@@ -17,6 +17,8 @@ b_0=24679.98*u.MHz
 a_0=127484*u.MHz
 c_0=23769.70*u.MHz
 m=b_0**2/(a_0*c_0)
+mu_a=(0.896e-18*u.statC*u.cm).to('cm(3/2) g(1/2) s-1 cm')
+R_i=1
         
 home='/home/d.jeff/SgrB2DS_field1/VelocityMoms/'#Make sure to include slash after path
 fname='/ufrc/adamginsburg/d.jeff/imaging_results/SgrB2DS_field1_spw1_cube_medsub.image.fits'
@@ -54,6 +56,11 @@ table = utils.minimize_table(Splatalogue.query_lines(freq_min, freq_max, chemica
                                 energy_max=1840, energy_type='eu_k',
                                 line_lists=[linelist],
                                 show_upper_degeneracy=True))
+                                
+sparetable=Splatalogue.query_lines(freq_min, freq_max, chemical_name=' CH3OH',
+                                energy_max=1840, energy_type='eu_k',
+                                line_lists=[linelist],
+                                show_upper_degeneracy=True)
                                 
 '''Loop through a given list of lines (in km/s), computing and saving moment0 maps of the entered data cube'''
 def lineloop(line_list,line_width,iterations,quantum_numbers):
@@ -93,6 +100,7 @@ vel_lines=vradio(lines,spw1restfreq)
 #print(vel_lines)
 qns=table['QNs']
 eus=table['EU_K']*u.K
+degeneracies=sparetable['Upper State Degeneracy']
 #testqn=qns[0:50]
 #print(np.size(qns))
 #print(testqn)
@@ -135,6 +143,7 @@ def unscrambler(filenames,sliced_qns,linelist):
     unscrambled_qns=[]
     unscrambled_freqs=[]
     unscrambled_eus=[]
+    unscrambled_degs=[]
     tempfiles=np.copy(filenames)
     for i in range(len(filenames)):
         tempfiles[i]=tempfiles[i].replace('.fits','')
@@ -144,20 +153,21 @@ def unscrambler(filenames,sliced_qns,linelist):
                 unscrambled_qns.append(sliced_qns[j])
                 unscrambled_freqs.append(linelist[j])
                 unscrambled_eus.append(eus[j])
-    return unscrambled_qns,unscrambled_freqs,unscrambled_eus
+                unscrambled_degs.append(degeneracies[j])
+    return unscrambled_qns,unscrambled_freqs,unscrambled_eus,unscrambled_degs
 
 beamlist=beamer(files)*u.sr
 #print(beamlist)
 fluxes=fluxvalues(383,649,files)*u.Jy*u.km/u.s#/u.sr
 #print(fluxes)
-unscrambledqns,unscrambledfreqs,unscrambledeus=unscrambler(files,slicedqns,lines)
+unscrambledqns,unscrambledfreqs,unscrambledeus,unscrambleddegs=unscrambler(files,slicedqns,lines)
 '''print(files)
 print(unscrambledqns)
 print(unscrambledfreqs)'''
 
 datadict={}
 for i in range(len(fluxes)):
-    datadict[i]={'qns':unscrambledqns[i],'freq':unscrambledfreqs[i],'beam':beamlist[i],'flux':fluxes[i],'E_u':unscrambledeus[i]}
+    datadict[i]={'qns':unscrambledqns[i],'freq':unscrambledfreqs[i],'beam':beamlist[i],'flux':fluxes[i],'E_u':unscrambledeus[i],'degen':unscrambleddegs[i]}
 
 '''Rough estimate: 0.75 arcsec/15pixels >>> 0.05 arsec/pixel >>> 2.424e-7rad/pixel
 Taken from DS9 tradiation region'''
@@ -185,15 +195,6 @@ intensities,t_brights=kkms(beamlist,datadict)
 
 print(t_brights)
     
-def KtoJ(T):
-    return (3/2)*k*T
-    
-def Ntot_rj_thin_nobg(nu,linewidth,s,g,q,eu_J,T_ex,vint_intensity):
-    #nu=nu
-    #T_ex=T_ex
-    #T_r=T_r
-    return ((3*k)/(8*np.pi**3*nu*mu_a**2*s*R_i))*(q/g)*np.exp((eu_J/(k*T_ex)))*((vint_intensity))#((nu+templatewidth)-(nu-templatewidth)))
-    
 def jupperfinder(quan_nums):
     j_upper=[]
     k_upper=[]
@@ -202,7 +203,7 @@ def jupperfinder(quan_nums):
             comp=quan_nums[i][j].isdigit()
             if comp==False:
                 appendage=quan_nums[i][:(j)]
-                j_upper.append(appendage)
+                j_upper.append(int(appendage))
                 for k in range(1,len(quan_nums[i][j:])):
                     secondary=quan_nums[i][j+k]
                     if k == 1:
@@ -210,7 +211,7 @@ def jupperfinder(quan_nums):
                             continue
                     elif secondary.isdigit()==False:
                         appendage=quan_nums[i][(j+1):(j+k)]
-                        k_upper.append(appendage)
+                        k_upper.append(int(appendage))
                         break
                 break
     
@@ -235,6 +236,18 @@ def N_u(ntot,qrot,gu,eu_J,T_ex):
 def Q_rot_asym(T):
     return np.sqrt(m*np.pi*((k*T)/(h*b_0))**3)
     
+def S_j(j_upper,k_upper):#Works for symmetric tops
+    return (j_upper**2-k_upper**2)/(j_upper*(2*j_upper+1))
+    
+def KtoJ(T):
+    return (3/2)*k*T
+    
+def Ntot_rj_thin_nobg(nu,s,g,q,eu_J,T_ex,vint_intensity):
+    #nu=nu
+    #T_ex=T_ex
+    #T_r=T_r
+    return ((3*k)/(8*np.pi**3*nu*mu_a**2*s*R_i))*(q/g)*np.exp((eu_J/(k*T_ex)))*((vint_intensity))#((nu+templatewidth)-(nu-templatewidth)))
+    
 #howmanybeams=2.424e-7/8.57915480931599e-5#Omega=solid_angle(8.57915480931599e-5*u.deg)#BMAJ
 #jyhz=fluxes*howmanybeams
 #print(jyhz.to('Jy Hz'))
@@ -251,7 +264,12 @@ qrots=[]
 s_j=[]
 for i in range(len(texs)):
     qrots.append(Q_rot_asym(texs[i]))
-    s_j=(4**2-2**2)/(4*(2*4+1))
+    s_j.append(S_j(jupper[i],kupper[i]))
+
+testntot=Ntot_rj_thin_nobg(datadict[0]['freq'],s_j[0],datadict[0]['degen'],qrots[0],
+KtoJ(datadict[0]['E_u']),texs[0],intensities[0])
+testnuoverg=N_u(testntot,qrots[0],datadict[0]['degen'],KtoJ(datadict[0]['E_u']),texs[0])
+print(testnuoverg.to('cm-2'))
 #ntot=Ntot_rj_thin_nobg(lines[0],linewidth,s,9,KtoJ(tex[0])
 
 
