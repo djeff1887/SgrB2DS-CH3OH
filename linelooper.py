@@ -8,6 +8,7 @@ from astropy.io import fits
 import glob
 import radio_beam
 
+'''Collect constants and CH3OH-specific quantum parameters'''
 c=cnst.c*u.m/u.s
 k=cnst.k*u.J/u.K
 h=cnst.h*u.J*u.s
@@ -54,6 +55,7 @@ table = utils.minimize_table(Splatalogue.query_lines(freq_min, freq_max, chemica
                                 line_lists=[linelist],
                                 show_upper_degeneracy=True))
                                 
+'''Loop through a given list of lines (in km/s), computing and saving moment0 maps of the entered data cube'''
 def lineloop(line_list,line_width,iterations,quantum_numbers):
     for i in range(iterations):
         line=line_list[i]#*u.Hz
@@ -72,22 +74,25 @@ def lineloop(line_list,line_width,iterations,quantum_numbers):
         #name='test'+str(i)
         slabmom0.write((home+'CH3OH~'+transition+'.fits'),overwrite=True)
         print('Done')
-        
+
+'''Replaces unwanted characters from the QN table for use in file names'''
 def qn_replace(string):
     string=string.replace('=','')
     string=string.replace('(','_')
     string=string.replace(')','')
     return string
     
+'''Converts given line list in frequency to radio velocity'''
 def vradio(frequency,rest_freq):
     velocity_list=c.to(u.km/u.s)*((rest_freq-frequency)/rest_freq)
     return velocity_list.to('km s-1')
+    
 #print(np.shape(lines))
 lines=table['Freq']*10**9*u.Hz
 vel_lines=vradio(lines,spw1restfreq)
 #print(vel_lines)
 qns=table['QNs']
-tex=table['EU_K']
+eus=table['EU_K']*u.K
 #testqn=qns[0:50]
 #print(np.size(qns))
 #print(testqn)
@@ -100,8 +105,7 @@ for i in range(len(test)):
 plt.show()
 '''
 linewidth=0.0097*u.GHz#from small line @ 219.9808GHz# 0.0155>>20.08km/s 
-linewidth_vel=linewidth*c.to(u.km/u.s)/spw1restfreq#vradio(linewidth,spw1restfreq)
-print(linewidth_vel.to('km s-1'))
+linewidth_vel=(linewidth*c.to(u.km/u.s)/spw1restfreq).to('km s-1')#vradio(linewidth,spw1restfreq)
 slicedqns=[]
 print('\nlinelooper...')
 lineloop(vel_lines,linewidth_vel,len(lines),qns)
@@ -130,6 +134,7 @@ def beamer(fitsfiles):
 def unscrambler(filenames,sliced_qns,linelist):
     unscrambled_qns=[]
     unscrambled_freqs=[]
+    unscrambled_eus=[]
     tempfiles=np.copy(filenames)
     for i in range(len(filenames)):
         tempfiles[i]=tempfiles[i].replace('.fits','')
@@ -138,30 +143,47 @@ def unscrambler(filenames,sliced_qns,linelist):
             if comp==True:
                 unscrambled_qns.append(sliced_qns[j])
                 unscrambled_freqs.append(linelist[j])
-    return unscrambled_qns,unscrambled_freqs
+                unscrambled_eus.append(eus[j])
+    return unscrambled_qns,unscrambled_freqs,unscrambled_eus
 
 beamlist=beamer(files)*u.sr
-print(beamlist)
+#print(beamlist)
 fluxes=fluxvalues(383,649,files)*u.Jy*u.km/u.s#/u.sr
-print(fluxes)
-unscrambledqns,unscrambledfreqs=unscrambler(files,slicedqns,lines)
+#print(fluxes)
+unscrambledqns,unscrambledfreqs,unscrambledeus=unscrambler(files,slicedqns,lines)
 '''print(files)
 print(unscrambledqns)
 print(unscrambledfreqs)'''
 
 datadict={}
 for i in range(len(fluxes)):
-    datadict[unscrambledqns[i]]={'freq':unscrambledfreqs[i],'beam':beamlist[i],'flux':fluxes[i]}
-    
-print(datadict[unscrambledqns[0]])
+    datadict[i]={'qns':unscrambledqns[i],'freq':unscrambledfreqs[i],'beam':beamlist[i],'flux':fluxes[i],'E_u':unscrambledeus[i]}
 
 '''Rough estimate: 0.75 arcsec/15pixels >>> 0.05 arsec/pixel >>> 2.424e-7rad/pixel
-Taken from DS9 tradiation region
+Taken from DS9 tradiation region'''
 
-def velflux(beams,fluxes):
-    vflux=[]
+def kkms(beams,data_dict):
+    intensitylist=[]
+    t_bright=[]
     for i in range(len(fluxes)):
-            temp=(fluxes[i]'''
+        temp=(data_dict[i]['flux']/linewidth_vel).to('Jy')
+        #print(temp)
+        equiv=u.brightness_temperature(data_dict[i]['freq'])
+        #print(equiv)
+        jy_sr=temp/beams[i]
+        #print(jy_sr)
+        conversion=jy_sr.to(u.K,equivalencies=equiv)
+        t_bright.append(conversion)
+        #print(conversion)
+        velflux_T=conversion*linewidth_vel
+        #print(velflux_T)
+        #print('\n')
+        intensitylist.append(velflux_T)
+    return intensitylist,t_bright
+
+intensities,t_brights=kkms(beamlist,datadict)
+
+print(t_brights)
     
 def KtoJ(T):
     return (3/2)*k*T
@@ -171,6 +193,41 @@ def Ntot_rj_thin_nobg(nu,linewidth,s,g,q,eu_J,T_ex,vint_intensity):
     #T_ex=T_ex
     #T_r=T_r
     return ((3*k)/(8*np.pi**3*nu*mu_a**2*s*R_i))*(q/g)*np.exp((eu_J/(k*T_ex)))*((vint_intensity))#((nu+templatewidth)-(nu-templatewidth)))
+    
+def jupperfinder(quan_nums):
+    j_upper=[]
+    k_upper=[]
+    for i in range(len(quan_nums)):
+        for j in range(len(quan_nums[i])):
+            comp=quan_nums[i][j].isdigit()
+            if comp==False:
+                appendage=quan_nums[i][:(j)]
+                j_upper.append(appendage)
+                for k in range(1,len(quan_nums[i][j:])):
+                    secondary=quan_nums[i][j+k]
+                    if k == 1:
+                        if secondary=='-':
+                            continue
+                    elif secondary.isdigit()==False:
+                        appendage=quan_nums[i][(j+1):(j+k)]
+                        k_upper.append(appendage)
+                        break
+                break
+    
+    return j_upper,k_upper
+    
+def T_ex(tb,datums):
+    ts=[]
+    for i in range(len(datums.keys())):
+        insert=tb[i]
+        nu=datums[i]['freq']
+        if tb[i]>0:
+            tex=(h*nu)/(k*np.log(((h*nu)/(insert*k))+1))
+            ts.append(tex)
+        else:
+            continue
+    
+    return ts
 
 def N_u(ntot,qrot,gu,eu_J,T_ex):
     return ntot/(qrot*np.exp(eu_J/(k*T_ex)))
@@ -187,8 +244,14 @@ def Q_rot_asym(T):
 #vint_trads=nohzflux*((c)**2/(2*k*lines[0]**2))
 #vint_trads=vint_trads.to('K km s-1')
 #print(vint_trads)
-qrot=Q_rot_asym(tex[0])
-s_j=(4**2-2**2)/(4*(2*4+1))
+texs=T_ex(t_brights,datadict)
+jupper,kupper=jupperfinder(unscrambledqns)
+
+qrots=[]
+s_j=[]
+for i in range(len(texs)):
+    qrots.append(Q_rot_asym(texs[i]))
+    s_j=(4**2-2**2)/(4*(2*4+1))
 #ntot=Ntot_rj_thin_nobg(lines[0],linewidth,s,9,KtoJ(tex[0])
 
 
