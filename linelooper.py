@@ -68,6 +68,7 @@ def lineloop(line_list,line_width,iterations,quantum_numbers):
         slabmom0=slab.moment0()
         print('Saving...')
         transition=qn_replace(quantum_numbers[i])
+        slicedqns.append(transition)
         #name='test'+str(i)
         slabmom0.write((home+'CH3OH~'+transition+'.fits'),overwrite=True)
         print('Done')
@@ -101,9 +102,10 @@ plt.show()
 linewidth=0.0097*u.GHz#from small line @ 219.9808GHz# 0.0155>>20.08km/s 
 linewidth_vel=linewidth*c.to(u.km/u.s)/spw1restfreq#vradio(linewidth,spw1restfreq)
 print(linewidth_vel.to('km s-1'))
-'''print('\nlinelooper...')
+slicedqns=[]
+print('\nlinelooper...')
 lineloop(vel_lines,linewidth_vel,len(lines),qns)
-print('lines looped.\n')'''
+print('lines looped.\n')
 ######
 
 #print(qns)
@@ -124,14 +126,42 @@ def beamer(fitsfiles):
       temp=radio_beam.Beam.from_fits_header(hdu).value
       beams.append(temp)
     return beams
+    
+def unscrambler(filenames,sliced_qns,linelist):
+    unscrambled_qns=[]
+    unscrambled_freqs=[]
+    tempfiles=np.copy(filenames)
+    for i in range(len(filenames)):
+        tempfiles[i]=tempfiles[i].replace('.fits','')
+        for j in range(len(sliced_qns)):
+            comp=sliced_qns[j]==tempfiles[i][47:]
+            if comp==True:
+                unscrambled_qns.append(sliced_qns[j])
+                unscrambled_freqs.append(linelist[j])
+    return unscrambled_qns,unscrambled_freqs
 
 beamlist=beamer(files)*u.sr
 print(beamlist)
+fluxes=fluxvalues(383,649,files)*u.Jy*u.km/u.s#/u.sr
+print(fluxes)
+unscrambledqns,unscrambledfreqs=unscrambler(files,slicedqns,lines)
+'''print(files)
+print(unscrambledqns)
+print(unscrambledfreqs)'''
+
+datadict={}
+for i in range(len(fluxes)):
+    datadict[unscrambledqns[i]]={'freq':unscrambledfreqs[i],'beam':beamlist[i],'flux':fluxes[i]}
+    
+print(datadict[unscrambledqns[0]])
 
 '''Rough estimate: 0.75 arcsec/15pixels >>> 0.05 arsec/pixel >>> 2.424e-7rad/pixel
-Taken from DS9 tradiation region'''    
-def solid_angle(angle):
-    return np.pi*np.sin(angle)**2*u.sr
+Taken from DS9 tradiation region
+
+def velflux(beams,fluxes):
+    vflux=[]
+    for i in range(len(fluxes)):
+            temp=(fluxes[i]'''
     
 def KtoJ(T):
     return (3/2)*k*T
@@ -148,15 +178,14 @@ def N_u(ntot,qrot,gu,eu_J,T_ex):
 def Q_rot_asym(T):
     return np.sqrt(m*np.pi*((k*T)/(h*b_0))**3)
     
-fluxes=fluxvalues(383,649,files)*u.Jy*u.km/u.s#/u.sr
 #howmanybeams=2.424e-7/8.57915480931599e-5#Omega=solid_angle(8.57915480931599e-5*u.deg)#BMAJ
-jyhz=fluxes*howmanybeams
+#jyhz=fluxes*howmanybeams
 #print(jyhz.to('Jy Hz'))
-nohzflux=(jyhz[7]*c/lines[0]).to('Jy km s-1')
+#nohzflux=(jyhz[7]*c/lines[0]).to('Jy km s-1')
 #print(nohzflux)
 #print(lines)#vint_intensities.to('erg s-1 cm-2 sr-1 Hz-1 km s-1'))
-vint_trads=nohzflux*((c)**2/(2*k*lines[0]**2))
-vint_trads=vint_trads.to('K km s-1')
+#vint_trads=nohzflux*((c)**2/(2*k*lines[0]**2))
+#vint_trads=vint_trads.to('K km s-1')
 #print(vint_trads)
 qrot=Q_rot_asym(tex[0])
 s_j=(4**2-2**2)/(4*(2*4+1))
