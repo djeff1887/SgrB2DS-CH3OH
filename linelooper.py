@@ -56,7 +56,7 @@ table = utils.minimize_table(Splatalogue.query_lines(freq_min, freq_max, chemica
                                 energy_max=1840, energy_type='eu_k',
                                 line_lists=[linelist],
                                 show_upper_degeneracy=True))
-                                
+'''Needed for upper state degeneracies'''                                
 sparetable=Splatalogue.query_lines(freq_min, freq_max, chemical_name=' CH3OH',
                                 energy_max=1840, energy_type='eu_k',
                                 line_lists=[linelist],
@@ -101,6 +101,7 @@ vel_lines=vradio(lines,spw1restfreq)
 qns=table['QNs']
 eus=table['EU_K']*u.K
 degeneracies=sparetable['Upper State Degeneracy']
+log10aijs=table['log10_Aij']
 #testqn=qns[0:50]
 #print(np.size(qns))
 #print(testqn)
@@ -144,6 +145,7 @@ def unscrambler(filenames,sliced_qns,linelist):
     unscrambled_freqs=[]
     unscrambled_eus=[]
     unscrambled_degs=[]
+    unscrambled_aijs=[]
     tempfiles=np.copy(filenames)
     for i in range(len(filenames)):
         tempfiles[i]=tempfiles[i].replace('.fits','')
@@ -152,22 +154,23 @@ def unscrambler(filenames,sliced_qns,linelist):
             if comp==True:
                 unscrambled_qns.append(sliced_qns[j])
                 unscrambled_freqs.append(linelist[j])
-                unscrambled_eus.append(eus[j])
+                unscrambled_eus.append(eus[j]/u.K)
                 unscrambled_degs.append(degeneracies[j])
-    return unscrambled_qns,unscrambled_freqs,unscrambled_eus,unscrambled_degs
+                unscrambled_aijs.append((10**log10aijs[j])*u.Hz)
+    return unscrambled_qns,unscrambled_freqs,unscrambled_eus,unscrambled_degs,unscrambled_aijs
 
 beamlist=beamer(files)*u.sr
 #print(beamlist)
 fluxes=fluxvalues(383,649,files)*u.Jy*u.km/u.s#/u.sr
 #print(fluxes)
-unscrambledqns,unscrambledfreqs,unscrambledeus,unscrambleddegs=unscrambler(files,slicedqns,lines)
+unscrambledqns,unscrambledfreqs,unscrambledeus,unscrambleddegs,unscrambledaijs=unscrambler(files,slicedqns,lines)
 '''print(files)
 print(unscrambledqns)
 print(unscrambledfreqs)'''
 
 datadict={}
 for i in range(len(fluxes)):
-    datadict[i]={'qns':unscrambledqns[i],'freq':unscrambledfreqs[i],'beam':beamlist[i],'flux':fluxes[i],'E_u':unscrambledeus[i],'degen':unscrambleddegs[i]}
+    datadict[i]={'qns':unscrambledqns[i],'freq':unscrambledfreqs[i],'beam':beamlist[i],'flux':fluxes[i],'E_u(K)':unscrambledeus[i],'degen':unscrambleddegs[i],'aij':unscrambledaijs[i]}
 
 '''Rough estimate: 0.75 arcsec/15pixels >>> 0.05 arsec/pixel >>> 2.424e-7rad/pixel
 Taken from DS9 tradiation region'''
@@ -216,7 +219,7 @@ def jupperfinder(quan_nums):
                 break
     
     return j_upper,k_upper
-    
+'''    
 def T_ex(tb,datums):
     ts=[]
     for i in range(len(datums.keys())):
@@ -228,10 +231,10 @@ def T_ex(tb,datums):
         else:
             continue
     
-    return ts
+    return ts'''
 
-def N_u(ntot,qrot,gu,eu_J,T_ex):
-    return ntot/(qrot*np.exp(eu_J/(k*T_ex)))
+def N_u(nu,Aij,velocityintegrated_intensity_K):#(ntot,qrot,gu,eu_J,T_ex):
+    return ((8*np.pi*k*nu**2)/(h*c**3*Aij))*velocityintegrated_intensity_K#ntot/(qrot*np.exp(eu_J/(k*T_ex)))
     
 def Q_rot_asym(T):
     return np.sqrt(m*np.pi*((k*T)/(h*b_0))**3)
@@ -257,19 +260,29 @@ def Ntot_rj_thin_nobg(nu,s,g,q,eu_J,T_ex,vint_intensity):
 #vint_trads=nohzflux*((c)**2/(2*k*lines[0]**2))
 #vint_trads=vint_trads.to('K km s-1')
 #print(vint_trads)
-texs=T_ex(t_brights,datadict)
-jupper,kupper=jupperfinder(unscrambledqns)
-
+#texs=T_ex(t_brights,datadict)
+n_us=[]
+for i in range(len(intensities)):
+    temp=N_u(datadict[i]['freq'],datadict[i]['aij'],intensities[i])
+    n_us.append((temp.to('cm-2')*u.cm**2)/unscrambleddegs[i])
+#jupper,kupper=jupperfinder(unscrambledqns)
+'''
 qrots=[]
 s_j=[]
 for i in range(len(texs)):
     qrots.append(Q_rot_asym(texs[i]))
-    s_j.append(S_j(jupper[i],kupper[i]))
+    s_j.append(S_j(jupper[i],kupper[i]))'''
 
-testntot=Ntot_rj_thin_nobg(datadict[0]['freq'],s_j[0],datadict[0]['degen'],qrots[0],
-KtoJ(datadict[0]['E_u']),texs[0],intensities[0])
-testnuoverg=N_u(testntot,qrots[0],datadict[0]['degen'],KtoJ(datadict[0]['E_u']),texs[0])
-print(testnuoverg.to('cm-2'))
+#testntot=Ntot_rj_thin_nobg(datadict[0]['freq'],s_j[0],datadict[0]['degen'],qrots[0],
+#KtoJ(datadict[0]['E_u']),texs[0],intensities[0])
+#testnuoverg=N_u(testntot,qrots[0],datadict[0]['degen'],KtoJ(datadict[0]['E_u']),texs[0])
+print(n_us[i])
 #ntot=Ntot_rj_thin_nobg(lines[0],linewidth,s,9,KtoJ(tex[0])
+
+plt.scatter(unscrambledeus,np.log10(n_us))
+plt.title(r'spw1 CH$_3$OH Rotational Diagram')
+plt.xlabel(r'E$_u$ (K)')
+plt.ylabel(r'log$_{10}$(N$_u$/g$_u$)')
+plt.show()
 
 
