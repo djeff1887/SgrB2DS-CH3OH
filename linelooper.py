@@ -20,13 +20,13 @@ m=b_0**2/(a_0*c_0)
 mu_a=(0.896e-18*u.statC*u.cm).to('cm(3/2) g(1/2) s-1 cm')
 R_i=1
         
-home='/home/d.jeff/SgrB2DS_field1/VelocityMoms/'#Make sure to include slash after path
+home='/home/d.jeff/SgrB2DS_field1/VelocityMoms3/'#Make sure to include slash after path
 fname='/ufrc/adamginsburg/d.jeff/imaging_results/SgrB2DS_field1_spw1_cube_medsub.image.fits'
 cube=sc.read(fname)
 header=fits.getheader(fname)
 
 
-spw1restfreq=header['RESTFRQ']*u.Hz
+spw1restfreq=header['RESTFRQ']*u.Hz 
 freqs=cube.spectral_axis#Hz
 velcube=cube.with_spectral_unit((u.km/u.s),velocity_convention='radio',rest_value=spw1restfreq)
 #print(velcube.spectral_axis)
@@ -71,7 +71,8 @@ def lineloop(line_list,line_width,iterations,quantum_numbers):
         nu_lower=line-line_width
         #print('Done')
         #print('Make spectral slab')
-        slab=velcube.spectral_slab(nu_upper,nu_lower)
+        slab=cube.spectral_slab(nu_upper,nu_lower)
+        slab=slab.with_spectral_unit((u.km/u.s),velocity_convention='radio',rest_value=spw1restfreq)
         #print('Done')
         #print('Moment 0')
         slabmom0=slab.moment0()
@@ -94,35 +95,28 @@ def vradio(frequency,rest_freq):
     velocity_list=c.to(u.km/u.s)*((rest_freq-frequency)/rest_freq)
     return velocity_list.to('km s-1')
     
-#print(np.shape(lines))
-lines=table['Freq']*10**9*u.Hz
-vel_lines=vradio(lines,spw1restfreq)
-#print(vel_lines)
+lines=table['Freq']*10**9*u.Hz/(1+z)
+#vel_lines=vradio(lines,spw1restfreq)
 qns=table['QNs']
 eus=table['EU_K']*u.K
 degeneracies=sparetable['Upper State Degeneracy']
 log10aijs=table['log10_Aij']
-#testqn=qns[0:50]
-#print(np.size(qns))
-#print(testqn)
 
-
-#print(testqn)
 '''
 for i in range(len(test)):
     plt.axvline(x=test[i],color='red')
 plt.show()
 '''
-linewidth=0.0097*u.GHz#from small line @ 219.9808GHz# 0.0155>>20.08km/s 
+linewidth=0.5*0.0097*u.GHz#from small line @ 219.9808GHz# 0.0155>>20.08km/s 
 linewidth_vel=(linewidth*c.to(u.km/u.s)/spw1restfreq).to('km s-1')#vradio(linewidth,spw1restfreq)
 slicedqns=[]
 print('\nlinelooper...')
-lineloop(vel_lines,linewidth_vel,len(lines),qns)
+lineloop(lines,linewidth,len(lines),qns)
 print('lines looped.\n')
 ######
 
 #print(qns)
-files=glob.glob('/home/d.jeff/SgrB2DS_field1/VelocityMoms/*')
+files=glob.glob(home+'*')
 #print(files)
 
 def fluxvalues(xpix,ypix,filenames):
@@ -150,7 +144,7 @@ def unscrambler(filenames,sliced_qns,linelist):
     for i in range(len(filenames)):
         tempfiles[i]=tempfiles[i].replace('.fits','')
         for j in range(len(sliced_qns)):
-            comp=sliced_qns[j]==tempfiles[i][47:]
+            comp=(sliced_qns[j]==tempfiles[i][48:])
             if comp==True:
                 unscrambled_qns.append(sliced_qns[j])
                 unscrambled_freqs.append(linelist[j])
@@ -170,6 +164,7 @@ print(unscrambledfreqs)'''
 
 datadict={}
 for i in range(len(fluxes)):
+    print(i)
     datadict[i]={'qns':unscrambledqns[i],'freq':unscrambledfreqs[i],'beam':beamlist[i],'flux':fluxes[i],'E_u(K)':unscrambledeus[i],'degen':unscrambleddegs[i],'aij':unscrambledaijs[i]}
 
 '''Rough estimate: 0.75 arcsec/15pixels >>> 0.05 arsec/pixel >>> 2.424e-7rad/pixel
@@ -278,11 +273,13 @@ for i in range(len(texs)):
 #testnuoverg=N_u(testntot,qrots[0],datadict[0]['degen'],KtoJ(datadict[0]['E_u']),texs[0])
 print(n_us[i])
 #ntot=Ntot_rj_thin_nobg(lines[0],linewidth,s,9,KtoJ(tex[0])
-
+home2=home.replace('VelocityMoms3/','')
+plt.clf()
 plt.scatter(unscrambledeus,np.log10(n_us))
 plt.title(r'spw1 CH$_3$OH Rotational Diagram')
 plt.xlabel(r'E$_u$ (K)')
 plt.ylabel(r'log$_{10}$(N$_u$/g$_u$)')
+plt.savefig((home2+'trialrotdiag2.png'),dpi=100,overwrite=True)
 plt.show()
 
 
