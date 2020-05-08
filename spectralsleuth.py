@@ -11,9 +11,9 @@ import regions
 
 files=glob.glob('/ufrc/adamginsburg/d.jeff/imaging_results/*.fits')
 z=0.0002333587
-linelist='JPL'
 chem= input('Molecule?: ')
 chem=(' '+chem+' ')
+linelist=input('Linelist? (Lovas, SLAIM, JPL, CDMS, ToyoMA, OSU, Recomb, Lisa, RFI): ')
 
 speciesdata={}
 imgnames=['spw2','spw1','spw0']
@@ -62,7 +62,7 @@ for i in range(len(files)):
         for k in range(len(lines)):
             ax.axvline(x=lines[k],color='red')
             #plt.annotate((lines[i]),xy=(lines[i],0),xytext=(lines[i],(spw1[i].value+0.01)),rotation=90)
-        ax.set_title((imgnames[i]+chem+'Spectral Sleuthing'))
+        ax.set_title((imgnames[i]+chem+linelist+'Spectral Sleuthing'))
         ax.set_ylabel('Jy/beam')
         ax.set_xlabel('Frequency (Hz)')
         plt.show()
@@ -77,7 +77,7 @@ for i in range(len(files)):
         for l in range(len(lines)):
             ax.axvline(x=lines[l],color='red')
             #plt.annotate((lines[i]),xy=(lines[i],0),xytext=(lines[i],(spw1[i].value+0.01)),rotation=90)
-        ax.set_title((imgnames[i]+chem+'Spectral Sleuthing'))
+        ax.set_title((imgnames[i]+chem+linelist+'Spectral Sleuthing'))
         ax.set_xlabel('Frequency (Hz)')
         ax.set_ylabel('Jy/beam')
         plt.show()
