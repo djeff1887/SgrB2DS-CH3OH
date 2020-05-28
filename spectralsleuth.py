@@ -14,6 +14,8 @@ z=0.0002333587
 chem= input('Molecule?: ')
 chem=(' '+chem+' ')
 linelist=input('Linelist? (Lovas, SLAIM, JPL, CDMS, ToyoMA, OSU, Recomb, Lisa, RFI): ')
+linewidth=0.00485*u.GHz
+
 
 speciesdata={}
 imgnames=['spw2','spw1','spw0']
@@ -24,6 +26,8 @@ for i in range(len(files)):
     header=fits.getheader(fname)
 
     freqs=cube.spectral_axis
+    
+    numchans=int(round(np.abs((linewidth.to('Hz')).value/(freqs[1].value-freqs[0].value))))
 
     freq_max=freqs[0]*(1+z)#215*u.GHz
     freq_min=freqs[(len(freqs)-1)]*(1+z)#235*u.GHz
@@ -58,26 +62,49 @@ for i in range(len(files)):
         ax=plt.subplot(111)
         plt.plot(freqs,spw.value,drawstyle='steps')
         for j in range(len(mlines)):
-            ax.axvline(x=mlines[j],color='green')
+            centroid=mlines[j]*u.Hz
+            minfreq=centroid-linewidth
+            maxfreq=centroid+linewidth
+            centrchan=int(cube.closest_spectral_channel(centroid))
+            #interval=np.linspace(cube.closest_spectral_channel(maxfreq.value),cube.closest_spectral_channel(minfreq.value),numchans*2)
+            ax.axvline(x=centroid.value,color='green')
+            ax.plot(freqs[cube.closest_spectral_channel(maxfreq):cube.closest_spectral_channel(minfreq)],spw.value[cube.closest_spectral_channel(maxfreq):cube.closest_spectral_channel(minfreq)],drawstyle='steps',color='orange')
         for k in range(len(lines)):
             ax.axvline(x=lines[k],color='red')
             #plt.annotate((lines[i]),xy=(lines[i],0),xytext=(lines[i],(spw1[i].value+0.01)),rotation=90)
-        ax.set_title((imgnames[i]+chem+linelist+'Spectral Sleuthing'))
+        ax.set_title((imgnames[i]+chem+linelist+' '+'Spectral Sleuthing'))
         ax.set_ylabel('Jy/beam')
         ax.set_xlabel('Frequency (Hz)')
         plt.show()
         continue
     elif i != 2:
         spw=cube[:,649,383]
+        '''
+        if (freqs[0]-freqs[1])<0:
+            freqs=freqs[::-1]
+            pass
+        else:
+            pass
+        '''
         fig=plt.figure()
         ax=plt.subplot(111)
         plt.plot(freqs,spw.value,drawstyle='steps')
         for k in range(len(mlines)):
-            ax.axvline(x=mlines[k],color='green')
+            centroid=mlines[k]*u.Hz
+            minfreq=centroid-linewidth
+            maxfreq=centroid+linewidth
+            centrchan=int(cube.closest_spectral_channel(centroid))
+            #interval=np.linspace((maxfreq.value),(minfreq.value),numchans*2)
+            ax.axvline(x=centroid.value,color='green')
+            if (freqs[0]-freqs[1])<0:
+                ax.plot(freqs[cube.closest_spectral_channel(minfreq):cube.closest_spectral_channel(maxfreq)],spw.value[cube.closest_spectral_channel(minfreq):cube.closest_spectral_channel(maxfreq)],drawstyle='steps',color='orange')
+            else:
+                ax.plot(freqs[cube.closest_spectral_channel(maxfreq):cube.closest_spectral_channel(minfreq)],spw.value[cube.closest_spectral_channel(maxfreq):cube.closest_spectral_channel(minfreq)],drawstyle='steps',color='orange')
+            #ax.plot(interval,spw.value[(centrchan-numchans):(centrchan+numchans)],drawstyle='steps')
         for l in range(len(lines)):
             ax.axvline(x=lines[l],color='red')
             #plt.annotate((lines[i]),xy=(lines[i],0),xytext=(lines[i],(spw1[i].value+0.01)),rotation=90)
-        ax.set_title((imgnames[i]+chem+linelist+'Spectral Sleuthing'))
+        ax.set_title((imgnames[i]+chem+linelist+' '+'Spectral Sleuthing'))
         ax.set_xlabel('Frequency (Hz)')
         ax.set_ylabel('Jy/beam')
         plt.show()
