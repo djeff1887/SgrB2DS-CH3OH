@@ -2,6 +2,7 @@ import numpy as np
 import astropy.units as u
 from spectral_cube import SpectralCube as sc
 import matplotlib.pyplot as plt
+from matplotlib.pyplot import cm
 from astroquery.splatalogue import utils, Splatalogue
 import scipy.constants as cnst
 from astropy.io import fits
@@ -13,15 +14,16 @@ files=glob.glob('/ufrc/adamginsburg/d.jeff/imaging_results/*.fits')
 z=0.0002333587
 #chem= input('Molecule?: ')
 #chem=(' '+chem+' ')
-contaminants=['CH3OCHO','HOONO']
+contaminants=[' CH3OCHO ',' HOONO ',' C3H6O2 ',' g-CH3CH2OH ']
+colors=cm.rainbow(np.linspace(0,1,len(contaminants)))
 
 linelist='JPL'#input('Linelist? (Lovas, SLAIM, JPL, CDMS, ToyoMA, OSU, Recomb, Lisa, RFI): ')
 
 contamdata={}
 imgnames=['spw2','spw1','spw0']
 
-for i in range(len(files)-2):
-    print('Getting ready')
+for i in range(len(files)):
+    print('Getting ready - '+imgnames[i])
     cube=sc.read(files[i])
     header=fits.getheader(files[i])
     
@@ -38,6 +40,9 @@ for i in range(len(files)-2):
     mqns=methanol_table['QNs']
     print('Setting figure variable')
     fig=plt.figure()
+    
+    mins=[]
+    maxs=[]
     if i == 2:
         print('Plotting backdrop spectrum')
         spw=cube[:,762,496]
@@ -46,22 +51,39 @@ for i in range(len(files)-2):
         plt.xlabel('Frequency (Hz)')
         plt.title((imgnames[i]+' '+'Contaminant-labeled Spectra'))
         ax=plt.subplot(111)
-        print('Plotting mlines')
+        print('Plotting mlines and ROIs')
         for a in range(len(mlines)):
             centroid=mlines[a]*u.Hz
             minfreq=centroid-linewidth
             maxfreq=centroid+linewidth
-            contamtable=Splatalogue.query_lines(minfreq, maxfreq,energy_max=1840, energy_type='eu_k', chemical_name=chem, line_lists=[linelist],show_upper_degeneracy=True)
-            if len(contamtable)==0:
-                print('No '+chem+' lines in frequency range '+str(mfreqmin)+'-'+str(mfreqmax)+' GHz.')
-            else:
-                print(chem+' contaminants identified for CH3OH '+mqns[a]+'.')
-                table = utils.minimize_table(contamtable)
+            mins.append(minfreq)
+            maxs.append(maxfreq)
             if a == 0:
                 ax.axvline(x=centroid.value,color='green',label='CH3OH')
             else:
                 ax.axvline(x=centroid.value,color='green')
             ax.plot(freqs[cube.closest_spectral_channel(maxfreq):cube.closest_spectral_channel(minfreq)],spw.value[cube.closest_spectral_channel(maxfreq):cube.closest_spectral_channel(minfreq)],drawstyle='steps',color='orange')
+        print('Begin plotting contaminant lines')
+        for j in range(len(contaminants)):
+            print('Checking'+contaminants[j])
+            dum=0
+            for d in range(len(mins)):
+                contamtable=Splatalogue.query_lines((mins[d]*(1+z)), (maxs[d]*(1+z)),energy_max=1840, energy_type='eu_k', chemical_name=contaminants[j], line_lists=[linelist],show_upper_degeneracy=True)
+                if len(contamtable)==0:
+                    print('No '+contaminants[j]+' lines in frequency range '+str(mins[d])+'-'+str(maxs[d])+'.')
+                else:
+                    print(contaminants[j]+' contaminants identified for CH3OH '+mqns[d]+' at '+str(mins[d]+linewidth)+' GHz.')
+                    table = utils.minimize_table(contamtable)
+                    line=(table['Freq']*10**9)/(1+z)#Redshifted
+                    qns=table['QNs']
+                    for g in range(len(table)):
+                        if g==0 and dum==0:
+                            ax.axvline(x=line[g],color=colors[j],label=contaminants[j])
+                            print('hiii')
+                            dum+=1
+                        else:
+                            ax.axvline(x=line[g],color=colors[j])
+        plt.legend()
         plt.show()
         
     elif i != 2:
@@ -77,17 +99,8 @@ for i in range(len(files)-2):
             centroid=mlines[b]*u.Hz
             minfreq=centroid-linewidth
             maxfreq=centroid+linewidth
-            for k in range(len(contaminants)):
-                contamtable=Splatalogue.query_lines(minfreq, maxfreq,energy_max=1840, energy_type='eu_k', chemical_name=contaminants[k], line_lists=[linelist],show_upper_degeneracy=True)
-                if len(contamtable)==0:
-                    print('No '+contaminants[k]+' lines in frequency range '+str(minfreq)+'-'+str(maxfreq)+' GHz.')
-                else:
-                    print(contaminants[k]+' contaminants identified for CH3OH '+mqns[b]+'.')
-                    table = utils.minimize_table(contamtable)
-                    line=(table['Freq']*10**9)/(1+z)#Redshifted
-                    qns=table['QNs']
-                    for f in range(len(table)):
-                        ax.axvline(x=line[f],color='red')
+            mins.append(minfreq)
+            maxs.append(maxfreq)
             if b == 0:
                 ax.axvline(x=centroid.value,color='green',label='CH3OH')
             else:
@@ -96,6 +109,26 @@ for i in range(len(files)-2):
                 ax.plot(freqs[cube.closest_spectral_channel(minfreq):cube.closest_spectral_channel(maxfreq)],spw.value[cube.closest_spectral_channel(minfreq):cube.closest_spectral_channel(maxfreq)],drawstyle='steps',color='orange')
             else:
                 ax.plot(freqs[cube.closest_spectral_channel(maxfreq):cube.closest_spectral_channel(minfreq)],spw.value[cube.closest_spectral_channel(maxfreq):cube.closest_spectral_channel(minfreq)],drawstyle='steps',color='orange')
+        print('Begin plotting contaminant lines')
+        for k in range(len(contaminants)):
+            print('Checking'+contaminants[k]+'...')
+            dummy=0
+            for c in range(len(mins)):
+                contamtable=Splatalogue.query_lines((mins[c]*(1+z)), (maxs[c]*(1+z)),energy_max=1840, energy_type='eu_k', chemical_name=contaminants[k], line_lists=[linelist],show_upper_degeneracy=True)
+                if len(contamtable)==0:
+                    print('No '+contaminants[k]+' lines in frequency range '+str(mins[c])+'-'+str(maxs[c])+'.')
+                    continue
+                else:
+                    print(contaminants[k]+' contaminants identified for CH3OH '+mqns[c]+' in frequency range '+str(mins[c])+'-'+str(maxs[c])+'.')
+                    table = utils.minimize_table(contamtable)
+                    line=(table['Freq']*10**9)/(1+z)#Redshifted
+                    qns=table['QNs']
+                    dummy+=1
+                    for f in range(len(table)):
+                        if f == 0 and dummy == 1:
+                            ax.axvline(x=line[f],color=colors[k],label=contaminants[k])
+                        else:
+                            ax.axvline(x=line[f],color=colors[k])
         plt.legend()
         plt.show()
             #ax.plot(interval,spw.value[(centrchan-numchans):(centrchan+numchans)],drawstyle='steps')

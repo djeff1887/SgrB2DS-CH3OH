@@ -53,7 +53,7 @@ for i in range(len(files)):
                                 show_upper_degeneracy=True, only_NRAO_recommended=True)
     lines=(table['Freq']*10**9)/(1+z)#Redshifted
     qns=table['QNs']
-    speciesdata[imgnames[i]]={'freqs':(lines*u.Hz),'qns':qns,'E_u(K)':(table['EU_K']),'methanoltable':methanol_table}#'lines':lines,'qns':qns}
+    speciesdata[imgnames[i]]={'freqs':(lines*u.Hz),'qns':qns,'EU_K':(table['EU_K']),'methanoltable':methanol_table}#'lines':lines,'qns':qns}
     
     print('Plotting lines...')
     if i == 2:
