@@ -29,8 +29,8 @@ for i in range(len(files)):
     
     numchans=int(round(np.abs((linewidth.to('Hz')).value/(freqs[1].value-freqs[0].value))))
 
-    freq_max=freqs[0]*(1+z)#215*u.GHz
-    freq_min=freqs[(len(freqs)-1)]*(1+z)#235*u.GHz
+    freq_max=freqs[np.argmin(freqs)]*(1+z)#215*u.GHz
+    freq_min=freqs[np.argmax(freqs)]*(1+z)#235*u.GHz
     
     methanol_table= utils.minimize_table(Splatalogue.query_lines(freq_min, freq_max, chemical_name=' CH3OH ', energy_max=1840, energy_type='eu_k', line_lists=[linelist], show_upper_degeneracy=True))
 
