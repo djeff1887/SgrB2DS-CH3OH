@@ -9,14 +9,14 @@ import glob
 import radio_beam
 import regions
 
-fname='/ufrc/adamginsburg/d.jeff/imaging_results/SgrB2DS_field1_spw1_cube_medsub.image.fits'#glob.glob('/ufrc/adamginsburg/d.jeff/imaging_results/*.fits')
+fname='/ufrc/adamginsburg/d.jeff/imaging_results/SgrB2DS_field1_spw2_cube_medsub.image.fits'#glob.glob('/ufrc/adamginsburg/d.jeff/imaging_results/*.fits')
 z=0.0002333587
 #chem= input('Molecule?: ')
 #chem=(' '+chem+' ')
 linelist=input('Linelist? (Lovas, SLAIM, JPL, CDMS, ToyoMA, OSU, Recomb, Lisa, RFI): ')
 
 speciesdata={}
-imgnames=['spw1']
+imgnames=['spw2']
 
 #'/ufrc/adamginsburg/d.jeff/imaging_results/SgrB2DS_field1_spw1_cube_medsub.image.fits'#'/ufrc/adamginsburg/d.jeff/imaging_results/SgrB2DS_field1_spw0_cube.image.fits'
 cube=sc.read(fname)
@@ -60,10 +60,11 @@ for i in range(len(methanol_table['Freq'])):
     lines=(table['Freq']*10**9)/(1+z)#Redshifted
     qns=table['QNs']
     print('Plotting background spectra')
-    if imgnames=='spw0':
+    if imgnames[0]=='spw0':
         spw=cube[:,762,496]
     else:
         spw=cube[:,649,383]
+        
     fig=plt.figure()
     ax=plt.subplot(111)
     plt.plot(freqs,spw.value,drawstyle='steps')
@@ -76,20 +77,23 @@ for i in range(len(methanol_table['Freq'])):
                 print(species[stuff])
                 print('Skipping problem '+skips[much]+'...')
                 continue
-            '''
+
+        '''
         elif species[stuff]=='CH2Cl2':
             print('Skipping CH2Cl2...')#Not sure why, but this molecule doesn't have a Splatalogue entry/isn't queried properly in spw2
             continue
             '''
+        
         for more in range(len(knowns)):#Skips known contaminants
             if knowns[more] in species[stuff]:
                 print('Skipping known '+knowns[more]+'...')
                 continue   
-    
+
         if stuff > 0:
-            if species[stuff] == species[stuff-1]:#Prevents repeats of same molecule plotting, for efficiency
+            if species[stuff] in species[stuff-1]:#Prevents repeats of same molecule plotting, for efficiency
+                print('Skipping duplicate '+species[stuff]+'...')
                 continue
-                
+          
         else:
             print('Querying lines for '+species[stuff]+' in frequency range '+str(mfreqmin)+'-'+str(mfreqmax)+' GHz.')
             if 'v' in species[stuff]:#Removes v=___ from chem name for queries
@@ -115,34 +119,6 @@ for i in range(len(methanol_table['Freq'])):
             ax.set_xlabel('Frequency (Hz)')
             ax.set_ylabel('Jy/beam')
             plt.show()
-    '''
-    
-    '''
-    '''
-    if i == 2:
-        
-        
-        
-            #plt.annotate((lines[i]),xy=(lines[i],0),xytext=(lines[i],(spw1[i].value+0.01)),rotation=90)
-        ax.set_title((imgnames[0]+' '+linelist+' Spectral Sleuthing (2)'))
-        ax.set_ylabel('Jy/beam')
-        ax.set_xlabel('Frequency (Hz)')
-        plt.show()
-        continue
-     '''  
-''' 
-     spw=cube[:,649,383]
-     fig=plt.figure()
-     ax=plt.subplot(111)
-     plt.plot(freqs,spw.value,drawstyle='steps')
-     for k in range(len(mlines)):
-       ax.axvline(x=mlines[k],color='green')
-     for l in range(len(lines)):
-       ax.axvline(x=lines[l],color='red')
-            #plt.annotate((lines[i]),xy=(lines[i],0),xytext=(lines[i],(spw1[i].value+0.01)),rotation=90)
-        continue
-'''
-
 
 
 
