@@ -34,7 +34,8 @@ methanol_table= utils.minimize_table(Splatalogue.query_lines(freq_min, freq_max,
 mlines=(methanol_table['Freq']*10**9)/(1+z)
 mqns=methanol_table['QNs']
 
-skips=['CH2Cl2','(CH3)2CO']
+skips=['CH2Cl2','(CH3)2CO', 'c-C6H5CCH','c-C4H4O2','HC7O','H13C(O)NH2','a-(CH3)2CHCH2CN','H2NCH2COOH-Iv=0'
+, 'g-(CH3)2CHCH2CN','t-HC(O)SH','CH3CHNH2COOH-I','C2H5CHCNCH3','NCC(O)NH2','c-C6H5OH','(Z)-HC2CHCHCN', 'c-C6H5CN','g\'Ga-(CH2OH)2','H2C(CN)2','AA-n-C4H9CN','GA-n-C4H9CN','OC(CN)2','CH2(OD)CHO','g\'Gg-(CH2OH)2','aa-(C2H5)2O','C2H3NH20&#150;&larr;0+','CH3CHNH2COOH-II','c-HC(O)SH']
 knowns=['CH3OH','CH3OCHO','HOONO']
 
 for i in range(len(methanol_table['Freq'])):
@@ -42,7 +43,7 @@ for i in range(len(methanol_table['Freq'])):
     mfreqmin=methanol_table['Freq'][i]*u.GHz-(linewidth/2)
     mfreqmax=methanol_table['Freq'][i]*u.GHz+(linewidth/2)
     
-    temptable=Splatalogue.query_lines(mfreqmin, mfreqmax,energy_max=1840, energy_type='eu_k', line_lists=[linelist],show_upper_degeneracy=True)#chemical_name=chem,
+    temptable=Splatalogue.query_lines(mfreqmin, mfreqmax,energy_max=1840, energy_type='eu_k', line_lists=[linelist],show_upper_degeneracy=True,only_NRAO_recommended=True)#chemical_name=chem,
     if len(temptable)==0:
         print('No  lines in frequency range '+str(mfreqmin)+'-'+str(mfreqmax)+' GHz.')
         continue
@@ -56,6 +57,7 @@ for i in range(len(methanol_table['Freq'])):
                                 line_lists=[linelist],
                                 show_upper_degeneracy=True, only_NRAO_recommended=True)
         '''
+
     species=table['Species']
     lines=(table['Freq']*10**9)/(1+z)#Redshifted
     qns=table['QNs']
@@ -71,28 +73,24 @@ for i in range(len(methanol_table['Freq'])):
     print('Begin contaminant plotting')
     
     for stuff in range(len(species)):
-        for much in range(len(skips)):
-            if skips[much] in species[stuff]:
-                print(skips[much])
-                print(species[stuff])
-                print('Skipping problem '+skips[much]+'...')
-                continue
-
         '''
-        elif species[stuff]=='CH2Cl2':
-            print('Skipping CH2Cl2...')#Not sure why, but this molecule doesn't have a Splatalogue entry/isn't queried properly in spw2
+        if any(species[stuff] in knowns):
+            print('Skipping known '+species[stuff]+'...')
             continue
-            '''
+            
+        '''
         
-        for more in range(len(knowns)):#Skips known contaminants
-            if knowns[more] in species[stuff]:
-                print('Skipping known '+knowns[more]+'...')
-                continue   
-
-        if stuff > 0:
-            if species[stuff] in species[stuff-1]:#Prevents repeats of same molecule plotting, for efficiency
-                print('Skipping duplicate '+species[stuff]+'...')
-                continue
+        if stuff > 0 and species[stuff] == species[stuff-1]:#Prevents repeats of same molecule plotting, for efficiency
+            print('Skipping duplicate '+species[stuff]+'...')
+            continue
+            
+        if species[stuff] in skips:
+            print('Skipping problem '+species[stuff]+'...')
+            continue
+        
+        if species[stuff] in knowns:
+            print('Skipping known '+knowns[more]+'...')
+            continue
           
         else:
             print('Querying lines for '+species[stuff]+' in frequency range '+str(mfreqmin)+'-'+str(mfreqmax)+' GHz.')

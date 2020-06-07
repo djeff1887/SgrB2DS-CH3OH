@@ -14,10 +14,10 @@ files=glob.glob('/ufrc/adamginsburg/d.jeff/imaging_results/*.fits')
 z=0.0002333587
 #chem= input('Molecule?: ')
 #chem=(' '+chem+' ')
-contaminants=[' CH3OCHO ',' HOONO ',' C3H6O2 ',' g-CH3CH2OH ']
+contaminants=[' CH3OCHO ',' HOONO ',' C3H6O2 ',' g-CH3CH2OH ',' HNCO ']
 colors=cm.rainbow(np.linspace(0,1,len(contaminants)))
 
-linelist='JPL'#input('Linelist? (Lovas, SLAIM, JPL, CDMS, ToyoMA, OSU, Recomb, Lisa, RFI): ')
+linelist=['JPL','SLAIM','CDMS']#input('Linelist? (Lovas, SLAIM, JPL, CDMS, ToyoMA, OSU, Recomb, Lisa, RFI): ')
 
 contamdata={}
 imgnames=['spw2','spw1','spw0']
@@ -34,7 +34,7 @@ for i in range(len(files)):
     linewidth=0.00485*u.GHz#Half of original 0.0097GHz
             
     '''Generate methanol table for contaminant search'''    
-    methanol_table= utils.minimize_table(Splatalogue.query_lines(freq_min, freq_max, chemical_name=' CH3OH ', energy_max=1840, energy_type='eu_k', line_lists=[linelist], show_upper_degeneracy=True))
+    methanol_table= utils.minimize_table(Splatalogue.query_lines(freq_min, freq_max, chemical_name=' CH3OH ', energy_max=1840, energy_type='eu_k', line_lists=['JPL'], show_upper_degeneracy=True))
         
     mlines=(methanol_table['Freq']*10**9)/(1+z)
     mqns=methanol_table['QNs']
@@ -68,21 +68,23 @@ for i in range(len(files)):
             print('Checking'+contaminants[j])
             dum=0
             for d in range(len(mins)):
-                contamtable=Splatalogue.query_lines((mins[d]*(1+z)), (maxs[d]*(1+z)),energy_max=1840, energy_type='eu_k', chemical_name=contaminants[j], line_lists=[linelist],show_upper_degeneracy=True)
-                if len(contamtable)==0:
-                    print('No '+contaminants[j]+' lines in frequency range '+str(mins[d])+'-'+str(maxs[d])+'.')
-                else:
-                    print(contaminants[j]+' contaminants identified for CH3OH '+mqns[d]+' at '+str(mins[d]+linewidth)+' GHz.')
-                    table = utils.minimize_table(contamtable)
-                    line=(table['Freq']*10**9)/(1+z)#Redshifted
-                    qns=table['QNs']
-                    for g in range(len(table)):
-                        if g==0 and dum==0:
-                            ax.axvline(x=line[g],color=colors[j],label=contaminants[j])
-                            print('hiii')
-                            dum+=1
-                        else:
-                            ax.axvline(x=line[g],color=colors[j])
+                for liss in range(len(linelist)):
+                    contamtable=Splatalogue.query_lines((mins[d]*(1+z)), (maxs[d]*(1+z)),energy_max=1840, energy_type='eu_k', chemical_name=contaminants[j], line_lists=[linelist[liss]],show_upper_degeneracy=True)
+                    if len(contamtable)==0:
+                        print('No '+contaminants[j]+' lines in '+linelist[liss]+' frequency range '+str(mins[d])+'-'+str(maxs[d])+'.')
+            
+                    else:
+                        print(contaminants[j]+' contaminants identified in '+linelist[liss]+' for CH3OH '+mqns[d]+' at '+str(mins[d]+linewidth)+' GHz.')
+                        table = utils.minimize_table(contamtable)
+                        line=(table['Freq']*10**9)/(1+z)#Redshifted
+                        qns=table['QNs']
+                        for g in range(len(table)):
+                            if g==0 and dum==0:
+                                ax.axvline(x=line[g],color=colors[j],label=contaminants[j])
+                                print('hiii')
+                                dum+=1
+                            else:
+                                ax.axvline(x=line[g],color=colors[j])
         plt.legend()
         plt.show()
         
@@ -114,21 +116,26 @@ for i in range(len(files)):
             print('Checking'+contaminants[k]+'...')
             dummy=0
             for c in range(len(mins)):
-                contamtable=Splatalogue.query_lines((mins[c]*(1+z)), (maxs[c]*(1+z)),energy_max=1840, energy_type='eu_k', chemical_name=contaminants[k], line_lists=[linelist],show_upper_degeneracy=True)
-                if len(contamtable)==0:
-                    print('No '+contaminants[k]+' lines in frequency range '+str(mins[c])+'-'+str(maxs[c])+'.')
-                    continue
-                else:
-                    print(contaminants[k]+' contaminants identified for CH3OH '+mqns[c]+' in frequency range '+str(mins[c])+'-'+str(maxs[c])+'.')
-                    table = utils.minimize_table(contamtable)
-                    line=(table['Freq']*10**9)/(1+z)#Redshifted
-                    qns=table['QNs']
-                    dummy+=1
-                    for f in range(len(table)):
-                        if f == 0 and dummy == 1:
-                            ax.axvline(x=line[f],color=colors[k],label=contaminants[k])
-                        else:
-                            ax.axvline(x=line[f],color=colors[k])
+                listcheck=0
+                for sill in range(len(linelist)):
+                    contamtable=Splatalogue.query_lines((mins[c]*(1+z)), (maxs[c]*(1+z)),energy_max=1840, energy_type='eu_k', chemical_name=contaminants[k], line_lists=[linelist[sill]],show_upper_degeneracy=True)
+                    if len(contamtable)==0:
+                        print('No '+contaminants[k]+' lines in '+linelist[sill]+' frequency range '+str(mins[c])+'-'+str(maxs[c])+'.')
+                        continue
+                    if listcheck > 0:
+                        continue
+                    else:
+                        print(contaminants[k]+' contaminants identified in '+linelist[sill]+' for CH3OH '+mqns[c]+' in frequency range '+str(mins[c])+'-'+str(maxs[c])+'.')
+                        table = utils.minimize_table(contamtable)
+                        line=(table['Freq']*10**9)/(1+z)#Redshifted
+                        qns=table['QNs']
+                        dummy+=1
+                        for f in range(len(table)):
+                            if f == 0 and dummy == 1:
+                                ax.axvline(x=line[f],color=colors[k],label=contaminants[k])
+                            else:
+                                ax.axvline(x=line[f],color=colors[k])
+                        listcheck+=1
         plt.legend()
         plt.show()
             #ax.plot(interval,spw.value[(centrchan-numchans):(centrchan+numchans)],drawstyle='steps')
