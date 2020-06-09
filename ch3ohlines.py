@@ -29,13 +29,16 @@ def specmaker(plot,x,y,xmin,xmax,center,trans):
     print(len(y.value[cube.closest_spectral_channel(xmax):cube.closest_spectral_channel(xmin)]))
     left=cube.closest_spectral_channel(xmin)
     right=cube.closest_spectral_channel(xmax)
-    tempx=x[right:left]
-    tempy=y.value[right:left]
+    tempx=x[0:90]
+    tempy=y.value[0:90]
     if left > right:
-        plot.set_ylim(-3,200)
+        plot.set_ylim(-100,100)
+        print(tempx[0:5])
         print(tempy[0])
+        print(type(right))
         print('Inverted cube')
-        plot.plot(x[right:left],tempy,drawstyle='steps')
+        plot.plot(tempx,tempy,drawstyle='steps')
+        #plot.axhline(y=0,color='red',linestyle='--')
     else:
         plot.set_ylim(-1,10)
         plot.plot(x[left:right],y.value[left:right],drawstyle='steps')
@@ -139,10 +142,18 @@ for i in range(len(files)-1):
             maxs.append(maxfreq)
             
         print('Begin figure plot loops')
-            
+        rowoffset=0
         for row in range(numrows):
             print('Start Row '+str(row)+'.')
             for col in range(numcols):
+                if row == (numrows-1):
+                    if col >= int(len(mlines)/numrows):
+                        break
+                    else:
+                        specmaker(ax[row,col],freqs,spw.to('mJy/beam'),mins[col+rowoffset],maxs[col+rowoffset], mlines[col+rowoffset], mqns[col+rowoffset])
+                else:
+                    specmaker(ax[row,col],freqs,spw.to('mJy/beam'),mins[col+rowoffset],maxs[col+rowoffset], mlines[col+rowoffset], mqns[col+rowoffset])
+                '''
                 if row == 0:
                     specmaker(ax[row,col],freqs,spw.to('mJy/beam'),mins[col],maxs[col],mlines[col],mqns[col])
                     continue
@@ -155,6 +166,8 @@ for i in range(len(files)-1):
                     else:
                         specmaker(ax[row,col],freqs,spw.to('mJy/beam'),mins[col+10],maxs[col+10], mlines[col+10], mqns[col+10])
                         continue
+                '''
+            rowoffset+=5
         plt.title(imgnames[i]+' CH3OH Lines')
         print('Plotting complete. plt.show()')
         plt.show()
