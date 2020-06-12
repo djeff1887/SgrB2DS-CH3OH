@@ -9,6 +9,7 @@ from astropy.io import fits
 import glob
 import radio_beam
 import regions
+import math
 
 files=glob.glob('/ufrc/adamginsburg/d.jeff/imaging_results/*.fits')
 z=0.0002333587
@@ -23,28 +24,27 @@ mdict={}
 contamdata={}
 imgnames=['spw2','spw1','spw0']
 
-def specmaker(plot,x,y,xmin,xmax,center,trans):
+def specmaker(plot,x,y,xmin,xmax,center,trans,ymax,ymin):
     plot.set_xlim(xmin.value,xmax.value)
     plot.axvline(x=center,color='green',linestyle='--')
-    print(len(y.value[cube.closest_spectral_channel(xmax):cube.closest_spectral_channel(xmin)]))
     left=cube.closest_spectral_channel(xmin)
     right=cube.closest_spectral_channel(xmax)
-    tempx=x[0:90]
-    tempy=y.value[0:90]
+    plot.set_ylim(ymin,ymax)
+    plot.plot(x,y.value,drawstyle='steps')
+    '''
+    
     if left > right:
-        plot.set_ylim(-100,100)
-        print(tempx[0:5])
-        print(tempy[0])
-        print(type(right))
-        print('Inverted cube')
-        plot.plot(tempx,tempy,drawstyle='steps')
+        plot.set_ylim(-7,65)
+        plot.plot(x,y.value,drawstyle='steps')
+        print('tempxy plotted')
         #plot.axhline(y=0,color='red',linestyle='--')
     else:
         plot.set_ylim(-1,10)
-        plot.plot(x[left:right],y.value[left:right],drawstyle='steps')
+        plot.plot(x,y.value,drawstyle='steps')
+    '''
     
 
-for i in range(len(files)-1):
+for i in range(len(files)):
     print('Getting ready - '+imgnames[i])
     cube=sc.read(files[i])
     header=fits.getheader(files[i])
@@ -60,31 +60,68 @@ for i in range(len(files)-1):
     
     freq_min=freqs[0]*(1+z)#215*u.GHz
     freq_max=freqs[(len(freqs)-1)]*(1+z)#235*u.GHz
+    
+    assert freq_max > freq_min, 'Decreasing frequency axis'
+    
     linewidth=0.00485*u.GHz#Half of original 0.0097GHz
             
     '''Generate methanol table for contaminant search'''    
     methanol_table= utils.minimize_table(Splatalogue.query_lines(freq_min, freq_max, chemical_name=' CH3OH ', energy_max=1840, energy_type='eu_k', line_lists=[linelist], show_upper_degeneracy=True))
         
+    mdict[i]={imgnames[i]:methanol_table}
     mlines=(methanol_table['Freq']*10**9)/(1+z)
     mqns=methanol_table['QNs']
     
     mins=[]
     maxs=[]
+    
     if i == 2:
-        print('Plotting backdrop spectrum')
-        spw=cube[:,762,496]
-        plt.plot(freqs,spw.value,drawstyle='steps')
-        plt.ylabel('Jy/beam')
-        plt.xlabel('Frequency (Hz)')
-        plt.title((imgnames[i]+' '+'Contaminant-labeled Spectra'))
-        ax=plt.subplot(111)
-        print('Plotting mlines and ROIs')
-        for a in range(len(mlines)):
-            centroid=mlines[a]*u.Hz
+        print('Setting figure and ax variables')
+        numcols=5
+        numrows=math.ceil(len(mlines)/numcols)
+        fig,ax=plt.subplots(numrows,numcols,sharey=True)
+        print('Number of rows: ', numrows)
+        
+        print('Gathering mlines and and plot widths')
+        for line in mlines:
+            centroid=line*u.Hz
             minfreq=centroid-linewidth
             maxfreq=centroid+linewidth
             mins.append(minfreq)
             maxs.append(maxfreq)
+            
+        print('Begin figure plot loops')
+        rowoffset=0
+        for row in range(numrows):
+            print('Start Row '+str(row)+'.')
+            for col in range(numcols):
+                if row == (numrows-1):
+                    if col >= int(len(mlines)/numrows):
+                        break
+                    else:
+                        if freqflip == True:
+                            sub=cube.spectral_slab(maxs[col+rowoffset],mins[col+rowoffset])
+                            sub_freq=sub.spectral_axis[::-1]
+                            spw=sub[:,762,496][::-1]
+                        else:
+                            sub=cube.spectral_slab(mins[col+rowoffset],maxs[col+rowoffset])
+                            sub_freq=sub.spectral_axis
+                            spw=sub[:,762,496]
+                            
+                        specmaker(ax[row,col],sub_freq,spw.to('mJy/beam'),mins[col+rowoffset],maxs[col+rowoffset], mlines[col+rowoffset], mqns[col+rowoffset])
+                else:
+                    if freqflip == True:
+                        sub=cube.spectral_slab(maxs[col+rowoffset],mins[col+rowoffset])
+                        sub_freq=sub.spectral_axis[::-1]
+                        spw=sub[:,762,496][::-1]
+                    else:
+                        sub=cube.spectral_slab(mins[col+rowoffset],maxs[col+rowoffset])
+                        sub_freq=sub.spectral_axis
+                        spw=sub[:,762,496]
+                        
+                    specmaker(ax[row,col],sub_freq,spw.to('mJy/beam'),mins[col+rowoffset],maxs[col+rowoffset], mlines[col+rowoffset], mqns[col+rowoffset])
+            
+            '''
             if a == 0:
                 ax.axvline(x=centroid.value,color='green',label='CH3OH')
             else:
@@ -110,20 +147,16 @@ for i in range(len(files)-1):
                             dum+=1
                         else:
                             ax.axvline(x=line[g],color=colors[j])
+            '''
         plt.legend()
         plt.show()
         
     elif i != 2:
         print('Setting figure and ax variables')
-        numrows=3
         numcols=5
+        numrows=math.ceil(len(mlines)/numcols)
         fig,ax=plt.subplots(numrows,numcols,sharey=True)
-        print('Gathering intensity values')
-        spw=cube[:,649,383]
-        if freqflip==True:
-            spw=spw[::-1]
-        else:
-            pass
+        print('Number of rows: ', numrows)
 
         
         '''        
@@ -133,9 +166,9 @@ for i in range(len(files)-1):
         plt.title((imgnames[i]+' '+'Contaminant-labeled Spectra'))
         ax=plt.subplot(111)
         '''
-        print('Generating mline data')
-        for b in range(len(mlines)):
-            centroid=mlines[b]*u.Hz
+        print('Gathering mlines and plot widths')
+        for line in mlines:
+            centroid=line*u.Hz
             minfreq=centroid-(linewidth*1.5)
             maxfreq=centroid+(linewidth*1.5)
             mins.append(minfreq)
@@ -143,16 +176,71 @@ for i in range(len(files)-1):
             
         print('Begin figure plot loops')
         rowoffset=0
+        preymax=-100
+        preymin=100
         for row in range(numrows):
             print('Start Row '+str(row)+'.')
             for col in range(numcols):
+                
                 if row == (numrows-1):
                     if col >= int(len(mlines)/numrows):
                         break
                     else:
-                        specmaker(ax[row,col],freqs,spw.to('mJy/beam'),mins[col+rowoffset],maxs[col+rowoffset], mlines[col+rowoffset], mqns[col+rowoffset])
+                        if freqflip == True:
+                            sub=cube.spectral_slab(maxs[col+rowoffset],mins[col+rowoffset])
+                            sub_freq=sub.spectral_axis[::-1]
+                            spw=sub[:,649,383][::-1]
+                        else:
+                            sub=cube.spectral_slab(mins[col+rowoffset],maxs[col+rowoffset])
+                            sub_freq=sub.spectral_axis
+                            spw=sub[:,649,383]
+                        tempymax=spw[np.argmax(spw)].to('mJy/beam').value
+                        tempymin=spw[np.argmin(spw)].to('mJy/beam').value
+                        if tempymax > preymax:
+                            reymax=tempymax+5
+                        else:
+                            reymax=preymax
+                            
+                        if tempymin < preymin:
+                            reymin=tempymin-1
+                        else:
+                            reymin=preymin
+                        
+                        print(reymax)
+                        print(reymin)
+                        specmaker(ax[row,col],sub_freq,spw.to('mJy/beam'),mins[col+rowoffset],maxs[col+rowoffset], mlines[col+rowoffset], mqns[col+rowoffset],reymax,reymin)
+                        preymax=reymax
+                        preymin=reymin
+                        
                 else:
-                    specmaker(ax[row,col],freqs,spw.to('mJy/beam'),mins[col+rowoffset],maxs[col+rowoffset], mlines[col+rowoffset], mqns[col+rowoffset])
+                    if freqflip == True:
+                        sub=cube.spectral_slab(maxs[col+rowoffset],mins[col+rowoffset])
+                        sub_freq=sub.spectral_axis[::-1]
+                        spw=sub[:,649,383][::-1]
+                    else:
+                        sub=cube.spectral_slab(mins[col+rowoffset],maxs[col+rowoffset])
+                        sub_freq=sub.spectral_axis
+                        spw=sub[:,649,383]
+                    
+                    tempymax=spw[np.argmax(spw)].to('mJy/beam').value
+                    print(tempymax)
+                    tempymin=spw[np.argmin(spw)].to('mJy/beam').value
+                    
+                    if tempymax > preymax:
+                        reymax=tempymax+2
+                    else:
+                        reymax=preymax
+                        
+                    if tempymin < preymin:
+                        reymin=tempymin-1
+                    else:
+                        reymin=preymin
+                        
+                    print(reymax)
+                    print(reymin)
+                    specmaker(ax[row,col],sub_freq,spw.to('mJy/beam'),mins[col+rowoffset],maxs[col+rowoffset], mlines[col+rowoffset], mqns[col+rowoffset],reymax,reymin)
+                    preymax=reymax
+                    preymin=reymin
                 '''
                 if row == 0:
                     specmaker(ax[row,col],freqs,spw.to('mJy/beam'),mins[col],maxs[col],mlines[col],mqns[col])
@@ -168,6 +256,7 @@ for i in range(len(files)-1):
                         continue
                 '''
             rowoffset+=5
+        fig.subplots_adjust(wspace=0,hspace=0.25) 
         plt.title(imgnames[i]+' CH3OH Lines')
         print('Plotting complete. plt.show()')
         plt.show()
