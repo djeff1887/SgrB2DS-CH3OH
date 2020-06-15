@@ -26,7 +26,7 @@ imgnames=['spw2','spw1','spw0']
 
 def specmaker(plot,x,y,xmin,xmax,center,trans,ymax,ymin):
     plot.set_xlim(xmin.value,xmax.value)
-    plot.axvline(x=center,color='green',linestyle='--')
+    plot.axvline(x=center,color='green',linestyle='--',label='CH3OH')
     left=cube.closest_spectral_channel(xmin)
     right=cube.closest_spectral_channel(xmax)
     plot.set_ylim(ymin,ymax)
@@ -92,6 +92,8 @@ for i in range(len(files)):
             
         print('Begin figure plot loops')
         rowoffset=0
+        preymax=-100
+        preymin=100
         for row in range(numrows):
             print('Start Row '+str(row)+'.')
             for col in range(numcols):
@@ -103,23 +105,85 @@ for i in range(len(files)):
                             sub=cube.spectral_slab(maxs[col+rowoffset],mins[col+rowoffset])
                             sub_freq=sub.spectral_axis[::-1]
                             spw=sub[:,762,496][::-1]
+                            tempymax=spw[np.argmax(spw)].to('mJy/beam').value
+                            tempymin=spw[np.argmin(spw)].to('mJy/beam').value
                         else:
                             sub=cube.spectral_slab(mins[col+rowoffset],maxs[col+rowoffset])
                             sub_freq=sub.spectral_axis
                             spw=sub[:,762,496]
+                            tempymax=spw[np.argmax(spw)].to('mJy/beam').value
+                            tempymin=spw[np.argmin(spw)].to('mJy/beam').value
+                    
+                        if tempymax > preymax:
+                            reymax=tempymax+1
+                            print('new max: ',reymax)
+                        else:
+                            reymax=preymax
+                        
+                        if tempymin < preymin:
+                            reymin=tempymin-1
+                            print('new min: ',reymin)
+                        else:
+                            reymin=preymin
+                        
+                        print(tempymax)
+                        print(tempymin)
                             
-                        specmaker(ax[row,col],sub_freq,spw.to('mJy/beam'),mins[col+rowoffset],maxs[col+rowoffset], mlines[col+rowoffset], mqns[col+rowoffset])
+                        specmaker(ax[row,col],sub_freq,spw.to('mJy/beam'),mins[col+rowoffset],maxs[col+rowoffset], mlines[col+rowoffset], mqns[col+rowoffset],reymax,reymin)
+                        preymax=reymax
+                        preymin=reymin
                 else:
+                    print('non-final row')
                     if freqflip == True:
                         sub=cube.spectral_slab(maxs[col+rowoffset],mins[col+rowoffset])
                         sub_freq=sub.spectral_axis[::-1]
                         spw=sub[:,762,496][::-1]
+                        tempymax=spw[np.argmax(spw)].to('mJy/beam').value
+                        tempymin=spw[np.argmin(spw)].to('mJy/beam').value
+                    
+                        if tempymax > preymax:
+                            reymax=tempymax+1
+                            print('new max: ',reymax)
+                        else:
+                            reymax=preymax
+                        
+                        if tempymin < preymin:
+                            reymin=tempymin-1
+                            print('new min: ',reymin)
+                        else:
+                            reymin=preymin
+                        
+                        print(tempymax)
+                        print(tempymin)
+                        specmaker(ax[row,col],sub_freq,spw.to('mJy/beam'),mins[col+rowoffset],maxs[col+rowoffset], mlines[col+rowoffset], mqns[col+rowoffset],reymax,reymin)
+                        preymax=reymax
+                        preymin=reymin
                     else:
                         sub=cube.spectral_slab(mins[col+rowoffset],maxs[col+rowoffset])
                         sub_freq=sub.spectral_axis
                         spw=sub[:,762,496]
+                        tempymax=spw[np.argmax(spw)].to('mJy/beam').value
+                        tempymin=spw[np.argmin(spw)].to('mJy/beam').value
+                    
+                        if tempymax > preymax:
+                            print('new max')
+                            reymax=tempymax+1
+                        else:
+                            reymax=preymax
                         
-                    specmaker(ax[row,col],sub_freq,spw.to('mJy/beam'),mins[col+rowoffset],maxs[col+rowoffset], mlines[col+rowoffset], mqns[col+rowoffset])
+                        if tempymin < preymin:
+                            print('new min')
+                            reymin=tempymin-1
+                        else:
+                            reymin=preymin
+                        
+                        print(tempymax)
+                        print(tempymin)
+                        specmaker(ax[row,col],sub_freq,spw.to('mJy/beam'),mins[col+rowoffset],maxs[col+rowoffset], mlines[col+rowoffset], mqns[col+rowoffset],reymax,reymin)
+                        preymax=reymax
+                        preymin=reymin
+                    
+            rowoffset+=5
             
             '''
             if a == 0:
@@ -181,7 +245,6 @@ for i in range(len(files)):
         for row in range(numrows):
             print('Start Row '+str(row)+'.')
             for col in range(numcols):
-                
                 if row == (numrows-1):
                     if col >= int(len(mlines)/numrows):
                         break
@@ -197,47 +260,52 @@ for i in range(len(files)):
                         tempymax=spw[np.argmax(spw)].to('mJy/beam').value
                         tempymin=spw[np.argmin(spw)].to('mJy/beam').value
                         if tempymax > preymax:
-                            reymax=tempymax+5
+                            print('new max')
+                            reymax=tempymax+1
                         else:
                             reymax=preymax
                             
                         if tempymin < preymin:
+                            print('new min')
                             reymin=tempymin-1
                         else:
                             reymin=preymin
                         
-                        print(reymax)
-                        print(reymin)
+                        print(tempymax)
+                        print(tempymin)
                         specmaker(ax[row,col],sub_freq,spw.to('mJy/beam'),mins[col+rowoffset],maxs[col+rowoffset], mlines[col+rowoffset], mqns[col+rowoffset],reymax,reymin)
                         preymax=reymax
                         preymin=reymin
                         
                 else:
                     if freqflip == True:
+                        print('flip')
                         sub=cube.spectral_slab(maxs[col+rowoffset],mins[col+rowoffset])
                         sub_freq=sub.spectral_axis[::-1]
                         spw=sub[:,649,383][::-1]
                     else:
+                        print('normal')
                         sub=cube.spectral_slab(mins[col+rowoffset],maxs[col+rowoffset])
                         sub_freq=sub.spectral_axis
                         spw=sub[:,649,383]
                     
                     tempymax=spw[np.argmax(spw)].to('mJy/beam').value
-                    print(tempymax)
                     tempymin=spw[np.argmin(spw)].to('mJy/beam').value
                     
                     if tempymax > preymax:
-                        reymax=tempymax+2
+                        print('new max')
+                        reymax=tempymax+1
                     else:
                         reymax=preymax
                         
                     if tempymin < preymin:
+                        print('new min')
                         reymin=tempymin-1
                     else:
                         reymin=preymin
                         
-                    print(reymax)
-                    print(reymin)
+                    print(tempymax)
+                    print(tempymin)
                     specmaker(ax[row,col],sub_freq,spw.to('mJy/beam'),mins[col+rowoffset],maxs[col+rowoffset], mlines[col+rowoffset], mqns[col+rowoffset],reymax,reymin)
                     preymax=reymax
                     preymin=reymin
