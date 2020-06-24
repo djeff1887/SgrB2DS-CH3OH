@@ -11,7 +11,6 @@ import numpy as np
 import scipy.constants as cnst
 import astropy.units as u
 from astroquery.splatalogue import Splatalogue as splat
-import lprime
 
 '''for the 10_2-9_3 state'''
 testrestfreq=232.41852100*u.GHz

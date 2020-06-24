@@ -20,8 +20,8 @@ m=b_0**2/(a_0*c_0)
 mu_a=(0.896e-18*u.statC*u.cm).to('cm(3/2) g(1/2) s-1 cm')
 R_i=1
         
-home='/home/d.jeff/SgrB2DS_field1/VelocityMoms3/'#Make sure to include slash after path
-fname='/ufrc/adamginsburg/d.jeff/imaging_results/SgrB2DS_field1_spw1_cube_medsub.image.fits'
+home='/home/d.jeff/SgrB2DS_field1/spw2mom0contaminated/'#Make sure to include slash after path
+fname='/ufrc/adamginsburg/d.jeff/imaging_results/SgrB2DS_field1_spw2_cube_medsub.image.fits'
 cube=sc.read(fname)
 header=fits.getheader(fname)
 
@@ -52,21 +52,21 @@ freq_min=freqs[(len(freqs)-1)]*(1+z)#235*u.GHz
 #print(freq_min)
 linelist='JPL'
 
-table = utils.minimize_table(Splatalogue.query_lines(freq_min, freq_max, chemical_name=' CH3OH',
+table = utils.minimize_table(Splatalogue.query_lines(freq_min, freq_max, chemical_name=' CH3OH ',
                                 energy_max=1840, energy_type='eu_k',
                                 line_lists=[linelist],
                                 show_upper_degeneracy=True))
 '''Needed for upper state degeneracies'''                                
-sparetable=Splatalogue.query_lines(freq_min, freq_max, chemical_name=' CH3OH',
+sparetable=Splatalogue.query_lines(freq_min, freq_max, chemical_name=' CH3OH ',
                                 energy_max=1840, energy_type='eu_k',
                                 line_lists=[linelist],
                                 show_upper_degeneracy=True)
                                 
-'''Loop through a given list of lines (in km/s), computing and saving moment0 maps of the entered data cube'''
+'''Loop through a given list of lines (in Hz), computing and saving moment0 maps of the entered data cube'''
 def lineloop(line_list,line_width,iterations,quantum_numbers):
     for i in range(iterations):
         line=line_list[i]#*u.Hz
-        print('Computing moment0')
+        print(f'Computing {quantum_numbers[i]} moment0')
         nu_upper=line+line_width
         nu_lower=line-line_width
         #print('Done')
@@ -110,13 +110,15 @@ plt.show()
 linewidth=0.5*0.0097*u.GHz#from small line @ 219.9808GHz# 0.0155>>20.08km/s 
 linewidth_vel=(linewidth*c.to(u.km/u.s)/spw1restfreq).to('km s-1')#vradio(linewidth,spw1restfreq)
 slicedqns=[]
+
 print('\nlinelooper...')
 lineloop(lines,linewidth,len(lines),qns)
 print('lines looped.\n')
+
 ######
 
 #print(qns)
-files=glob.glob(home+'*')
+files=glob.glob(home+'*.fits')
 #print(files)
 
 def fluxvalues(xpix,ypix,filenames):
@@ -125,16 +127,20 @@ def fluxvalues(xpix,ypix,filenames):
         data=fits.getdata(i)
         vals.append(data[(ypix-1),(xpix-1)])#Corrects for different pixel counting procedures
     return vals
-    
+
+'''Gathers beam data from cube headers'''    
 def beamer(fitsfiles):
     beams=[]
     for i in fitsfiles:
+      print(i)
       hdu=fits.getheader(i)
       temp=radio_beam.Beam.from_fits_header(hdu).value
       beams.append(temp)
     return beams
-    
+
+'''Reorders Splatalogue table parameters to match the glob.glob filename order'''
 def unscrambler(filenames,sliced_qns,linelist):
+    #print('Start unscrambler')
     unscrambled_qns=[]
     unscrambled_freqs=[]
     unscrambled_eus=[]
@@ -142,10 +148,14 @@ def unscrambler(filenames,sliced_qns,linelist):
     unscrambled_aijs=[]
     tempfiles=np.copy(filenames)
     for i in range(len(filenames)):
+        #print(f'filename: {filenames[i]}')
         tempfiles[i]=tempfiles[i].replace('.fits','')
         for j in range(len(sliced_qns)):
-            comp=(sliced_qns[j]==tempfiles[i][48:])
+            #print(f'sliced_qns: {sliced_qns[j]}')
+            #print(f'comparison qns: {tempfiles[i][55:]}')
+            comp=(sliced_qns[j]==tempfiles[i][55:])
             if comp==True:
+                print('comp==True')
                 unscrambled_qns.append(sliced_qns[j])
                 unscrambled_freqs.append(linelist[j])
                 unscrambled_eus.append(eus[j]/u.K)
@@ -158,18 +168,19 @@ beamlist=beamer(files)*u.sr
 fluxes=fluxvalues(383,649,files)*u.Jy*u.km/u.s#/u.sr
 #print(fluxes)
 unscrambledqns,unscrambledfreqs,unscrambledeus,unscrambleddegs,unscrambledaijs=unscrambler(files,slicedqns,lines)
-'''print(files)
-print(unscrambledqns)
-print(unscrambledfreqs)'''
+print(f'files: {files}')
+print(f'unscrambledqns: {unscrambledqns}')
+print(f'unscrambledfreqs: {unscrambledfreqs}')
 
+'''Places Splatalogue table params, fluxes, and beams into dictionary'''
 datadict={}
 for i in range(len(fluxes)):
-    print(i)
     datadict[i]={'qns':unscrambledqns[i],'freq':unscrambledfreqs[i],'beam':beamlist[i],'flux':fluxes[i],'E_u(K)':unscrambledeus[i],'degen':unscrambleddegs[i],'aij':unscrambledaijs[i]}
 
 '''Rough estimate: 0.75 arcsec/15pixels >>> 0.05 arsec/pixel >>> 2.424e-7rad/pixel
 Taken from DS9 tradiation region'''
 
+'''Compute Kkm/s intensity from datadict'''
 def kkms(beams,data_dict):
     intensitylist=[]
     t_bright=[]
@@ -256,6 +267,7 @@ def Ntot_rj_thin_nobg(nu,s,g,q,eu_J,T_ex,vint_intensity):
 #vint_trads=vint_trads.to('K km s-1')
 #print(vint_trads)
 #texs=T_ex(t_brights,datadict)
+'''Compute N_uppers'''
 n_us=[]
 for i in range(len(intensities)):
     temp=N_u(datadict[i]['freq'],datadict[i]['aij'],intensities[i])
@@ -273,7 +285,7 @@ for i in range(len(texs)):
 #testnuoverg=N_u(testntot,qrots[0],datadict[0]['degen'],KtoJ(datadict[0]['E_u']),texs[0])
 print(n_us[i])
 #ntot=Ntot_rj_thin_nobg(lines[0],linewidth,s,9,KtoJ(tex[0])
-home2=home.replace('VelocityMoms3/','')
+home2=home.replace('VelocityMoms3/','spw1ltemodelspec/')
 plt.clf()
 plt.scatter(unscrambledeus,np.log10(n_us))
 plt.title(r'spw1 CH$_3$OH Rotational Diagram')

@@ -11,14 +11,15 @@ import radio_beam
 import regions
 import math
 
+plt.close('all')
 files=glob.glob('/ufrc/adamginsburg/d.jeff/imaging_results/*.fits')
 z=0.0002333587
-#chem= input('Molecule?: ')
-#chem=(' '+chem+' ')
-contaminants=[' CH3OCHO ',' HOONO ',' C3H6O2 ',' g-CH3CH2OH ']
+
+contaminants=[' CH3OCHO ',' HOONO ',' C3H6O2 ',' g-CH3CH2OH ',' HNCO ']
 colors=cm.rainbow(np.linspace(0,1,len(contaminants)))
 
-linelist='JPL'#input('Linelist? (Lovas, SLAIM, JPL, CDMS, ToyoMA, OSU, Recomb, Lisa, RFI): ')
+linelist='JPL'
+linelistlist=['JPL','CDMS','SLAIM']
 
 mdict={}
 contamdata={}
@@ -29,19 +30,17 @@ def specmaker(plot,x,y,xmin,xmax,center,trans,ymax,ymin):
     plot.axvline(x=center,color='green',linestyle='--',label='CH3OH')
     plot.set_ylim(ymin,ymax)
     plot.plot(x,y.value,drawstyle='steps')
+    plot.set_title(trans)
     '''
-    
-    if left > right:
-        plot.set_ylim(-7,65)
-        plot.plot(x,y.value,drawstyle='steps')
-        print('tempxy plotted')
-        #plot.axhline(y=0,color='red',linestyle='--')
-    else:
-        plot.set_ylim(-1,10)
-        plot.plot(x,y.value,drawstyle='steps')
+    print(f'ymin: {y.min()}')
+    print(f'yvaluemin: {y.value.min()}')
+    print(f'tempymin/ymin: {tempymin/y.value.min()}')
     '''
-    
 
+def contamlines(plot,contamlinelist):
+    return
+    
+    
 for i in range(len(files)):
     print('Getting ready - '+imgnames[i])
     cube=sc.read(files[i])
@@ -73,6 +72,9 @@ for i in range(len(files)):
     mins=[]
     maxs=[]
     
+    yoffset=0.005#mJy/beam
+    yoffset2=0.05#mJy/beam
+    
     if i == 2:
         print('Setting figure and ax variables')
         numcols=5
@@ -95,37 +97,63 @@ for i in range(len(files)):
         for row in range(numrows):
             print('Start Row '+str(row)+'.')
             for col in range(numcols):
-
                 f1,f2 = maxs[col+rowoffset],mins[col+rowoffset]
                 if f1 > f2:
                     f1,f2 = f2,f1
                 sub=cube.spectral_slab(f1,f2)
                 spw=sub[:,762,496]
-                tempymax=spw.max().to('mJy/beam').value
-                tempymin=spw.min().to('mJy/beam').value
+                tempymax=spw.max().value
+                tempymin=spw.min().value
 
-                if row*column > numrows*numcols:
+                if row*col > numrows*numcols:
                     break
                 
                 if tempymax > preymax:
-                    reymax=tempymax+1
+                    reymax=tempymax+yoffset2
                     print('new max: ',reymax)
                 else:
                     reymax=preymax
 
                 if tempymin < preymin:
-                    reymin=tempymin-1
+                    reymin=tempymin-yoffset2
                     print('new min: ',reymin)
                 else:
                     reymin=preymin
+                '''
+                print(f'row: {row} col:{col}')
+                print(f'tempymax: {tempymax} spw max: {spw.max().to("mJy/beam")}')
+                print(f'tempymin: {tempymin} spw min: {spw.min().to("mJy/beam")}')
+                print(f'reymax: {reymax} reymin: {reymin}')
+                '''
 
-                print(tempymax)
-                print(tempymin)
-
-                specmaker(ax[row,col],spw.spectral_axis,spw.to('mJy/beam'),mins[col+rowoffset],maxs[col+rowoffset], mlines[col+rowoffset], mqns[col+rowoffset],reymax,reymin)
+                specmaker(ax[row,col],spw.spectral_axis,spw,mins[col+rowoffset],maxs[col+rowoffset], mlines[col+rowoffset], mqns[col+rowoffset],reymax,reymin)
                 preymax=reymax
                 preymin=reymin
 
+                for mols in range(len(contaminants)):
+                    contamlabel=0
+                    linelistcheck=0
+                    for lis in linelistlist:
+                        if linelistcheck > 0:
+                            #print(contaminants[mols]+' already plotted.')
+                            break
+                        else:
+                            contamtable=Splatalogue.query_lines((mins[col+rowoffset]*(1+z)), (maxs[col+rowoffset]*(1+z)),energy_max=1840, energy_type='eu_k', chemical_name=contaminants[mols], line_lists=[lis],show_upper_degeneracy=True)
+                            if len(contamtable)==0:
+                                print('No '+contaminants[mols]+' lines in '+lis+' frequency range '+str(mins[col+rowoffset])+'-'+str(maxs[col+rowoffset])+'.')
+                                continue
+                            else:
+                                linelistcheck+=1
+                                print('('+lis+') '+contaminants[mols]+' contaminants identified for CH3OH '+mqns[col+rowoffset]+' at '+str(mins[col+rowoffset]+linewidth)+' GHz.')
+                                table = utils.minimize_table(contamtable)
+                                line=(table['Freq']*10**9)/(1+z)#Redshifted
+                                qns=table['QNs']
+                                for g in range(len(table)):
+                                    if g==0 and contamlabel==0:
+                                        ax[row,col].axvline(x=line[g],color=colors[mols],label=contaminants[mols])
+                                        contamlabel+=1
+                                    else:
+                                        ax[row,col].axvline(x=line[g],color=colors[mols])
             rowoffset+=5
             
             '''
@@ -155,7 +183,7 @@ for i in range(len(files)):
                         else:
                             ax.axvline(x=line[g],color=colors[j])
             '''
-        plt.legend()
+        plt.legend(loc=0,bbox_to_anchor=(1.7,2.12))
         plt.show()
         
     elif i != 2:
@@ -188,70 +216,62 @@ for i in range(len(files)):
         for row in range(numrows):
             print('Start Row '+str(row)+'.')
             for col in range(numcols):
-                if row == (numrows-1):
-                    if col >= int(len(mlines)/numrows):
-                        break
-                    else:
-                        if freqflip == True:
-                            sub=cube.spectral_slab(maxs[col+rowoffset],mins[col+rowoffset])
-                            sub_freq=sub.spectral_axis[::-1]
-                            spw=sub[:,649,383][::-1]
-                        else:
-                            sub=cube.spectral_slab(mins[col+rowoffset],maxs[col+rowoffset])
-                            sub_freq=sub.spectral_axis
-                            spw=sub[:,649,383]
-                        tempymax=spw.max().to('mJy/beam').value
-                        tempymin=spw.min().to('mJy/beam').value
-                        if tempymax > preymax:
-                            print('new max')
-                            reymax=tempymax+1
-                        else:
-                            reymax=preymax
-                            
-                        if tempymin < preymin:
-                            print('new min')
-                            reymin=tempymin-1
-                        else:
-                            reymin=preymin
-                        
-                        print(tempymax)
-                        print(tempymin)
-                        specmaker(ax[row,col],sub_freq,spw.to('mJy/beam'),mins[col+rowoffset],maxs[col+rowoffset], mlines[col+rowoffset], mqns[col+rowoffset],reymax,reymin)
-                        preymax=reymax
-                        preymin=reymin
-                        
+                if col+rowoffset >= len(mlines):
+                    break
+                f1,f2 = maxs[col+rowoffset],mins[col+rowoffset]
+                if f1 > f2:
+                    f1,f2 = f2,f1
+                sub=cube.spectral_slab(f1,f2)
+                spw=sub[:,649,383]
+                tempymax=spw.max().value
+                tempymin=spw.min().value
+                
+                if tempymax > preymax:
+                    reymax=tempymax+yoffset
+                    print('new max: ',reymax)
                 else:
-                    if freqflip == True:
-                        print('flip')
-                        sub=cube.spectral_slab(maxs[col+rowoffset],mins[col+rowoffset])
-                        sub_freq=sub.spectral_axis[::-1]
-                        spw=sub[:,649,383][::-1]
-                    else:
-                        print('normal')
-                        sub=cube.spectral_slab(mins[col+rowoffset],maxs[col+rowoffset])
-                        sub_freq=sub.spectral_axis
-                        spw=sub[:,649,383]
-                    
-                    tempymax=spw.max().to('mJy/beam').value
-                    tempymin=spw.min().to('mJy/beam').value
-                    
-                    if tempymax > preymax:
-                        print('new max')
-                        reymax=tempymax+1
-                    else:
-                        reymax=preymax
-                        
-                    if tempymin < preymin:
-                        print('new min')
-                        reymin=tempymin-1
-                    else:
-                        reymin=preymin
-                        
-                    print(tempymax)
-                    print(tempymin)
-                    specmaker(ax[row,col],sub_freq,spw.to('mJy/beam'),mins[col+rowoffset],maxs[col+rowoffset], mlines[col+rowoffset], mqns[col+rowoffset],reymax,reymin)
-                    preymax=reymax
-                    preymin=reymin
+                    reymax=preymax
+
+                if tempymin < preymin:
+                    reymin=tempymin-yoffset
+                    print('new min: ',reymin)
+                else:
+                    reymin=preymin
+
+                print(f'row: {row} col:{col}')
+                print(f'tempymax: {tempymax} spw max: {spw.max().to("mJy/beam")}')
+                print(f'tempymin: {tempymin} spw min: {spw.min().to("mJy/beam")}')
+                print(f'reymax: {reymax} reymin: {reymin}')
+
+                specmaker(ax[row,col],spw.spectral_axis,spw,mins[col+rowoffset],maxs[col+rowoffset], mlines[col+rowoffset], mqns[col+rowoffset],reymax,reymin)
+                preymax=reymax
+                preymin=reymin
+                
+                for mols in range(len(contaminants)):
+                    contamlabel=0
+                    linelistcheck=0
+                    for lis in linelistlist:
+                        if linelistcheck > 0:
+                            #print(contaminants[mols]+' already plotted.')
+                            break
+                        else:
+                            contamtable=Splatalogue.query_lines((mins[col+rowoffset]*(1+z)), (maxs[col+rowoffset]*(1+z)),energy_max=1840, energy_type='eu_k', chemical_name=contaminants[mols], line_lists=[lis],show_upper_degeneracy=True)
+                            if len(contamtable)==0:
+                                print('No '+contaminants[mols]+' lines in '+lis+' frequency range '+str(mins[col+rowoffset])+'-'+str(maxs[col+rowoffset])+'.')
+                                continue
+                            else:
+                                linelistcheck+=1
+                                print('('+lis+') '+contaminants[mols]+' contaminants identified for CH3OH '+mqns[col+rowoffset]+' at '+str(mins[col+rowoffset]+linewidth)+' GHz.')
+                                table = utils.minimize_table(contamtable)
+                                line=(table['Freq']*10**9)/(1+z)#Redshifted
+                                qns=table['QNs']
+                                for g in range(len(table)):
+                                    if g==0 and contamlabel==0:
+                                        ax[row,col].axvline(x=line[g],color=colors[mols],label=contaminants[mols])
+                                        print(colors[mols])
+                                        contamlabel+=1
+                                    else:
+                                        ax[row,col].axvline(x=line[g],color=colors[mols])
                 '''
                 if row == 0:
                     specmaker(ax[row,col],freqs,spw.to('mJy/beam'),mins[col],maxs[col],mlines[col],mqns[col])
@@ -267,8 +287,9 @@ for i in range(len(files)):
                         continue
                 '''
             rowoffset+=5
-        fig.subplots_adjust(wspace=0,hspace=0.25) 
-        plt.title(imgnames[i]+' CH3OH Lines')
+        fig.subplots_adjust(wspace=0.2,hspace=0.55) 
+        #plt.title(imgnames[i]+' CH3OH Lines')
+        plt.legend(loc=0,bbox_to_anchor=(1.7,2.12))
         print('Plotting complete. plt.show()')
         plt.show()
         '''
