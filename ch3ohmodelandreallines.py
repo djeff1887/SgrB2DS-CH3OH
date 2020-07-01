@@ -91,6 +91,7 @@ def qngrabber(nums):
     return jupper, kupper
 
 def Tb3(ntot,nu,line_width,mulu_2,s,g,q,eu_J,T_ex):#Rearranged from Eq 82, M&S 2015
+    print(f'ntot: {ntot} nu: {nu} line_width: {line_width} mulu_2: {mulu_2} g: {g} q: {q} eu_J: {eu_J} Tex: {T_ex}')
     return ((8*np.pi**3*nu*mulu_2*R_i*g*f)/(3*k*q*np.exp(eu_J/(k*T_ex))*line_width))*ntot
     
 def N_u(ntot,qrot,gu,eu_J,T_kin):#Rearranged from Eq 31, M&S 2015
