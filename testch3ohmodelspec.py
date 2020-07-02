@@ -19,7 +19,7 @@ b_0=24679.98*u.MHz
 a_0=127484*u.MHz
 c_0=23769.70*u.MHz
 m=b_0**2/(a_0*c_0)
-Tbg=2.735*u.K
+Tbg=2.7355*u.K
 
 R_i=1
 kappa=((2*b_0)-a_0-c_0)/(a_0-c_0)
@@ -79,9 +79,16 @@ def Tb3(ntot,nu,line_width,mulu_2,g,q,eu_J,T_ex):#Rearranged from Eq 82, M&S 201
     
 def Tbthick(ntot,nu,line_width,mulu_2,g,q,eu_J,T_ex):
     return (1-np.exp(((-8*np.pi**3*mulu_2*R_i*g)/(3*h*q*line_width))*((np.exp((h*nu)/(k*T_ex))-1)/np.exp((eu_J)/(k*T_ex)))*ntot))*(f*(rjequivtemp(nu,T_ex)-rjequivtemp(nu,Tbg)))
-    
+   
+def Tbthick2(nupper,nu,line_width,aij,eu_J,T_ex):
+    return (1-np.exp(((-c**2*aij)/(8*np.pi*nu**2))*(np.exp((h*nu)/(k*T_ex)))*nupper))*(f*(rjequivtemp(nu,T_ex)-rjequivtemp(nu,Tbg)))
+
 def opticaldepth(Tr,nu,T_ex):
     return -np.log(1-(Tr/(f*(rjequivtemp(nu,T_ex)-rjequivtemp(nu,Tbg)))))
+    
+def opticaldepth2(mulu_2,nu,line_width,T_ex,nupper):
+    return ((8*np.pi**3*nu*mulu_2)/(3*h*c*line_width))*(np.exp((h*nu)/(k*T_ex))-1)*nupper
+    
 def N_u(ntot,qrot,gu,eu_J,T_ex):
     return ntot/((qrot/gu)*np.exp(eu_J/(k*T_ex)))
     
@@ -107,8 +114,8 @@ def kkms(beams,data):
         #intensitylist.append(velflux_T)
     return t_bright
     
-imgnum=0
-testline=8
+imgnum=1
+testline=0
 print('Getting ready - '+imgnames[imgnum])
 cube=sc.read(files[imgnum])
 #header=fits.getheader(files[0])
@@ -179,15 +186,21 @@ n_upper=N_u(n_total,q,mdegs[testline],meujs[testline],testT).to('cm-2')
 #testtbright=t_brightness(meujs[testline],mdegs[testline],q,n_total,n_upper)
 testtbright=Tb3(n_total,mlines[testline],lwvel,mulu2,mdegs[testline],q,meujs[testline],testT).to('K')#(mlines[testline],lwvel,s_j,n_upper).to('K')
 testtbthick=Tbthick(n_total,mlines[testline],lwvel,mulu2,mdegs[testline],q,meujs[testline],testT).to('K')
+testtbthick2=Tbthick2(n_upper,mlines[testline],lwvel,maijs[testline].value,meujs[testline],testT).to('K')
 testtau=opticaldepth(testtbthick,mlines[testline],testT)
+#testtau2=opticaldepth(testtbthick2,mlines[testline],testT)
+testtau3=opticaldepth2(mulu2,mlines[testline],lw2,testT,n_upper).to('')
 
 plotprofilethin=[]
 plotprofilethick=[]
+
 for i in range(len(plot)):
     temp=gauss(plot[i],testtbright,mlines[testline],lw2)
     temp2=gauss(plot[i],testtbthick,mlines[testline],lw2)
+    #temp3=gauss(plot[i],testtbthick2,mlines[testline],lw2)
     plotprofilethin.append(temp/u.K)
     plotprofilethick.append(temp2/u.K)
+    #plotprofilethick2.append(temp3/u.K)
 
 '''
 b1.append(testtbright/u.K)
@@ -197,12 +210,16 @@ qs.append(q)
         
 print(f'q: {q} n_upper: {n_upper} nu/g: {n_upper/mdegs[testline]} Tb: {testtbright}')
 print(f'Tbthick: {testtbthick}')
+#print(f'Tbthick-2: {testtbthick2}')
 print(f'thin-thick: {testtbright-testtbthick}')
 print(f'tau: {testtau}')
+#print(f'tau2: {testtau2}')
+print(f'tau3: {testtau3}')
 print(f'aij: {maijs[testline]} lines: {mlines[testline]}')
 plt.plot(spwwindow.spectral_axis,t_brights,drawstyle='steps')
 plt.plot(plot,plotprofilethin,label=(r'$\tau << 1$'))
 plt.plot(plot,plotprofilethick,label=(r'$\tau \geq 1$'))
+#plt.plot(plot,plotprofilethick2,label=(r'$\tau \geq 1$ pyspeckit'))
 plt.axvline(x=mlines[testline].value,ls='--')
 plt.title(f'Transition: {mqns[testline]} EU_K: {meuks[testline]} Tphys: {testT}')
 #plt.plot(Tphys.value,b1)

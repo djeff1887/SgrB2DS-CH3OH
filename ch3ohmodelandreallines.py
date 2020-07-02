@@ -23,13 +23,14 @@ b_0=24679.98*u.MHz
 a_0=127484*u.MHz
 c_0=23769.70*u.MHz
 m=b_0**2/(a_0*c_0)
+Tbg=2.7355*u.K
 
 
 R_i=1
 kappa=((2*b_0)-a_0-c_0)/(a_0-c_0)
 f=1
 
-testT=550*u.K
+testT=500*u.K
 #n_totes=[1e13,1e14,1e15,1e16,1e17,1e18,1e19,1e20,1e21,1e22,1e23]*u.cm**-2
 n_total=1e17*u.cm**-2
 
@@ -43,12 +44,13 @@ mdict={}
 contamdata={}
 imgnames=['spw2','spw1','spw0']
 
-def specmaker(plot,x,y,xmin,xmax,center,trans,ymax,ymin,moddata):
+def specmaker(plot,x,y,xmin,xmax,center,trans,ymax,ymin,moddata,thickmoddata):
     plot.set_xlim(xmin.value,xmax.value)
     plot.axvline(x=center,color='green',linestyle='--',linewidth=2.0,label='CH3OH')
     plot.set_ylim(ymin,ymax)
     plot.plot(x,y,drawstyle='steps')
     plot.plot(x,moddata,color='brown')
+    plot.plot(x,thickmoddata,color='cyan')
     plot.set_title(trans)
     '''
     print(f'ymin: {y.min()}')
@@ -64,6 +66,9 @@ def Q_rot_asym(T):#Eq 58, (Magnum & Shirley 2015); sigma=1, defined in Table 1 o
 
 def mulu(aij,nu):#Rearranged from Eq 11 (Magnum & Shirley 2015), returns product in units of cm5 g s-2
     return (3*h*c**3*aij)/(64*np.pi**4*nu**3)
+    
+def rjequivtemp(nu,T_ex):
+    return ((h*nu)/k)/(np.exp((h*nu)/(k*T_ex))-1)
     
 q=Q_rot_asym(testT).to('')
     
@@ -93,6 +98,12 @@ def qngrabber(nums):
 def Tb3(ntot,nu,line_width,mulu_2,s,g,q,eu_J,T_ex):#Rearranged from Eq 82, M&S 2015
     print(f'ntot: {ntot} nu: {nu} line_width: {line_width} mulu_2: {mulu_2} g: {g} q: {q} eu_J: {eu_J} Tex: {T_ex}')
     return ((8*np.pi**3*nu*mulu_2*R_i*g*f)/(3*k*q*np.exp(eu_J/(k*T_ex))*line_width))*ntot
+    
+def Tbthick(ntot,nu,line_width,mulu_2,g,q,eu_J,T_ex):
+    return (1-np.exp(((-8*np.pi**3*mulu_2*R_i*g)/(3*h*q*line_width))*((np.exp((h*nu)/(k*T_ex))-1)/np.exp((eu_J)/(k*T_ex)))*ntot))*(f*(rjequivtemp(nu,T_ex)-rjequivtemp(nu,Tbg)))
+    
+def opticaldepth(Tr,nu,T_ex):
+    return -np.log(1-(Tr/(f*(rjequivtemp(nu,T_ex)-rjequivtemp(nu,Tbg)))))
     
 def N_u(ntot,qrot,gu,eu_J,T_kin):#Rearranged from Eq 31, M&S 2015
     return ntot/((qrot/gu)*np.exp(eu_J/(k*T_kin)))
@@ -162,6 +173,8 @@ for i in range(len(files)):
     yoffset=0.5#K
     yoffset2=5#K
     
+    opticaldepths={}
+    opticaldepthlist=[]
     if i == 2:
         print('Setting figure and ax variables')
         numcols=5
@@ -198,12 +211,17 @@ for i in range(len(files)):
                 mulu2=(mulu(maijs[col+rowoffset],mlines[col+rowoffset]*u.Hz)).to('cm5 g s-2')#u.statC*u.cm.to('cm(3/2) g(1/2) s-1 cm')
                 print(f'n_upper: {n_upper}')
                 tbright=Tb3(n_total,mlines[col+rowoffset]*u.Hz,lw2vel,mulu2,s_j,mdegs[col+rowoffset],q,meujs[col+rowoffset],testT).to('K')#Tb2(mlines[col+rowoffset]*u.Hz,lw2vel,s_j,n_upper).to('K')
+                tbthick=Tbthick(n_total,mlines[col+rowoffset]*u.Hz,lw2vel,mulu2,mdegs[col+rowoffset],q,meujs[col+rowoffset],testT).to('K')
+                tau=opticaldepth(tbthick,mlines[col+rowoffset]*u.Hz,testT)
+                print(f'tau: {tau}')
+                
                 print(f'Tb: {tbright}')
                 modeltbs=[]
+                thickmodeltbs=[]
                 
                 for hz in spw.spectral_axis:
                     modeltbs.append((gauss(hz,tbright,mlines[col+rowoffset]*u.Hz,lw2)/u.K)+16)    
-                
+                    thickmodeltbs.append((gauss(hz,tbthick,mlines[col+rowoffset]*u.Hz,lw2)/u.K)+16)
                 tempymax=max(spwtbs)
                 tempymin=min(spwtbs)
 
@@ -228,7 +246,7 @@ for i in range(len(files)):
                 print(f'reymax: {reymax} reymin: {reymin}')
                 '''
 
-                specmaker(ax[row,col],spw.spectral_axis,spwtbs,mins[col+rowoffset],maxs[col+rowoffset], mlines[col+rowoffset], mqns[col+rowoffset],reymax,reymin,modeltbs)
+                specmaker(ax[row,col],spw.spectral_axis,spwtbs,mins[col+rowoffset],maxs[col+rowoffset], mlines[col+rowoffset], mqns[col+rowoffset],reymax,reymin,modeltbs,thickmodeltbs)
                 ax[row,col].xaxis.set_major_formatter(mtick.FormatStrFormatter('%.2e'))
                 preymax=reymax
                 preymin=reymin
@@ -341,10 +359,15 @@ for i in range(len(files)):
                 mulu2=(mulu(maijs[col+rowoffset],mlines[col+rowoffset]*u.Hz)).to('cm5 g s-2')#u.statC*u.cm.to('cm(3/2) g(1/2) s-1 cm')
                 print(f'mulu2: {mulu2}')
                 tbright=Tb3(n_total,mlines[col+rowoffset]*u.Hz,lw2vel,mulu2,s_j,mdegs[col+rowoffset],q,meujs[col+rowoffset],testT).to('K')#Tb2(mlines[col+rowoffset]*u.Hz,lw2vel,s_j,n_upper).to('K')
-                modeltbs=[]
+                tbthick=Tbthick(n_total,mlines[col+rowoffset]*u.Hz,lw2vel,mulu2,mdegs[col+rowoffset],q,meujs[col+rowoffset],testT).to('K')
+                tau=opticaldepth(tbthick,mlines[col+rowoffset]*u.Hz,testT)
+                print(f'tau: {tau}')
                 
+                modeltbs=[]
+                thickmodeltbs=[]
                 for hz in spw.spectral_axis:
-                    modeltbs.append(gauss(hz,tbright,mlines[col+rowoffset]*u.Hz,lw2)/u.K)    
+                    modeltbs.append(gauss(hz,tbright,mlines[col+rowoffset]*u.Hz,lw2)/u.K)   
+                    thickmodeltbs.append(gauss(hz,tbthick,mlines[col+rowoffset]*u.Hz,lw2)/u.K) 
                 
                 print(f'Tbmax: {max(modeltbs)*u.K}')
                 tempymax=max(spwtbs)
@@ -369,7 +392,7 @@ for i in range(len(files)):
                 print(f'reymax: {reymax} reymin: {reymin}')
                 '''
 
-                specmaker(ax[row,col],spw.spectral_axis,spwtbs,mins[col+rowoffset],maxs[col+rowoffset], mlines[col+rowoffset], mqns[col+rowoffset],reymax,reymin,modeltbs)
+                specmaker(ax[row,col],spw.spectral_axis,spwtbs,mins[col+rowoffset],maxs[col+rowoffset], mlines[col+rowoffset], mqns[col+rowoffset],reymax,reymin,modeltbs,thickmodeltbs)
                 preymax=reymax
                 preymin=reymin
                 
