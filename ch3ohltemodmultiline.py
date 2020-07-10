@@ -52,6 +52,31 @@ def specmaker(plot,x,y,xmin,xmax,center,trans,ymax,ymin,moddata,thickmoddata):
     plot.plot(x,moddata,color='brown', label=(r'$\tau<<1$'))
     plot.plot(x,thickmoddata,color='cyan',label=(r'$\tau>1'))
     plot.set_title(trans)
+    for mols in range(len(contaminants)):
+        contamlabel=0
+        linelistcheck=0
+        for lis in linelistlist:
+            if linelistcheck > 0:
+                #print(contaminants[mols]+' already plotted.')
+                break
+            else:
+                contamtable=Splatalogue.query_lines((mins[col+rowoffset]*(1+z)), (maxs[col+rowoffset]*(1+z)),energy_max=1840, energy_type='eu_k', chemical_name=contaminants[mols], line_lists=[lis],show_upper_degeneracy=True)
+                if len(contamtable)==0:
+                    print('No '+contaminants[mols]+' lines in '+lis+' frequency range '+str(mins[col+rowoffset])+'-'+str(maxs[col+rowoffset])+'.')
+                    continue
+                else:
+                    linelistcheck+=1
+                    print('('+lis+') '+contaminants[mols]+' contaminants identified for CH3OH '+mqns[col+rowoffset]+' at '+str(mins[col+rowoffset]+linewidth)+' GHz.')
+                    table = utils.minimize_table(contamtable)
+                    line=(table['Freq']*10**9)/(1+z)#Redshifted
+                    qns=table['QNs']
+                    for g in range(len(table)):
+                        if g==0 and contamlabel==0:
+                            ax[row,col].axvline(x=line[g],color=colors[mols],label=contaminants[mols])
+                            print(contaminants[mols])
+                            contamlabel+=1
+                        else:
+                            ax[row,col].axvline(x=line[g],color=colors[mols])
     '''
     print(f'ymin: {y.min()}')
     print(f'yvaluemin: {y.value.min()}')
@@ -396,31 +421,6 @@ for i in range(len(files)-1):
                 preymax=reymax
                 preymin=reymin
                 
-                for mols in range(len(contaminants)):
-                    contamlabel=0
-                    linelistcheck=0
-                    for lis in linelistlist:
-                        if linelistcheck > 0:
-                            #print(contaminants[mols]+' already plotted.')
-                            break
-                        else:
-                            contamtable=Splatalogue.query_lines((mins[col+rowoffset]*(1+z)), (maxs[col+rowoffset]*(1+z)),energy_max=1840, energy_type='eu_k', chemical_name=contaminants[mols], line_lists=[lis],show_upper_degeneracy=True)
-                            if len(contamtable)==0:
-                                print('No '+contaminants[mols]+' lines in '+lis+' frequency range '+str(mins[col+rowoffset])+'-'+str(maxs[col+rowoffset])+'.')
-                                continue
-                            else:
-                                linelistcheck+=1
-                                print('('+lis+') '+contaminants[mols]+' contaminants identified for CH3OH '+mqns[col+rowoffset]+' at '+str(mins[col+rowoffset]+linewidth)+' GHz.')
-                                table = utils.minimize_table(contamtable)
-                                line=(table['Freq']*10**9)/(1+z)#Redshifted
-                                qns=table['QNs']
-                                for g in range(len(table)):
-                                    if g==0 and contamlabel==0:
-                                        ax[row,col].axvline(x=line[g],color=colors[mols],label=contaminants[mols])
-                                        print(contaminants[mols])
-                                        contamlabel+=1
-                                    else:
-                                        ax[row,col].axvline(x=line[g],color=colors[mols])
                 '''
                 if row == 0:
                     specmaker(ax[row,col],freqs,spw.to('mJy/beam'),mins[col],maxs[col],mlines[col],mqns[col])
