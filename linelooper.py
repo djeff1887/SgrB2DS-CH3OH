@@ -21,7 +21,7 @@ mu_a=(0.896e-18*u.statC*u.cm).to('cm(3/2) g(1/2) s-1 cm')
 R_i=1
         
 home='/home/d.jeff/SgrB2DS_field1/spw2mom0contaminated/'#Make sure to include slash after path
-fname='/ufrc/adamginsburg/d.jeff/imaging_results/SgrB2DS_field1_spw2_cube_medsub.image.fits'
+fname='/blue/adamginsburg/d.jeff/imaging_results/SgrB2DS_field1_spw2_cube_medsub.image.fits'
 cube=sc.read(fname)
 header=fits.getheader(fname)
 

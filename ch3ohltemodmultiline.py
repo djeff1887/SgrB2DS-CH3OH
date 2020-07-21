@@ -13,7 +13,7 @@ import regions
 import math
 
 plt.close('all')
-files=glob.glob('/ufrc/adamginsburg/d.jeff/imaging_results/*.fits')
+files=glob.glob('/blue/adamginsburg/d.jeff/imaging_results/*.fits')
 z=0.0002333587
 c=cnst.c*u.m/u.s
 k=cnst.k*u.J/u.K
@@ -42,7 +42,7 @@ linelistlist=['JPL','CDMS','SLAIM']
 
 mdict={}
 contamdata={}
-imgnames=['spw2','spw1','spw0']
+imgnames=['spw3','spw0','spw2','spw1']
 
 def specmaker(plot,x,y,xmin,xmax,center,trans,ymax,ymin,moddata,thickmoddata):
     plot.set_xlim(xmin.value,xmax.value)
@@ -72,7 +72,7 @@ def specmaker(plot,x,y,xmin,xmax,center,trans,ymax,ymin,moddata,thickmoddata):
                     qns=table['QNs']
                     for g in range(len(table)):
                         if g==0 and contamlabel==0:
-                            ax[row,col].axvline(x=line[g],color=colors[mols],label=contaminants[mols])
+                            contamline=ax[row,col].axvline(x=line[g],color=colors[mols],label=contaminants[mols])
                             print(contaminants[mols])
                             contamlabel+=1
                         else:
@@ -155,7 +155,7 @@ def JybeamtoK(beams,data):
 def contamlines(plot,contamlinelist):
     return
     
-for i in range(len(files)-1):
+for i in range(len(files)-2):
     print('Getting ready - '+imgnames[i])
     cube=sc.read(files[i])
     header=fits.getheader(files[i])
@@ -200,7 +200,7 @@ for i in range(len(files)-1):
     
     opticaldepths={}
     opticaldepthlist=[]
-    if i == 2:
+    if i < 2:
         print('Setting figure and ax variables')
         numcols=5
         numrows=math.ceil(len(mlines)/numcols)
@@ -222,6 +222,9 @@ for i in range(len(files)-1):
         for row in range(numrows):
             print('Start Row '+str(row)+'.')
             for col in range(numcols):
+                if col+rowoffset >= len(mlines):
+                    #handles, labels = ax[row,col].get_legend_handles_labels()
+                    break
                 f1,f2 = maxs[col+rowoffset],mins[col+rowoffset]
                 if f1 > f2:
                     f1,f2 = f2,f1
@@ -230,6 +233,7 @@ for i in range(len(files)-1):
                 beamlist=spw.beams
                 beamlist=(beamlist.value)*u.sr/u.beam
                 spwtbs=JybeamtoK(beamlist,spw)
+                lw2vel=vradio(lw2,mlines[col+rowoffset]*u.Hz)
                 J,K=qngrabber(mqns[col+rowoffset])
                 s_j=(J**2-K**2)/(J*(2*J+1))#Eq 58, M&S 2015
                 n_upper=N_u(n_total,q,mdegs[col+rowoffset],meujs[col+rowoffset],testT).to('cm-2')
@@ -335,7 +339,7 @@ for i in range(len(files)-1):
         print('Plotting complete. plt.show()')
         plt.show()
         
-    elif i != 2:
+    elif i > 2:
         print('Setting figure and ax variables')
         numcols=5
         numrows=math.ceil(len(mlines)/numcols)
@@ -366,6 +370,7 @@ for i in range(len(files)-1):
             print('Start Row '+str(row)+'.')
             for col in range(numcols):
                 if col+rowoffset >= len(mlines):
+                    #handles, labels = ax[row,col].get_legend_handles_labels()
                     break
                 f1,f2 = maxs[col+rowoffset],mins[col+rowoffset]
                 if f1 > f2:
@@ -438,7 +443,10 @@ for i in range(len(files)-1):
             rowoffset+=5
         fig.subplots_adjust(wspace=0.2,hspace=0.55) 
         fig.suptitle(f'{imgnames[i]}, Tkin: {testT}, N_total: {n_total}')
-        plt.legend(loc=0,bbox_to_anchor=(1.7,2.12))
+        labels = [ax.get_legend_handles_labels() for ax in fig.axes]
+        lines=[]
+        fig.legend(labels, loc='upper right', bbox_to_anchor=(1.7,2.12))
+        #plt.legend(loc=0,bbox_to_anchor=(1.7,2.12))
         print('Plotting complete. plt.show()')
         plt.show()
         '''

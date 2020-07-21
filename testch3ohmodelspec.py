@@ -1,5 +1,6 @@
 import numpy as np
 import astropy.units as u
+from astropy.wcs import WCS
 from spectral_cube import SpectralCube as sc
 import matplotlib.pyplot as plt
 from astroquery.splatalogue import utils, Splatalogue
@@ -25,16 +26,14 @@ R_i=1
 kappa=((2*b_0)-a_0-c_0)/(a_0-c_0)
 f=1
 
-files=glob.glob('/ufrc/adamginsburg/d.jeff/imaging_results/*.fits')
+files=glob.glob('/blue/adamginsburg/d.jeff/imaging_results/*.fits')
 z=0.0002333587
-imgnames=['spw2','spw1','spw0']
-
-
+imgnames=['spw3','spw0','spw2','spw1']
 
 def gauss(x,A,mu,sig):
     return A*np.exp((-1/2)*((x-mu)/sig)**2)
 
-def Q_rot_asym(T):
+def Q_rot_asym(T):#Eq 58, (Magnum & Shirley 2015); sigma=1, defined in Table 1 of M&S 2015
     return np.sqrt(m*np.pi*((k*T)/(h*b_0))**3)
     
 def mulu(aij,nu):#Rearranged from Eq 11 (Magnum & Shirley 2015), returns product in units of cm5 g s-2
@@ -43,6 +42,16 @@ def mulu(aij,nu):#Rearranged from Eq 11 (Magnum & Shirley 2015), returns product
 def vradio(frequency,rest_freq):
     velocity=c.to(u.km/u.s)*(1-((rest_freq-frequency)/rest_freq))
     return velocity.to('cm s-1')
+    
+def component_restfrequency(cmpntvel,rest_freq):
+    ref_freq=minmethtable['Freq'][testline]*10**9*u.Hz
+    c_kms=c.to('km s-1')
+    z_vel=z*c_kms
+    cmpntshift_vel=z_vel+cmpntvel
+    cmpnt_zvel=cmpntshift_vel/c_kms
+    cmpnt_restfreq=ref_freq/(1+cmpnt_zvel)
+    
+    return cmpnt_restfreq
     
 def KtoJ(T):
     return (3/2)*k*T
@@ -114,10 +123,21 @@ def kkms(beams,data):
         #intensitylist.append(velflux_T)
     return t_bright
     
-imgnum=1
-testline=0
+imgnum=0
+testline=5
 print('Getting ready - '+imgnames[imgnum])
 cube=sc.read(files[imgnum])
+
+'''Set WCS params [RA,DEC,FRQ].(For non-contsub cubes not using spectral-cube, the Stokes axis hasn't been removed, so the input array must be [RA,DEC,STOKES,FRQ]. '''
+cube_w=cube.wcs#WCS(files[imgnum])
+if 'medsub' in files[imgnum]:
+    contsub=True
+else:
+    contsub=False
+
+targetworldcrd=[[0,0,0],[2.66835339e+02, -2.83961660e+01, 0]]
+targetpixcrd=cube_w.all_world2pix(targetworldcrd,1,ra_dec_order=True)
+
 #header=fits.getheader(files[0])
 #beamer=radio_beam.Beam.from_fits_header(hdu).value
 
@@ -160,18 +180,23 @@ plotwidth=linewidth*1.5
 lwvel=vradio(lw2,mlines[testline])
 print(f'Transition: {mqns[testline]}\nEU_K: {meuks[testline]}')
 
-spwwindow=cube.spectral_slab((mlines[testline]-plotwidth),(mlines[testline]+plotwidth))[:,649,383]
+cmpnt2veloffset=1*u.km/u.s
+cmpnt2frq=component_restfrequency(cmpnt2veloffset,mlines[testline])
+print(f'2nd component: {cmpnt2frq}')
+
+spwwindow=cube.spectral_slab((mlines[testline]-plotwidth),(mlines[testline]+plotwidth))[:,int(round(targetpixcrd[1][1])),int(round(targetpixcrd[1][0]))]
 beamlist=spwwindow.beams
 beamlist=(beamlist.value)*u.sr/u.beam
 t_brights=kkms(beamlist,spwwindow)
 
 #print(t_brights)
-
+peakK=spwwindow[np.argmax(spwwindow)]
 
 Tphys=np.linspace(1,1000,100)*u.K
 testT=550*u.K
 n_totes=[1e13,1e14,1e15,1e16,1e17,1e18,1e19,1e20,1e21,1e22,1e23]*u.cm**-2
 plot=np.linspace((mlines[testline]-plotwidth),(mlines[testline]+plotwidth),30)
+#plotcmpnt=
 
 b1=[]
 b2=[]
@@ -183,25 +208,35 @@ q=Q_rot_asym(testT).to('')
 mulu2=mulu(maijs[testline],mlines[testline]).to('cm5 g s-2')#(0.896e-18*u.statC*u.cm).to('cm(3/2) g(1/2) s-1 cm')
 n_total=1e17*u.cm**-2
 n_upper=N_u(n_total,q,mdegs[testline],meujs[testline],testT).to('cm-2')
+print(f'pre-function n_upper: {n_upper}')
 #testtbright=t_brightness(meujs[testline],mdegs[testline],q,n_total,n_upper)
 testtbright=Tb3(n_total,mlines[testline],lwvel,mulu2,mdegs[testline],q,meujs[testline],testT).to('K')#(mlines[testline],lwvel,s_j,n_upper).to('K')
 testtbthick=Tbthick(n_total,mlines[testline],lwvel,mulu2,mdegs[testline],q,meujs[testline],testT).to('K')
-testtbthick2=Tbthick2(n_upper,mlines[testline],lwvel,maijs[testline].value,meujs[testline],testT).to('K')
+testtbcmpnt2=Tbthick(n_total,mlines[testline],lwvel,mulu2,mdegs[testline],q,meujs[testline],testT).to('K')
 testtau=opticaldepth(testtbthick,mlines[testline],testT)
 #testtau2=opticaldepth(testtbthick2,mlines[testline],testT)
 testtau3=opticaldepth2(mulu2,mlines[testline],lw2,testT,n_upper).to('')
 
 plotprofilethin=[]
 plotprofilethick=[]
+plotprofilecmpnt2=[]
+if contsub:
+    contoffset=0
+else:
+    contoffset=20
 
 for i in range(len(plot)):
     temp=gauss(plot[i],testtbright,mlines[testline],lw2)
     temp2=gauss(plot[i],testtbthick,mlines[testline],lw2)
-    #temp3=gauss(plot[i],testtbthick2,mlines[testline],lw2)
-    plotprofilethin.append(temp/u.K)
-    plotprofilethick.append(temp2/u.K)
-    #plotprofilethick2.append(temp3/u.K)
+    temp3=gauss(plot[i],testtbthick,cmpnt2frq,lw2)
+    plotprofilethin.append((temp/u.K)+contoffset)
+    plotprofilethick.append((temp2/u.K)+contoffset)
+    plotprofilecmpnt2.append((temp3/u.K)+contoffset)
 
+comboplotprofile=[]
+for j in range(len(plot)):
+    gaussadd=(plotprofilethick[j]-contoffset)+(plotprofilecmpnt2[j]-contoffset)
+    comboplotprofile.append(gaussadd+contoffset)
 '''
 b1.append(testtbright/u.K)
 b2.append(testtbright2/u.K)
@@ -219,7 +254,8 @@ print(f'aij: {maijs[testline]} lines: {mlines[testline]}')
 plt.plot(spwwindow.spectral_axis,t_brights,drawstyle='steps')
 plt.plot(plot,plotprofilethin,label=(r'$\tau << 1$'))
 plt.plot(plot,plotprofilethick,label=(r'$\tau \geq 1$'))
-#plt.plot(plot,plotprofilethick2,label=(r'$\tau \geq 1$ pyspeckit'))
+plt.plot(plot,plotprofilecmpnt2,label=(r'cmpnt2'))
+plt.plot(plot,comboplotprofile,label=('combo'))
 plt.axvline(x=mlines[testline].value,ls='--')
 plt.title(f'Transition: {mqns[testline]} EU_K: {meuks[testline]} Tphys: {testT}')
 #plt.plot(Tphys.value,b1)
