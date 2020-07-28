@@ -186,9 +186,10 @@ plotwidth=linewidth*1.5
 lwvel=vradio(lw2,mlines[testline])
 print(f'Transition: {mqns[testline]}\nEU_K: {meuks[testline]}')
 
-cmpnt2veloffset=1*u.km/u.s
+cmpnt2veloffset=1.85*u.km/u.s
 cmpnt2frq=component_restfrequency(cmpnt2veloffset,mlines[testline])
 print(f'2nd component: {cmpnt2frq}')
+cmpnt2frqoffset=np.abs(mlines[testline]-cmpnt2frq)
 
 spwwindow=cube.spectral_slab((mlines[testline]-plotwidth),(mlines[testline]+plotwidth))[:,int(round(targetpixcrd[1][1])),int(round(targetpixcrd[1][0]))]
 beamlist=spwwindow.beams
@@ -267,10 +268,19 @@ class Gaussian1D(Fittable1DModel):
 '''
         
 fit_g=fitting.LevMarLSQFitter()
-linemin=0
-linemax=29
-testclass=models.Gaussian1D(mean=np.median(spwwindow.spectral_axis), stddev=1 * u.MHz, amplitude=1 * u.K)#testtbthick,mlines[testline],lw2)
-testfit=fit_g(testclass,spwwindow.spectral_axis[linemin:linemax],t_brights[linemin:linemax]*u.K)
+linemin=14
+linemax=30
+linemin2=0
+linemax2=15
+linemin3=0
+linemax3=31
+testmod1=models.Gaussian1D(mean=mlines[testline], stddev=1 * u.MHz, amplitude=(t_brights[np.argmax(t_brights)]) * u.K)#testtbthick,mlines[testline],lw2)
+testmod2=models.Gaussian1D(mean=(mlines[testline]+cmpnt2frqoffset), stddev=1 * u.MHz, amplitude=(t_brights[np.argmax(t_brights)]/1.2) * u.K)
+testmod3=testmod1+testmod2
+#testfit1=fit_g(testmod1,spwwindow.spectral_axis[linemin:linemax],t_brights[linemin:linemax]*u.K)
+#testfit2=fit_g(testmod2,spwwindow.spectral_axis[linemin2:linemax2],t_brights[linemin2:linemax2]*u.K)
+testfit3=fit_g(testmod3,spwwindow.spectral_axis[linemin3:linemax3],t_brights[linemin3:linemax3]*u.K,epsilon=1e-11)
+#testcombo=testfit1+testfit2
         
 print(f'q: {q} n_upper: {n_upper} nu/g: {n_upper/mdegs[testline]} Tb: {testtbright}')
 print(f'Tbthick: {testtbthick}')
@@ -280,19 +290,30 @@ print(f'tau: {testtau}')
 #print(f'tau2: {testtau2}')
 print(f'tau3: {testtau3}')
 print(f'aij: {maijs[testline]} lines: {mlines[testline]}')
-print(f'Model fit params: {testfit}')
+print(f'Model fit params: {testfit3}')
 print(f'Model fit info: {fit_g.fit_info}')
 plt.plot(spwwindow.spectral_axis,t_brights,drawstyle='steps')
+
 plt.plot(plot,plotprofilethin,label=(r'$\tau << 1$'))
 plt.plot(plot,plotprofilethick,label=(r'$\tau \geq 1$'))
+
 plt.plot(spwwindow.spectral_axis[linemin:linemax],t_brights[linemin:linemax],drawstyle='steps',color='orange')
+plt.plot(spwwindow.spectral_axis[linemin2:linemax2],t_brights[linemin2:linemax2],drawstyle='steps',color='green')
 '''
 plt.plot(plot,plotprofilecmpnt2,label=(r'cmpnt2'))
 plt.plot(plot,comboplotprofile,label=('combo'))
+#plt.plot(plot,testfit1(plot),label='LMLSQ fit',color='red')
+#plt.plot(plot,testfit2(plot),label='Cmpnt 2 LMLSQ fit',color='purple')
+#plt.plot(plot,testcombo(plot),label='Both cmpnts LMLSQ fit',color='cyan')
 '''
-plt.plot(plot,testfit(plot),label='LMLSQ fit')
+annotation_shift=7073527.01781464*u.Hz#5.25*1.85 km/s in frequency units
+plt.plot(plot,testfit3(plot),label='Composite LMLSQ fit',color='blue')
 plt.axvline(x=mlines[testline].value,ls='--')
 plt.title(f'Transition: {mqns[testline]} EU_K: {meuks[testline]} Tphys: {testT}')
+plt.annotate((f'Component 1 Input\nT_b: {round(testmod3[0].amplitude.value,4)} K\n$\mu$: {round(((testmod3[0].mean.quantity).to(u.GHz).value),6)} GHz\n$\sigma$: {testmod3[0].stddev.value} MHz'),xy=(spwwindow.spectral_axis[5].value,t_brights[15]),xytext=(((mlines[testline]-annotation_shift)).value,(max(t_brights)/1.2)),fontsize=7)
+plt.annotate((f'Component 1 Output\nT_b: {round(testfit3[0].amplitude.value,4)} K\n$\mu$: {round(((testfit3[0].mean.quantity).to(u.GHz).value),6)} GHz\n$\sigma$: {round((testfit3[0].stddev.quantity.to(u.MHz).value),4)} MHz'),xy=(spwwindow.spectral_axis[5].value,t_brights[15]),xytext=(((mlines[testline]-annotation_shift)).value,(max(t_brights)/1.55)),fontsize=7)
+plt.annotate((f'Component 2 Input\nT_b: {round(testmod3[1].amplitude.value,4)} K\n$\mu$: {round(((testmod3[1].mean.value*u.Hz).to(u.GHz).value),6)} GHz\n$\sigma$: {testmod3[1].stddev.value} MHz\nv_offset: {cmpnt2veloffset}'),xy=(spwwindow.spectral_axis[5].value,t_brights[15]),xytext=(((mlines[testline]-annotation_shift)).value,(max(t_brights)/2.45)),fontsize=7)
+plt.annotate((f'Component 2 Output\nT_b: {round(testfit3[1].amplitude.value,4)} K\n$\mu$: {round(((testfit3[1].mean.quantity).to(u.GHz).value),6)} GHz\n$\sigma$: {round((testfit3[1].stddev.quantity.to(u.MHz).value),4)} MHz'),xy=(spwwindow.spectral_axis[5].value,t_brights[15]),xytext=(((mlines[testline]-annotation_shift)).value,(max(t_brights)/4.65)),fontsize=7)
 #plt.plot(Tphys.value,b1)
 #plt.plot(Tphys.value,b2)
 plt.legend()
