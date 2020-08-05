@@ -20,7 +20,7 @@ m=b_0**2/(a_0*c_0)
 mu_a=(0.896e-18*u.statC*u.cm).to('cm(3/2) g(1/2) s-1 cm')
 R_i=1
         
-home='/home/d.jeff/SgrB2DS_field1/spw2mom0contaminated/'#Make sure to include slash after path
+home='/blue/adamginsburg/d.jeff/imaging_results/SgrB2DS-CH3OH/Mom0/field1/spw2'#Make sure to include slash after path
 fname='/blue/adamginsburg/d.jeff/imaging_results/SgrB2DS_field1_spw2_cube_medsub.image.fits'
 cube=sc.read(fname)
 header=fits.getheader(fname)
@@ -31,7 +31,12 @@ freqs=cube.spectral_axis#Hz
 velcube=cube.with_spectral_unit((u.km/u.s),velocity_convention='radio',rest_value=spw1restfreq)
 #print(velcube.spectral_axis)
 cube_unmasked=velcube.unmasked_data
-data=cube_unmasked[:,368,628]#[:,383,649]#Jy*km/s
+
+cube_w=cube.wcs
+targetworldcrd=[[0,0,0],[2.66835339e+02, -2.83961660e+01, 0]]
+targetpixcrd=cube_w.all_world2pix(targetworldcrd,1,ra_dec_order=True)
+
+#data=cube_unmasked[:,368,628]#[:,383,649]#Jy*km/s
 #test=cube_unmasked[:,383:413,649:679]
 
 #print(np.shape(data))
@@ -165,7 +170,7 @@ def unscrambler(filenames,sliced_qns,linelist):
 
 beamlist=beamer(files)*u.sr
 #print(beamlist)
-fluxes=fluxvalues(383,649,files)*u.Jy*u.km/u.s#/u.sr
+fluxes=fluxvalues(round(targetpixcrd[1][0],round(targetpixcrd[1][1]),files)*u.Jy*u.km/u.s#/u.sr
 #print(fluxes)
 unscrambledqns,unscrambledfreqs,unscrambledeus,unscrambleddegs,unscrambledaijs=unscrambler(files,slicedqns,lines)
 print(f'files: {files}')

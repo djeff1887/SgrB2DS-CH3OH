@@ -14,7 +14,7 @@ import math
 
 plt.close('all')
 files=glob.glob('/blue/adamginsburg/d.jeff/imaging_results/*.fits')
-z=0.0002333587
+z=0.000234806#0.000236254#0.0002333587
 c=cnst.c*u.m/u.s
 k=cnst.k*u.J/u.K
 h=cnst.h*u.J*u.s
@@ -155,7 +155,7 @@ def JybeamtoK(beams,data):
 def contamlines(plot,contamlinelist):
     return
     
-for i in range(len(files)-2):
+for i in range(len(files)):
     print('Getting ready - '+imgnames[i])
     cube=sc.read(files[i])
     header=fits.getheader(files[i])
@@ -200,6 +200,7 @@ for i in range(len(files)-2):
     
     opticaldepths={}
     opticaldepthlist=[]
+    
     if i < 2:
         print('Setting figure and ax variables')
         numcols=5
@@ -233,6 +234,9 @@ for i in range(len(files)-2):
                 beamlist=spw.beams
                 beamlist=(beamlist.value)*u.sr/u.beam
                 spwtbs=JybeamtoK(beamlist,spw)
+                
+                spwtbs_stddev=np.std(spwtbs)
+                
                 lw2vel=vradio(lw2,mlines[col+rowoffset]*u.Hz)
                 J,K=qngrabber(mqns[col+rowoffset])
                 s_j=(J**2-K**2)/(J*(2*J+1))#Eq 58, M&S 2015
@@ -339,7 +343,7 @@ for i in range(len(files)-2):
         print('Plotting complete. plt.show()')
         plt.show()
         
-    elif i > 2:
+    elif i >= 2:
         print('Setting figure and ax variables')
         numcols=5
         numrows=math.ceil(len(mlines)/numcols)
