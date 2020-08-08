@@ -42,7 +42,7 @@ linelistlist=['JPL','CDMS','SLAIM']
 
 mdict={}
 contamdata={}
-imgnames=['spw3','spw0','spw2','spw1']
+imgnames=['spw0','spw2','spw1','spw3']
 
 def specmaker(plot,x,y,xmin,xmax,center,trans,ymax,ymin,moddata,thickmoddata):
     plot.set_xlim(xmin.value,xmax.value)
@@ -155,10 +155,16 @@ def JybeamtoK(beams,data):
 def contamlines(plot,contamlinelist):
     return
     
+pixelcoords=[]
 for i in range(len(files)):
     print('Getting ready - '+imgnames[i])
     cube=sc.read(files[i])
     header=fits.getheader(files[i])
+    
+    cube_w=cube.wcs
+    targetworldcrd=[[0,0,0],[2.66835339e+02, -2.83961660e+01, 0]]
+    targetpixcrd=cube_w.all_world2pix(targetworldcrd,1,ra_dec_order=True)
+    pixelcoords.append(targetpixcrd[1])
     
     freqs=cube.spectral_axis
     freqflip=False
@@ -201,50 +207,50 @@ for i in range(len(files)):
     opticaldepths={}
     opticaldepthlist=[]
     
-    if i < 2:
-        print('Setting figure and ax variables')
-        numcols=5
-        numrows=math.ceil(len(mlines)/numcols)
-        fig,ax=plt.subplots(numrows,numcols,sharey=True)
-        print('Number of rows: ', numrows)
+    print('Setting figure and ax variables')
+    numcols=5
+    numrows=math.ceil(len(mlines)/numcols)
+    fig,ax=plt.subplots(numrows,numcols,sharey=True)
+    print('Number of rows: ', numrows)
+    
+    print('Gathering mlines and and plot widths')
+    for line in mlines:
+        centroid=line*u.Hz
+        minfreq=centroid-linewidth
+        maxfreq=centroid+linewidth
+        mins.append(minfreq)
+        maxs.append(maxfreq)
         
-        print('Gathering mlines and and plot widths')
-        for line in mlines:
-            centroid=line*u.Hz
-            minfreq=centroid-linewidth
-            maxfreq=centroid+linewidth
-            mins.append(minfreq)
-            maxs.append(maxfreq)
+    print('Begin figure plot loops')
+    rowoffset=0
+    preymax=-100
+    preymin=100
+    for row in range(numrows):
+        print('Start Row '+str(row)+'.')
+        for col in range(numcols):
+            if col+rowoffset >= len(mlines):
+                #handles, labels = ax[row,col].get_legend_handles_labels()
+                break
+            f1,f2 = maxs[col+rowoffset],mins[col+rowoffset]
+            if f1 > f2:
+                f1,f2 = f2,f1
+            sub=cube.spectral_slab(f1,f2)
+            spw=sub[:,int(round(targetpixcrd[1][1])),int(round(targetpixcrd[1][0]))]
+            beamlist=spw.beams
+            beamlist=(beamlist.value)*u.sr/u.beam
+            spwtbs=JybeamtoK(beamlist,spw)
             
-        print('Begin figure plot loops')
-        rowoffset=0
-        preymax=-100
-        preymin=100
-        for row in range(numrows):
-            print('Start Row '+str(row)+'.')
-            for col in range(numcols):
-                if col+rowoffset >= len(mlines):
-                    #handles, labels = ax[row,col].get_legend_handles_labels()
-                    break
-                f1,f2 = maxs[col+rowoffset],mins[col+rowoffset]
-                if f1 > f2:
-                    f1,f2 = f2,f1
-                sub=cube.spectral_slab(f1,f2)
-                spw=sub[:,762,496]
-                beamlist=spw.beams
-                beamlist=(beamlist.value)*u.sr/u.beam
-                spwtbs=JybeamtoK(beamlist,spw)
-                
-                spwtbs_stddev=np.std(spwtbs)
-                
-                lw2vel=vradio(lw2,mlines[col+rowoffset]*u.Hz)
-                J,K=qngrabber(mqns[col+rowoffset])
-                s_j=(J**2-K**2)/(J*(2*J+1))#Eq 58, M&S 2015
-                n_upper=N_u(n_total,q,mdegs[col+rowoffset],meujs[col+rowoffset],testT).to('cm-2')
-                mulu2=(mulu(maijs[col+rowoffset],mlines[col+rowoffset]*u.Hz)).to('cm5 g s-2')#u.statC*u.cm.to('cm(3/2) g(1/2) s-1 cm')
-                print(f'n_upper: {n_upper}')
-                tbright=Tb3(n_total,mlines[col+rowoffset]*u.Hz,lw2vel,mulu2,s_j,mdegs[col+rowoffset],q,meujs[col+rowoffset],testT).to('K')#Tb2(mlines[col+rowoffset]*u.Hz,lw2vel,s_j,n_upper).to('K')
-                tbthick=Tbthick(n_total,mlines[col+rowoffset]*u.Hz,lw2vel,mulu2,mdegs[col+rowoffset],q,meujs[col+rowoffset],testT).to('K')
+            spwtbs_stddev=np.std(spwtbs)
+            
+            lw2vel=vradio(lw2,mlines[col+rowoffset]*u.Hz)
+            J,K=qngrabber(mqns[col+rowoffset])
+            s_j=(J**2-K**2)/(J*(2*J+1))#Eq 58, M&S 2015
+            n_upper=N_u(n_total,q,mdegs[col+rowoffset],meujs[col+rowoffset],testT).to('cm-2')
+            mulu2=(mulu(maijs[col+rowoffset],mlines[col+rowoffset]*u.Hz)).to('cm5 g s-2')#u.statC*u.cm.to('cm(3/2) g(1/2) s-1 cm')
+            print(f'n_upper: {n_upper}')
+            tbright=Tb3(n_total,mlines[col+rowoffset]*u.Hz,lw2vel,mulu2,s_j,mdegs[col+rowoffset],q,meujs[col+rowoffset],testT).to('K')#Tb2(mlines[col+rowoffset]*u.Hz,lw2vel,s_j,n_upper).to('K')
+            tbthick=Tbthick(n_total,mlines[col+rowoffset]*u.Hz,lw2vel,mulu2,mdegs[col+rowoffset],q,meujs[col+rowoffset],testT).to('K')
+            if tbthick.value >= spwtbs_stddev:
                 tau=opticaldepth(tbthick,mlines[col+rowoffset]*u.Hz,testT)
                 print(f'tau: {tau}')
                 
@@ -253,8 +259,8 @@ for i in range(len(files)):
                 thickmodeltbs=[]
                 
                 for hz in spw.spectral_axis:
-                    modeltbs.append((gauss(hz,tbright,mlines[col+rowoffset]*u.Hz,lw2)/u.K)+16)    
-                    thickmodeltbs.append((gauss(hz,tbthick,mlines[col+rowoffset]*u.Hz,lw2)/u.K)+16)
+                    modeltbs.append((gauss(hz,tbright,mlines[col+rowoffset]*u.Hz,lw2)/u.K))    
+                    thickmodeltbs.append((gauss(hz,tbthick,mlines[col+rowoffset]*u.Hz,lw2)/u.K))
                 tempymax=max(spwtbs)
                 tempymin=min(spwtbs)
 
@@ -262,13 +268,13 @@ for i in range(len(files)):
                     break
                 
                 if tempymax > preymax:
-                    reymax=tempymax+yoffset2
+                    reymax=tempymax#+yoffset2
                     #print('new max: ',reymax)
                 else:
                     reymax=preymax
 
                 if tempymin < preymin:
-                    reymin=tempymin-yoffset2
+                    reymin=tempymin#-yoffset2
                     #print('new min: ',reymin)
                 else:
                     reymin=preymin
@@ -308,41 +314,44 @@ for i in range(len(files)):
                                         contamlabel+=1
                                     else:
                                         ax[row,col].axvline(x=line[g],color=colors[mols])
-            rowoffset+=5
-            
-            '''
-            if a == 0:
-                ax.axvline(x=centroid.value,color='green',label='CH3OH')
             else:
-                ax.axvline(x=centroid.value,color='green')
-            ax.plot(freqs[cube.closest_spectral_channel(maxfreq):cube.closest_spectral_channel(minfreq)],spw.value[cube.closest_spectral_channel(maxfreq):cube.closest_spectral_channel(minfreq)],drawstyle='steps',color='orange')
-        print('Begin plotting contaminant lines')
-        for j in range(len(contaminants)):
-            print('Checking'+contaminants[j])
-            dum=0
-            for d in range(len(mins)):
-                contamtable=Splatalogue.query_lines((mins[d]*(1+z)), (maxs[d]*(1+z)),energy_max=1840, energy_type='eu_k', chemical_name=contaminants[j], line_lists=[linelist],show_upper_degeneracy=True)
-                if len(contamtable)==0:
-                    print('No '+contaminants[j]+' lines in frequency range '+str(mins[d])+'-'+str(maxs[d])+'.')
-                else:
-                    print(contaminants[j]+' contaminants identified for CH3OH '+mqns[d]+' at '+str(mins[d]+linewidth)+' GHz.')
-                    table = utils.minimize_table(contamtable)
-                    line=(table['Freq']*10**9)/(1+z)#Redshifted
-                    qns=table['QNs']
-                    for g in range(len(table)):
-                        if g==0 and dum==0:
-                            ax.axvline(x=line[g],color=colors[j],label=contaminants[j])
-                            print('hiii')
-                            dum+=1
-                        else:
-                            ax.axvline(x=line[g],color=colors[j])
-            '''
-        fig.suptitle(f'{imgnames[i]}, Tkin: {testT}, N_total: {n_total}')
-        plt.legend(loc=0,bbox_to_anchor=(1.7,2.12))
-        fig.subplots_adjust(wspace=0.2,hspace=0.55)
-        print('Plotting complete. plt.show()')
-        plt.show()
+                print(r'Line below 3$/sigma$')
+                pass        
+        rowoffset+=5
         
+        '''
+        if a == 0:
+            ax.axvline(x=centroid.value,color='green',label='CH3OH')
+        else:
+            ax.axvline(x=centroid.value,color='green')
+        ax.plot(freqs[cube.closest_spectral_channel(maxfreq):cube.closest_spectral_channel(minfreq)],spw.value[cube.closest_spectral_channel(maxfreq):cube.closest_spectral_channel(minfreq)],drawstyle='steps',color='orange')
+    print('Begin plotting contaminant lines')
+    for j in range(len(contaminants)):
+        print('Checking'+contaminants[j])
+        dum=0
+        for d in range(len(mins)):
+            contamtable=Splatalogue.query_lines((mins[d]*(1+z)), (maxs[d]*(1+z)),energy_max=1840, energy_type='eu_k', chemical_name=contaminants[j], line_lists=[linelist],show_upper_degeneracy=True)
+            if len(contamtable)==0:
+                print('No '+contaminants[j]+' lines in frequency range '+str(mins[d])+'-'+str(maxs[d])+'.')
+            else:
+                print(contaminants[j]+' contaminants identified for CH3OH '+mqns[d]+' at '+str(mins[d]+linewidth)+' GHz.')
+                table = utils.minimize_table(contamtable)
+                line=(table['Freq']*10**9)/(1+z)#Redshifted
+                qns=table['QNs']
+                for g in range(len(table)):
+                    if g==0 and dum==0:
+                        ax.axvline(x=line[g],color=colors[j],label=contaminants[j])
+                        print('hiii')
+                        dum+=1
+                    else:
+                        ax.axvline(x=line[g],color=colors[j])
+        '''
+    fig.suptitle(f'{imgnames[i]}, Tkin: {testT}, N_total: {n_total}')
+    plt.legend(loc=0,bbox_to_anchor=(1.7,2.12))
+    fig.subplots_adjust(wspace=0.2,hspace=0.55)
+    print('Plotting complete. plt.show()')
+    plt.show()
+    '''    
     elif i >= 2:
         print('Setting figure and ax variables')
         numcols=5
@@ -351,13 +360,15 @@ for i in range(len(files)):
         print('Number of rows: ', numrows)
 
         
-        '''        
+    '''
+    '''        
         plt.plot(freqs,spw.value,drawstyle='steps')
         plt.ylabel('Jy/beam')
         plt.xlabel('Frequency (Hz)')
         plt.title((imgnames[i]+' '+'Contaminant-labeled Spectra'))
         ax=plt.subplot(111)
-        '''
+    '''
+    '''
         print('Gathering mlines and plot widths')
         for line in mlines:
             centroid=line*u.Hz
@@ -420,17 +431,20 @@ for i in range(len(files)):
                     reymin=preymin
 
                 print(f'row: {row} col:{col}')
-                '''
+    '''
+    '''
                 print(f'tempymax: {tempymax} spw max: {spw.max().to("mJy/beam")}')
                 print(f'tempymin: {tempymin} spw min: {spw.min().to("mJy/beam")}')
                 print(f'reymax: {reymax} reymin: {reymin}')
-                '''
+    '''
+    '''
 
                 specmaker(ax[row,col],spw.spectral_axis,spwtbs,mins[col+rowoffset],maxs[col+rowoffset], mlines[col+rowoffset], mqns[col+rowoffset],reymax,reymin,modeltbs,thickmodeltbs)
                 preymax=reymax
                 preymin=reymin
                 
-                '''
+    '''
+    '''
                 if row == 0:
                     specmaker(ax[row,col],freqs,spw.to('mJy/beam'),mins[col],maxs[col],mlines[col],mqns[col])
                     continue
@@ -443,7 +457,8 @@ for i in range(len(files)):
                     else:
                         specmaker(ax[row,col],freqs,spw.to('mJy/beam'),mins[col+10],maxs[col+10], mlines[col+10], mqns[col+10])
                         continue
-                '''
+    '''
+    '''
             rowoffset+=5
         fig.subplots_adjust(wspace=0.2,hspace=0.55) 
         fig.suptitle(f'{imgnames[i]}, Tkin: {testT}, N_total: {n_total}')
@@ -453,7 +468,8 @@ for i in range(len(files)):
         #plt.legend(loc=0,bbox_to_anchor=(1.7,2.12))
         print('Plotting complete. plt.show()')
         plt.show()
-        '''
+    '''
+    '''
             if b == 0:
                 ax.axvline(x=centroid.value,color='green',label='CH3OH')
             else:
@@ -462,8 +478,8 @@ for i in range(len(files)):
                 ax.plot(freqs[cube.closest_spectral_channel(minfreq):cube.closest_spectral_channel(maxfreq)],spw.value[cube.closest_spectral_channel(minfreq):cube.closest_spectral_channel(maxfreq)],drawstyle='steps',color='orange')
             else:
                 ax.plot(freqs[cube.closest_spectral_channel(maxfreq):cube.closest_spectral_channel(minfreq)],spw.value[cube.closest_spectral_channel(maxfreq):cube.closest_spectral_channel(minfreq)],drawstyle='steps',color='orange')
-        '''
-        '''
+    '''
+    '''
         print('Begin plotting contaminant lines')
         for k in range(len(contaminants)):
             print('Checking'+contaminants[k]+'...')
@@ -486,5 +502,4 @@ for i in range(len(files)):
                             ax.axvline(x=line[f],color=colors[k])
         plt.legend()
         plt.show()
-        '''
-            #ax.plot(interval,spw.value[(centrchan-numchans):(centrchan+numchans)],drawstyle='steps')
+    '''

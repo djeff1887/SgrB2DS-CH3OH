@@ -66,8 +66,15 @@ def component_velocityoffset_fitted(ref_freq,maincmpntfit_freq,cmpnt2fit_freq):
     vel_cmpnt2fit=z_cmpnt2fit*c_kms
     veloffset_cmpnt2fit=vel_maincmpntfit-vel_cmpnt2fit
     
-    return veloffset_cmpnt2fit
+    return z_maincmpntfit,z_cmpnt2fit,veloffset_cmpnt2fit
+'''
+def component_redshift(cmpntfreq,ref_freq):
+    c_kms=c.to('km s-1')
+    z_cmpnt=(ref_freq-cmpntfreq)/ref_freq
+    z_velocity=zcmpnt*c.to('km s-1')
     
+    return z_cmpnt, z_velocity
+'''
     
 def KtoJ(T):#Convert from excitation temperature (Kelvin) to energy (Joules)
     return (3/2)*k*T
@@ -103,7 +110,6 @@ def Tb3(ntot,nu,line_width,mulu_2,g,q,eu_J,T_ex):#Rearranged from Eq 82, M&S 201
     return ((8*np.pi**3*nu*mulu_2*R_i*g*f)/(3*k*q*np.exp(eu_J/(k*T_ex))*line_width))*ntot
     
 def Tbthick(ntot,nu,line_width,mulu_2,g,q,eu_J,T_ex):
-    #print(f'ntot: {ntot}, nu: {nu},line_width: {line_width},mulu_2: {mulu_2},g: {g},q: {q},eu_J: {eu_J},T_ex: {T_ex}')
     return (1-np.exp(((-8*np.pi**3*mulu_2*R_i*g)/(3*h*q*line_width))*((np.exp((h*nu)/(k*T_ex))-1)/np.exp((eu_J)/(k*T_ex)))*ntot))*(f*(rjequivtemp(nu,T_ex)-rjequivtemp(nu,Tbg)))
 
 '''#Used pyspeckit equations to get brightness temperature with optical depth, does not work though   
@@ -142,8 +148,8 @@ def kkms(beams,data):
         #intensitylist.append(velflux_T)
     return t_bright
     
-imgnum=2
-testline=0
+imgnum=3
+testline=16
 print('Getting ready - '+imgnames[imgnum])
 cube=sc.read(files[imgnum])
 
@@ -280,8 +286,8 @@ class Gaussian1D(Fittable1DModel):
 '''
         
 fit_g=fitting.LevMarLSQFitter()
-linemin=3
-linemax=26
+linemin=14
+linemax=30
 linemin2=0
 linemax2=15
 linemin3=0
@@ -289,13 +295,13 @@ linemax3=31
 testmod1=models.Gaussian1D(mean=mlines[testline], stddev=1 * u.MHz, amplitude=(t_brights[np.argmax(t_brights)]) * u.K)#testtbthick,mlines[testline],lw2)
 testmod2=models.Gaussian1D(mean=(mlines[testline]+cmpnt2frqoffset), stddev=1 * u.MHz, amplitude=(t_brights[np.argmax(t_brights)]/1.2) * u.K)
 testmod3=testmod1+testmod2
-testfit1=fit_g(testmod1,spwwindow.spectral_axis[linemin:linemax],t_brights[linemin:linemax]*u.K,epsilon=1e-11)
+#testfit1=fit_g(testmod1,spwwindow.spectral_axis[linemin:linemax],t_brights[linemin:linemax]*u.K)
 #testfit2=fit_g(testmod2,spwwindow.spectral_axis[linemin2:linemax2],t_brights[linemin2:linemax2]*u.K)
 testfit3=fit_g(testmod3,spwwindow.spectral_axis[linemin3:linemax3],t_brights[linemin3:linemax3]*u.K,epsilon=1e-11)
 #testcombo=testfit1+testfit2
 maincmpntfitmean=testfit3[0].mean.quantity
 cmpnt2fitmean=testfit3[1].mean.quantity
-cmpnt2fitveloffset=component_velocityoffset_fitted(minmethtable['Freq'][testline]*u.GHz,maincmpntfitmean,cmpnt2fitmean)
+z_maincmpnt,z_cmpnt2,cmpnt2fitveloffset=component_velocityoffset_fitted(minmethtable['Freq'][testline]*u.GHz,maincmpntfitmean,cmpnt2fitmean)
 
         
 print(f'q: {q} n_upper: {n_upper} nu/g: {n_upper/mdegs[testline]} Tb: {testtbright}')
@@ -308,22 +314,21 @@ print(f'tau3: {testtau3}')
 print(f'aij: {maijs[testline]} lines: {mlines[testline]}')
 print(f'Model fit params: {testfit3}')
 print(f'Model fit info: {fit_g.fit_info}')
+print(f'Main z: {z_maincmpnt}\nCmpnt2 z: {z_cmpnt2}')
 plt.plot(spwwindow.spectral_axis,t_brights,drawstyle='steps')
-'''
+
 plt.plot(plot,plotprofilethin,label=(r'$\tau << 1$'))
 plt.plot(plot,plotprofilethick,label=(r'$\tau \geq 1$'))
-
-
+'''
+plt.plot(spwwindow.spectral_axis[linemin:linemax],t_brights[linemin:linemax],drawstyle='steps',color='orange')
 plt.plot(spwwindow.spectral_axis[linemin2:linemax2],t_brights[linemin2:linemax2],drawstyle='steps',color='green')
 
 plt.plot(plot,plotprofilecmpnt2,label=(r'cmpnt2'))
 plt.plot(plot,comboplotprofile,label=('combo'))
-
+#plt.plot(plot,testfit1(plot),label='LMLSQ fit',color='red')
 #plt.plot(plot,testfit2(plot),label='Cmpnt 2 LMLSQ fit',color='purple')
 #plt.plot(plot,testcombo(plot),label='Both cmpnts LMLSQ fit',color='cyan')
 '''
-plt.plot(spwwindow.spectral_axis[linemin:linemax],t_brights[linemin:linemax],drawstyle='steps',color='orange')
-#plt.plot(plot,testfit1(plot),label='LMLSQ fit',color='red')
 annotation_shift=7500000*u.Hz#5.25*1.85 km/s in frequency units
 plt.plot(plot,testfit3(plot),label='Composite LMLSQ fit',color='purple')
 plt.plot(plot,testfit3[0](plot),label='Component1 fit',color='green')
