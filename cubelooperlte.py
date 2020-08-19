@@ -71,68 +71,6 @@ def vradio(frequency,rest_freq):
     velocity=c.to(u.km/u.s)*(1-((rest_freq-frequency)/rest_freq))
     return velocity.to('km s-1')
     
-qrot_partfunc=Q_rot_asym(testT).to('')
-
-images=['spw0','spw2','spw1','spw3']
-imgnum=0
-
-
-
-print('Accessing data cube')
-home=f'/blue/adamginsburg/d.jeff/imaging_results/SgrB2DS-CH3OH/Mom0/field1/{images[imgnum]}/'#Make sure to include slash after path
-fname=f'/blue/adamginsburg/d.jeff/imaging_results/SgrB2DS_field1_{images[imgnum]}_cube_minimize_medsub.image.fits'
-readstart=time.time()
-cube=sc.read(fname)
-readelapsed=time.time()-readstart
-print('Cube read in')
-print(time.strftime("%H:%M:%S", time.gmtime(readelapsed)))
-
-#cube=cube.rechunk(save_to_tmp_dir=True)
-header=fits.getheader(fname)
-
-print('Acquiring cube rest frequency and computing target pixel coordinates')
-spwrestfreq=header['RESTFRQ']*u.Hz 
-freqs=cube.spectral_axis#Hz
-velcube=cube.with_spectral_unit((u.km/u.s),velocity_convention='radio',rest_value=spwrestfreq)
-#print(velcube.spectral_axis)
-cube_unmasked=velcube.unmasked_data
-
-cube_w=cube.wcs
-targetworldcrd=[[0,0,0],[2.66835339e+02, -2.83961660e+01, 0]]
-targetpixcrd=cube_w.all_world2pix(targetworldcrd,1,ra_dec_order=True)
-
-#data=cube_unmasked[:,368,628]#[:,383,649]#Jy*km/s
-#test=cube_unmasked[:,383:413,649:679]
-
-#print(np.shape(data))
-
-#sum=np.sum(test[:,0:,0:])
-#print(np.shape(sum))
-
-#spec=np.stack((freqs,data),axis=1)
-#print(np.shape(spec))
-
-#plt.plot(spec[:,0],spec[:,1])
-#plt.show()
-
-z=0.000234806#0.0002333587
-freq_max=freqs[0]*(1+z)#215*u.GHz
-#print(freq_max)
-freq_min=freqs[(len(freqs)-1)]*(1+z)#235*u.GHz
-#print(freq_min)
-linelist='JPL'
-
-print('Peforming Splatalogue queries')
-table = utils.minimize_table(Splatalogue.query_lines(freq_min, freq_max, chemical_name=' CH3OH ',
-                                energy_max=1840, energy_type='eu_k',
-                                line_lists=[linelist],
-                                show_upper_degeneracy=True))
-'''Needed for upper state degeneracies'''                                
-sparetable=Splatalogue.query_lines(freq_min, freq_max, chemical_name=' CH3OH ',
-                                energy_max=1840, energy_type='eu_k',
-                                line_lists=[linelist],
-                                show_upper_degeneracy=True)
-                                
 '''Loop through a given list of lines (in Hz), computing and saving moment0 maps of the entered data cube'''
 def linelooplte(line_list,line_width,iterations,quantum_numbers):
     print('\nlinelooperLTE...')
@@ -184,7 +122,9 @@ def linelooplte(line_list,line_width,iterations,quantum_numbers):
             print('\nSaving...')
             #name='test'+str(i)
             slabmom0.write((home+'CH3OH~'+transition+'.fits'),overwrite=True)
-            print('Done\n')
+            moment0beam=slabmom0.beam.value*u.sr
+            targetpixflux=slabmom0[int(round(targetpixcrd[1][0])),int(round(targetpixcrd[1][1]))]#fluxvalues(int(round(targetpixcrd[1][0])),int(round(targetpixcrd[1][1])),files)*u.Jy*u.km/u.s
+            print(f'{quantum_numbers[i]} calculations complete.\n')
         else:
             print('LTE Model max brightnessTemp below 1sigma threshold')
             print(f'{quantum_numbers[i]} skipped\n')
@@ -197,55 +137,13 @@ def qn_replace(string):
     string=string.replace('(','_')
     string=string.replace(')','')
     return string
-
-print('Gathering Splatalogue table parameters')    
-lines=table['Freq']*10**9*u.Hz/(1+z)
-#vel_lines=vradio(lines,spw1restfreq)
-qns=table['QNs']
-euks=table['EU_K']*u.K
-eujs=[]
-for eupper_K in euks:
-    eujs.append(KtoJ(eupper_K))
-degeneracies=sparetable['Upper State Degeneracy']
-log10aijs=table['log10_Aij']
-aijs=10**log10aijs*u.Hz
-
-'''
-for i in range(len(test)):
-    plt.axvline(x=test[i],color='red')
-plt.show()
-'''
-singlecmpntwidth=(0.00485/8)*u.GHz
-linewidth=11231152.36688232*u.Hz#0.5*0.0097*u.GHz#from small line @ 219.9808GHz# 0.0155>>20.08km/s 
-linewidth_vel=vradio(singlecmpntwidth,spwrestfreq)#(singlecmpntwidth*c.to(u.km/u.s)/spwrestfreq).to('km s-1')#vradio(linewidth,spw1restfreq)
-slicedqns=[]
-
-
-
-linelooplte(lines,linewidth,len(lines),qns)
-
-######
-
-#print(qns)
-files=glob.glob(home+'*.fits')
-#print(files)
-
-def fluxvalues(xpix,ypix,filenames):
-    vals=[]
-    for i in filenames:
-        data=fits.getdata(i)
-        vals.append(data[(ypix-1),(xpix-1)])#Corrects for different pixel counting procedures
-    return vals
-
-'''Gathers beam data from cube headers'''    
-def beamer(fitsfiles):
-    beams=[]
-    print(f'in beamer function: {fitsfiles}')
-    for filename in fitsfiles:
-        hdu=fits.getheader(filename)
-        temp=radio_beam.Beam.from_fits_header(hdu).value
-        beams.append(temp)
-    return beams
+    
+'''Gathers beam data from moment map headers'''    
+def beamer(momentmap):
+    print(f'in beamer function: {momentmap}')
+    hdu=fits.getheader(momentmap)
+    momentbeam=radio_beam.Beam.from_fits_header(hdu).value
+    return momentbeam
 
 '''Reorders Splatalogue table parameters to match the glob.glob filename order'''
 def unscrambler(filenames,sliced_qns,linelist):
@@ -274,23 +172,14 @@ def unscrambler(filenames,sliced_qns,linelist):
             else: 
                 print(f'{sliced_qns[j]} != {tempfiles[i][55:]}')
     return unscrambled_qns,unscrambled_freqs,unscrambled_eus,unscrambled_degs,unscrambled_aijs
-beamlist=beamer(files)*u.sr
-#print(beamlist)
-fluxes=fluxvalues(int(round(targetpixcrd[1][0])),int(round(targetpixcrd[1][1])),files)*u.Jy*u.km/u.s#/u.sr
-#print(fluxes)
-unscrambledqns,unscrambledfreqs,unscrambledeuks,unscrambleddegs,unscrambledaijs=unscrambler(files,slicedqns,lines)
-print(f'files: {files}')
-print(f'unscrambledqns: {unscrambledqns}')
-print(f'unscrambledfreqs: {unscrambledfreqs}')
-
-'''Places Splatalogue table params, fluxes, and beams into dictionary'''
-datadict={}
-for i in range(len(fluxes)):
-    datadict[i]={'qns':unscrambledqns[i],'freq':unscrambledfreqs[i],'beam':beamlist[i],'flux':fluxes[i],'E_u(K)':unscrambledeuks[i],'degen':unscrambleddegs[i],'aij':unscrambledaijs[i]}
-
-'''Rough estimate: 0.75 arcsec/15pixels >>> 0.05 arsec/pixel >>> 2.424e-7rad/pixel
-Taken from DS9 tradiation region'''
-
+    
+def fluxvalues(xpix,ypix,filenames):
+    vals=[]
+    for i in filenames:
+        data=fits.getdata(i)
+        vals.append(data[(ypix-1),(xpix-1)])#Corrects for different pixel counting procedures
+    return vals
+    
 '''Compute Kkm/s intensity from datadict'''
 def kkms(beams,data_dict):
     intensitylist=[]
@@ -310,10 +199,6 @@ def kkms(beams,data_dict):
         #print('\n')
         intensitylist.append(velflux_T)
     return intensitylist,t_bright
-
-intensities,t_brights=kkms(beamlist,datadict)
-
-print(t_brights)
     
 def jupperfinder(quan_nums):
     j_upper=[]
@@ -336,20 +221,7 @@ def jupperfinder(quan_nums):
                 break
     
     return j_upper,k_upper
-'''    
-def T_ex(tb,datums):
-    ts=[]
-    for i in range(len(datums.keys())):
-        insert=tb[i]
-        nu=datums[i]['freq']
-        if tb[i]>0:
-            tex=(h*nu)/(k*np.log(((h*nu)/(insert*k))+1))
-            ts.append(tex)
-        else:
-            continue
     
-    return ts'''
-
 def N_u(nu,Aij,velocityintegrated_intensity_K):#(ntot,qrot,gu,eu_J,T_ex):
     return ((8*np.pi*k*nu**2)/(h*c**3*Aij))*velocityintegrated_intensity_K#ntot/(qrot*np.exp(eu_J/(k*T_ex)))
     
@@ -364,6 +236,148 @@ def Ntot_rj_thin_nobg(nu,s,g,q,eu_J,T_ex,vint_intensity):
     #T_ex=T_ex
     #T_r=T_r
     return ((3*k)/(8*np.pi**3*nu*mu_a**2*s*R_i))*(q/g)*np.exp((eu_J/(k*T_ex)))*((vint_intensity))#((nu+templatewidth)-(nu-templatewidth)))
+    
+qrot_partfunc=Q_rot_asym(testT).to('')
+
+images=['spw0','spw2','spw1','spw3']
+datacubes=glob.glob('/blue/adamginsburg/d.jeff/imaging_results/*.fits')
+fieldpath=f'/blue/adamginsburg/d.jeff/imaging_results/SgrB2DS-CH3OH/Mom0/field1/'
+
+masterdict={}
+
+masterlines=[]
+masterqns=[]
+mastereuks=[]
+mastereujs=[]
+masterdegens=[]
+masterlog10aijs=[]
+masteraijs=[]
+masterslicedqns=[]
+masterrestfreqs=[]
+
+
+for imgnum in range(len(datacubes)-3):
+    print(f'Accessing data cube {datacubes[imgnum]}')
+    assert images[imgnum] in datacubes[imgnum]; f'{images[imgnum]} not in filename {datacubes[imagnum]}\nClosing...'
+    home=fieldpath+f'{images[imgnum]}/'#Make sure to include slash after path
+    readstart=time.time()
+    cube=sc.read(datacubes[imgnum])
+    readelapsed=time.time()-readstart
+    print('Cube read in')
+    print(time.strftime("%H:%M:%S", time.gmtime(readelapsed)))
+    
+    #cube=cube.rechunk(save_to_tmp_dir=True)
+    header=fits.getheader(datacubes[imgnum])
+    
+    print('Acquiring cube rest frequency and computing target pixel coordinates')
+    spwrestfreq=header['RESTFRQ']*u.Hz 
+    freqs=cube.spectral_axis#Hz
+    velcube=cube.with_spectral_unit((u.km/u.s),velocity_convention='radio',rest_value=spwrestfreq)
+    #print(velcube.spectral_axis)
+    cube_unmasked=velcube.unmasked_data
+    
+    cube_w=cube.wcs
+    targetworldcrd=[[0,0,0],[2.66835339e+02, -2.83961660e+01, 0]]
+    targetpixcrd=cube_w.all_world2pix(targetworldcrd,1,ra_dec_order=True)
+    
+    #data=cube_unmasked[:,368,628]#[:,383,649]#Jy*km/s
+    #test=cube_unmasked[:,383:413,649:679]
+    
+    #print(np.shape(data))
+    
+    #sum=np.sum(test[:,0:,0:])
+    #print(np.shape(sum))
+    
+    #spec=np.stack((freqs,data),axis=1)
+    #print(np.shape(spec))
+    
+    #plt.plot(spec[:,0],spec[:,1])
+    #plt.show()
+    
+    z=0.000234806#0.0002333587
+    freq_max=freqs[0]*(1+z)#215*u.GHz
+    #print(freq_max)
+    freq_min=freqs[(len(freqs)-1)]*(1+z)#235*u.GHz
+    #print(freq_min)
+    linelist='JPL'
+    
+    print('Peforming Splatalogue queries')
+    table = utils.minimize_table(Splatalogue.query_lines(freq_min, freq_max, chemical_name=' CH3OH ',
+                                    energy_max=1840, energy_type='eu_k',
+                                    line_lists=[linelist],
+                                    show_upper_degeneracy=True))
+    '''Needed for upper state degeneracies'''                                
+    sparetable=Splatalogue.query_lines(freq_min, freq_max, chemical_name=' CH3OH ',
+                                    energy_max=1840, energy_type='eu_k',
+                                    line_lists=[linelist],
+                                    show_upper_degeneracy=True)
+                                    
+    
+    print('Gathering Splatalogue table parameters')    
+    lines=table['Freq']*10**9*u.Hz/(1+z)
+    #vel_lines=vradio(lines,spw1restfreq)
+    qns=table['QNs']
+    euks=table['EU_K']*u.K
+    eujs=[]
+    for eupper_K in euks:
+        eujs.append(KtoJ(eupper_K))
+    degeneracies=sparetable['Upper State Degeneracy']
+    log10aijs=table['log10_Aij']
+    aijs=10**log10aijs*u.Hz
+    
+    '''
+    for i in range(len(test)):
+        plt.axvline(x=test[i],color='red')
+    plt.show()
+    '''
+    singlecmpntwidth=(0.00485/8)*u.GHz
+    linewidth=11231152.36688232*u.Hz#0.5*0.0097*u.GHz#from small line @ 219.9808GHz# 0.0155>>20.08km/s 
+    linewidth_vel=vradio(singlecmpntwidth,spwrestfreq)#(singlecmpntwidth*c.to(u.km/u.s)/spwrestfreq).to('km s-1')#vradio(linewidth,spw1restfreq)
+    slicedqns=[]
+    
+    
+    
+    linelooplte(lines,linewidth,len(lines),qns)
+    
+######
+
+#print(qns)
+files=glob.glob(fieldpath+'*/*.fits')
+#print(files)
+
+#print(beamlist)
+#fluxes=fluxvalues(int(round(targetpixcrd[1][0])),int(round(targetpixcrd[1][1])),files)*u.Jy*u.km/u.s#/u.sr
+#print(fluxes)
+unscrambledqns,unscrambledfreqs,unscrambledeuks,unscrambleddegs,unscrambledaijs=unscrambler(files,slicedqns,lines)
+print(f'files: {files}')
+print(f'unscrambledqns: {unscrambledqns}')
+print(f'unscrambledfreqs: {unscrambledfreqs}')
+
+'''Places Splatalogue table params, fluxes, and beams into dictionary'''
+datadict={}
+for i in range(len(fluxes)):
+    datadict[i]={'qns':unscrambledqns[i],'freq':unscrambledfreqs[i],'beam':beamlist[i],'flux':fluxes[i],'E_u(K)':unscrambledeuks[i],'degen':unscrambleddegs[i],'aij':unscrambledaijs[i]}
+
+
+
+intensities,t_brights=kkms(beamlist,datadict)
+
+print(t_brights)
+
+'''    
+def T_ex(tb,datums):
+    ts=[]
+    for i in range(len(datums.keys())):
+        insert=tb[i]
+        nu=datums[i]['freq']
+        if tb[i]>0:
+            tex=(h*nu)/(k*np.log(((h*nu)/(insert*k))+1))
+            ts.append(tex)
+        else:
+            continue
+    
+    return ts'''
+
     
 #howmanybeams=2.424e-7/8.57915480931599e-5#Omega=solid_angle(8.57915480931599e-5*u.deg)#BMAJ
 #jyhz=fluxes*howmanybeams

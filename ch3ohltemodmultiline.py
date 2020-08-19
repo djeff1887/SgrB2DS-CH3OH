@@ -156,7 +156,7 @@ def contamlines(plot,contamlinelist):
     return
     
 pixelcoords=[]
-for i in range(len(files)):
+for i in range(len(files)-2):
     print('Getting ready - '+imgnames[i])
     cube=sc.read(files[i])
     header=fits.getheader(files[i])
@@ -165,6 +165,11 @@ for i in range(len(files)):
     targetworldcrd=[[0,0,0],[2.66835339e+02, -2.83961660e+01, 0]]
     targetpixcrd=cube_w.all_world2pix(targetworldcrd,1,ra_dec_order=True)
     pixelcoords.append(targetpixcrd[1])
+    
+    cubebeams=(cube.beams.value)*u.sr/u.beam
+    targetpixspec=cube[:,int(round(targetpixcrd[1][1])),int(round(targetpixcrd[1][0]))]
+    targetpixspec_K=JybeamtoK(cubebeams,targetpixspec)
+    targetpixK_std=np.nanstd(targetpixspec_K)
     
     freqs=cube.spectral_axis
     freqflip=False
@@ -250,11 +255,12 @@ for i in range(len(files)):
             print(f'n_upper: {n_upper}')
             tbright=Tb3(n_total,mlines[col+rowoffset]*u.Hz,lw2vel,mulu2,s_j,mdegs[col+rowoffset],q,meujs[col+rowoffset],testT).to('K')#Tb2(mlines[col+rowoffset]*u.Hz,lw2vel,s_j,n_upper).to('K')
             tbthick=Tbthick(n_total,mlines[col+rowoffset]*u.Hz,lw2vel,mulu2,mdegs[col+rowoffset],q,meujs[col+rowoffset],testT).to('K')
-            if tbthick.value >= spwtbs_stddev:
+            print(f'targetpixK_std: {targetpixK_std}')
+            if tbthick.value >= targetpixK_std:
                 tau=opticaldepth(tbthick,mlines[col+rowoffset]*u.Hz,testT)
                 print(f'tau: {tau}')
                 
-                print(f'Tb: {tbright}')
+                print(f'Tbthick: {tbthick}')
                 modeltbs=[]
                 thickmodeltbs=[]
                 
@@ -315,7 +321,7 @@ for i in range(len(files)):
                                     else:
                                         ax[row,col].axvline(x=line[g],color=colors[mols])
             else:
-                print(r'Line below 3$/sigma$')
+                print('Line below 1sigma threshold')
                 pass        
         rowoffset+=5
         
