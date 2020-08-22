@@ -75,17 +75,19 @@ def vradio(frequency,rest_freq):
 def linelooplte(line_list,line_width,iterations,quantum_numbers):
     print('\nlinelooperLTE...')
     print('Grab cube and reference pixel')
-    targetpixjybeam=cube[:,int(round(targetpixcrd[1][1])),int(round(targetpixcrd[1][0]))]
+    targetpixjybeam=cube[:,pixycrd,pixxcrd]
     #targetpixjybeam=targetpixjybeam.mask_channels(np.isnan(targetpixjybeam)==False)
     cubebeams=(cube.beams.value)*u.sr/u.beam
     print('Convert from Jy/beam to K')
     targetspec_K=JybeamtoK(cubebeams,targetpixjybeam)
     print('Compute cube brightness temperature stddev')
     targetspecK_stddev=np.nanstd(targetspec_K)
+    transitionbeamlist=[]
+    transitionfluxlist=[]
     for i in range(iterations):
-        line=line_list[i]#*u.Hz
         print(f'Start {quantum_numbers[i]} moment0 procedure')
-
+        temptransdict={}
+        line=line_list[i]#*u.Hz
         nu_upper=line+line_width
         nu_lower=line-line_width
         print(f'Make spectral slab between {nu_lower} and {nu_upper}')
@@ -96,7 +98,7 @@ def linelooplte(line_list,line_width,iterations,quantum_numbers):
         
         slabbeams=(slab.beams.value)*u.sr/u.beam
         #print(f'slabbeams: {slabbeams}')
-        slab_K=JybeamtoK(slabbeams,slab[:,int(round(targetpixcrd[1][1])),int(round(targetpixcrd[1][0]))])
+        slab_K=JybeamtoK(slabbeams,slab[:,pixycrd,pixxcrd])
         #print(f'slab_K: {slab_K}')
         mulu2=(mulu(aijs[i],line)).to('cm5 g s-2')
         linewidth_vel=vradio(singlecmpntwidth,line)
@@ -105,12 +107,31 @@ def linelooplte(line_list,line_width,iterations,quantum_numbers):
         print(f'tbthick: {tbthick} targetspecK_stddev: {targetspecK_stddev}')
         print('Slicing quantum numbers')
         transition=qn_replace(quantum_numbers[i])
-        slicedqns.append(transition)
         moment0filename=home+'CH3OH~'+transition+'.fits'
         #print('Done')
         #print('Moment 0')
         if os.path.isfile(moment0filename):
-            print(f'{moment0filename} already exists.\nSkipping transition {quantum_numbers[i]}\n')
+            print(f'{moment0filename} already exists.')
+            isfilemom0=fits.getdata(moment0filename)*u.Jy*u.km/u.s
+            isfilepixflux=isfilemom0[pixycrd,pixxcrd]
+            isfilebeam=beamer(moment0filename)
+            
+            temptransdict.update([('freq',line),('flux',isfilepixflux),('beam',isfilebeam),('euk',euks[i]),('eujs',eujs[i]),('degen',degeneracies[i]),('aij',aijs[i])])
+            transitiondict.update({transition:temptransdict})
+            masterslicedqns.append(transition)
+            mastereuks.append(euks[i].value)
+            #transitionfluxlist.append(isfilepixflux)
+            #masterfluxes.append(isfilepixflux)
+            #transitionbeamlist.append(isfilebeam)
+            #masterbeams.append(isfilebeam)
+            #masterslicedqns.append(transition)
+            #masterlines.append(line)
+            #mastereuks.append(euks[i])
+            #mastereujs.append(eujs[i])
+            #masterdegens.append(degeneracies[i])
+            #masterlog10aijs.append(log10aijs[i])
+            #masteraijs.append(aijs[i])
+            print('\nMaster lists populated for this transition. Proceeding...\n')
             pass
         elif tbthick >= targetspecK_stddev*u.K:
             print('Commence moment0')
@@ -123,13 +144,29 @@ def linelooplte(line_list,line_width,iterations,quantum_numbers):
             #name='test'+str(i)
             slabmom0.write((home+'CH3OH~'+transition+'.fits'),overwrite=True)
             moment0beam=slabmom0.beam.value*u.sr
-            targetpixflux=slabmom0[int(round(targetpixcrd[1][0])),int(round(targetpixcrd[1][1]))]#fluxvalues(int(round(targetpixcrd[1][0])),int(round(targetpixcrd[1][1])),files)*u.Jy*u.km/u.s
+            targetpixflux=slabmom0[pixycrd,pixxcrd]
+            temptransdict.update([('freq',line),('flux',targetpixflux),('beam',moment0beam),('euk',euks[i]),('eujs',eujs[i]),('degen',degeneracies[i]),('aij',aijs[i])])
+            transitiondict.update({transition:temptransdict})
+            mastereuks.append(euks[i])
+            #transitionbeamlist.append(moment0beam)
+            #masterbeams.append(moment0beam)
+            #transitionfluxlist.append(targetpixflux)
+            #masterfluxes.append(targetpixflux)
+            #masterslicedqns.append(transition)
+            #masterlines.append(line)
+            #mastereuks.append(euks[i])
+            #mastereujs.append(eujs[i])
+            #masterdegens.append(degeneracies[i])
+            #masterlog10aijs.append(log10aijs[i])
+            #masteraijs.append(aijs[i])
             print(f'{quantum_numbers[i]} calculations complete.\n')
         else:
             print('LTE Model max brightnessTemp below 1sigma threshold')
             print(f'{quantum_numbers[i]} skipped\n')
             pass
-    print('lines looped.')
+    spectraKdict.update({images[imgnum]:targetspec_K})
+    #masterdict[images[imgnum]]={'beam':transitionbeamlist,'fluxes':transitionfluxlist}
+    print('lines looped.\n')
 
 '''Replaces unwanted characters from the QN table for use in file names'''
 def qn_replace(string):
@@ -143,7 +180,7 @@ def beamer(momentmap):
     print(f'in beamer function: {momentmap}')
     hdu=fits.getheader(momentmap)
     momentbeam=radio_beam.Beam.from_fits_header(hdu).value
-    return momentbeam
+    return momentbeam*u.sr
 
 '''Reorders Splatalogue table parameters to match the glob.glob filename order'''
 def unscrambler(filenames,sliced_qns,linelist):
@@ -162,15 +199,15 @@ def unscrambler(filenames,sliced_qns,linelist):
             #print(f'comparison qns: {tempfiles[i][55:]}')
             comp=(sliced_qns[j]==tempfiles[i][79:])
             if comp==True:
-                print(f'{sliced_qns[j]} == {tempfiles[i][55:]}\comp==True')
+                print(f'{sliced_qns[j]} == {tempfiles[i][79:]}\comp==True')
                 unscrambled_qns.append(sliced_qns[j])
                 unscrambled_freqs.append(linelist[j])
-                unscrambled_eus.append(euks[j]/u.K)
-                unscrambled_degs.append(degeneracies[j])
-                unscrambled_aijs.append(aijs[j])
+                unscrambled_eus.append(mastereuks[j]/u.K)
+                unscrambled_degs.append(masterdegens[j])
+                unscrambled_aijs.append(masteraijs[j])
                 break
             else: 
-                print(f'{sliced_qns[j]} != {tempfiles[i][55:]}')
+                print(f'{sliced_qns[j]} != {tempfiles[i][79:]}')
     return unscrambled_qns,unscrambled_freqs,unscrambled_eus,unscrambled_degs,unscrambled_aijs
     
 def fluxvalues(xpix,ypix,filenames):
@@ -181,23 +218,31 @@ def fluxvalues(xpix,ypix,filenames):
     return vals
     
 '''Compute Kkm/s intensity from datadict'''
-def kkms(beams,data_dict):
-    intensitylist=[]
-    t_bright=[]
-    for i in range(len(fluxes)):
-        temp=(data_dict[i]['flux']/linewidth_vel).to('Jy')
-        #print(temp)
-        equiv=u.brightness_temperature(data_dict[i]['freq'])
-        #print(equiv)
-        jy_sr=temp/beams[i]
-        #print(jy_sr)
-        conversion=jy_sr.to(u.K,equivalencies=equiv)
-        t_bright.append(conversion)
-        #print(conversion)
-        velflux_T=conversion*linewidth_vel
-        #print(velflux_T)
-        #print('\n')
-        intensitylist.append(velflux_T)
+def kkms(fluxdict):
+    intensitylist={}
+    t_bright={}
+    dictkeys=fluxdict.keys()
+    for key in dictkeys:
+        temptransdict=fluxdict[key]
+        temptransdictkeys=list(temptransdict.keys())
+        print(temptransdictkeys)
+        for i in range(len(temptransdictkeys)):
+            if 'restfreq' in temptransdictkeys[i]:
+                continue
+            else:
+                temp=(temptransdict[temptransdictkeys[i]]['flux']/linewidth_vel).to('Jy')
+                #print(temp)
+                equiv=u.brightness_temperature(temptransdict[temptransdictkeys[i]]['freq'])
+                #print(equiv)
+                jy_sr=temp/temptransdict[temptransdictkeys[i]]['beam']
+                #print(jy_sr)
+                conversion=jy_sr.to(u.K,equivalencies=equiv)
+                t_bright.update({temptransdictkeys[i]:conversion})
+                #print(conversion)
+                velflux_T=conversion*linewidth_vel
+                #print(velflux_T)
+                #print('\n')
+                intensitylist.update({temptransdictkeys[i]:velflux_T})
     return intensitylist,t_bright
     
 def jupperfinder(quan_nums):
@@ -243,7 +288,8 @@ images=['spw0','spw2','spw1','spw3']
 datacubes=glob.glob('/blue/adamginsburg/d.jeff/imaging_results/*.fits')
 fieldpath=f'/blue/adamginsburg/d.jeff/imaging_results/SgrB2DS-CH3OH/Mom0/field1/'
 
-masterdict={}
+spwdict={}
+spectraKdict={}
 
 masterlines=[]
 masterqns=[]
@@ -255,23 +301,34 @@ masteraijs=[]
 masterslicedqns=[]
 masterrestfreqs=[]
 
+masterfluxes=[]
+masterbeams=[]
 
-for imgnum in range(len(datacubes)-3):
+for imgnum in range(len(datacubes)):
     print(f'Accessing data cube {datacubes[imgnum]}')
-    assert images[imgnum] in datacubes[imgnum]; f'{images[imgnum]} not in filename {datacubes[imagnum]}\nClosing...'
+    assert images[imgnum] in datacubes[imgnum], f'{images[imgnum]} not in filename {datacubes[imgnum]}\nClosing...'
     home=fieldpath+f'{images[imgnum]}/'#Make sure to include slash after path
     readstart=time.time()
     cube=sc.read(datacubes[imgnum])
     readelapsed=time.time()-readstart
-    print('Cube read in')
-    print(time.strftime("%H:%M:%S", time.gmtime(readelapsed)))
+    print(f'Cube read in {time.strftime("%H:%M:%S", time.gmtime(readelapsed))}')
     
     #cube=cube.rechunk(save_to_tmp_dir=True)
     header=fits.getheader(datacubes[imgnum])
     
     print('Acquiring cube rest frequency and computing target pixel coordinates')
-    spwrestfreq=header['RESTFRQ']*u.Hz 
+    spwrestfreq=header['RESTFRQ']*u.Hz
+    masterrestfreqs.append(spwrestfreq)
+    
     freqs=cube.spectral_axis#Hz
+    freqflip=False
+    if freqs[1] < freqs[0]:
+        freqs=freqs[::-1]
+        freqflip=True
+        print('Corrected decreasing frequency axis')
+    else:
+        pass
+        
     velcube=cube.with_spectral_unit((u.km/u.s),velocity_convention='radio',rest_value=spwrestfreq)
     #print(velcube.spectral_axis)
     cube_unmasked=velcube.unmasked_data
@@ -280,6 +337,8 @@ for imgnum in range(len(datacubes)-3):
     targetworldcrd=[[0,0,0],[2.66835339e+02, -2.83961660e+01, 0]]
     targetpixcrd=cube_w.all_world2pix(targetworldcrd,1,ra_dec_order=True)
     
+    pixxcrd,pixycrd=int(round(targetpixcrd[1][0])),int(round(targetpixcrd[1][1]))
+    print(f'x: {pixxcrd}/y: {pixycrd}')
     #data=cube_unmasked[:,368,628]#[:,383,649]#Jy*km/s
     #test=cube_unmasked[:,383:413,649:679]
     
@@ -295,9 +354,12 @@ for imgnum in range(len(datacubes)-3):
     #plt.show()
     
     z=0.000234806#0.0002333587
-    freq_max=freqs[0]*(1+z)#215*u.GHz
+    freq_min=freqs[0]*(1+z)#215*u.GHz
     #print(freq_max)
-    freq_min=freqs[(len(freqs)-1)]*(1+z)#235*u.GHz
+    freq_max=freqs[(len(freqs)-1)]*(1+z)#235*u.GHz
+    
+    assert freq_max > freq_min, 'Inverted spectral axis'
+    print('Passed increasing spectral axis check')
     #print(freq_min)
     linelist='JPL'
     
@@ -315,6 +377,7 @@ for imgnum in range(len(datacubes)-3):
     
     print('Gathering Splatalogue table parameters')    
     lines=table['Freq']*10**9*u.Hz/(1+z)
+    #masterlines.append(lines)
     #vel_lines=vradio(lines,spw1restfreq)
     qns=table['QNs']
     euks=table['EU_K']*u.K
@@ -333,34 +396,38 @@ for imgnum in range(len(datacubes)-3):
     singlecmpntwidth=(0.00485/8)*u.GHz
     linewidth=11231152.36688232*u.Hz#0.5*0.0097*u.GHz#from small line @ 219.9808GHz# 0.0155>>20.08km/s 
     linewidth_vel=vradio(singlecmpntwidth,spwrestfreq)#(singlecmpntwidth*c.to(u.km/u.s)/spwrestfreq).to('km s-1')#vradio(linewidth,spw1restfreq)
-    slicedqns=[]
+    #slicedqns=[]
     
-    
-    
+    transitiondict={}
     linelooplte(lines,linewidth,len(lines),qns)
+    #transitiondict.update({'restfreq':spwrestfreq})
+    spwdict.update({images[imgnum]:transitiondict})
+    #masterqns.append(slicedqns)
     
 ######
 
 #print(qns)
-files=glob.glob(fieldpath+'*/*.fits')
+#files=glob.glob(fieldpath+'*/*.fits')
 #print(files)
 
 #print(beamlist)
 #fluxes=fluxvalues(int(round(targetpixcrd[1][0])),int(round(targetpixcrd[1][1])),files)*u.Jy*u.km/u.s#/u.sr
 #print(fluxes)
-unscrambledqns,unscrambledfreqs,unscrambledeuks,unscrambleddegs,unscrambledaijs=unscrambler(files,slicedqns,lines)
+'''
+unscrambledqns,unscrambledfreqs,unscrambledeuks,unscrambleddegs,unscrambledaijs=unscrambler(files,masterqns,masterlines)
 print(f'files: {files}')
 print(f'unscrambledqns: {unscrambledqns}')
 print(f'unscrambledfreqs: {unscrambledfreqs}')
+'''
 
-'''Places Splatalogue table params, fluxes, and beams into dictionary'''
+'''Places Splatalogue table params, fluxes, and beams into dictionar
 datadict={}
-for i in range(len(fluxes)):
+for i in range(len(masterfluxes)):
     datadict[i]={'qns':unscrambledqns[i],'freq':unscrambledfreqs[i],'beam':beamlist[i],'flux':fluxes[i],'E_u(K)':unscrambledeuks[i],'degen':unscrambleddegs[i],'aij':unscrambledaijs[i]}
+'''
 
-
-
-intensities,t_brights=kkms(beamlist,datadict)
+print('Computing K km/s intensities and K brightness temperatures')
+intensities,t_brights=kkms(spwdict)
 
 print(t_brights)
 
@@ -389,19 +456,26 @@ def T_ex(tb,datums):
 #vint_trads=vint_trads.to('K km s-1')
 #print(vint_trads)
 #texs=T_ex(t_brights,datadict)
-'''Compute N_uppers'''
+print('Begin fitting procedure\nCompute N_uppers')
 n_us=[]
-for i in range(len(intensities)):
-    temp=N_u(datadict[i]['freq'],datadict[i]['aij'],intensities[i])
-    n_us.append((temp.to('cm-2')*u.cm**2)/unscrambleddegs[i])
-    
+spwdictkeys=spwdict.keys()
+for key in spwdictkeys:
+    transdict=spwdict[key]
+    transitionkeys=list(spwdict[key])
+    for transkey in range(len(transitionkeys)):
+        temp=N_u(transdict[transitionkeys[transkey]]['freq'],transdict[transitionkeys[transkey]]['aij'],intensities[transitionkeys[transkey]])
+        n_us.append((temp.to('cm-2')*u.cm**2)/transdict[transitionkeys[transkey]]['degen'])
+
+print('Setting up and executing model fit')
 linemod=models.Linear1D(slope=1.0,intercept=14)
 fit=fitting.LinearLSQFitter()
-fit_lin=fit(linemod,unscrambledeuks,np.log10(n_us))
-linemod_euks=np.linspace(min(unscrambledeuks),max(unscrambledeuks),100)
+fit_lin=fit(linemod,mastereuks,np.log10(n_us))
+linemod_euks=np.linspace(min(mastereuks),max(mastereuks),100)
+print('Model fit complete')
 
+print('Compute obsTex and obsNtot')
 obsTex=-np.log10(np.e)/(fit_lin.slope)
-obsNtot=qrot_partfunc*10**(np.log10(n_us[0])+fit_lin.slope*unscrambledeuks[0])
+obsNtot=qrot_partfunc*10**(np.log10(n_us[0])+fit_lin.slope*mastereuks[0])
 #jupper,kupper=jupperfinder(unscrambledqns)
 '''
 qrots=[]
@@ -413,17 +487,19 @@ for i in range(len(texs)):
 #testntot=Ntot_rj_thin_nobg(datadict[0]['freq'],s_j[0],datadict[0]['degen'],qrots[0],
 #KtoJ(datadict[0]['E_u']),texs[0],intensities[0])
 #testnuoverg=N_u(testntot,qrots[0],datadict[0]['degen'],KtoJ(datadict[0]['E_u']),texs[0])
-print(n_us[i])
+print(n_us[0])
 #ntot=Ntot_rj_thin_nobg(lines[0],linewidth,s,9,KtoJ(tex[0])
-home2=home.replace('spw0/','')
+#home2=home.replace('spw0/','')
 plt.clf()
-plt.scatter(unscrambledeuks,np.log10(n_us))
+print('Begin plotting')
+plt.scatter(mastereuks,np.log10(n_us))
 plt.plot(linemod_euks,fit_lin(linemod_euks),label=(f'obsTex: {obsTex*u.K}\nobsNtot: {obsNtot/u.cm**2}'))
-plt.title(f'{images[imgnum]} CH$_3$OH Rotational Diagram')
+plt.title(f'field1 {spwdict.keys()} CH$_3$OH Rotational Diagram')
 plt.xlabel(r'E$_u$ (K)')
 plt.ylabel(r'log$_{10}$(N$_u$/g$_u$)')
 plt.legend()
-plt.savefig((home2+'trialrotdiag2.png'),dpi=100,overwrite=True)
+plt.savefig((fieldpath+'rotdiag.png'),dpi=100,overwrite=True)
 plt.show()
+print('cubes loopered.')
 
 
