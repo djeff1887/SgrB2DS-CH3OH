@@ -10,6 +10,7 @@ import radio_beam
 import os
 from astropy.modeling import models, fitting
 import time
+import pdb
 
 '''Collect constants and CH3OH-specific quantum parameters'''
 print('Setting constants')
@@ -79,8 +80,8 @@ imgnum=0
 
 
 print('Accessing data cube')
-home=f'/blue/adamginsburg/d.jeff/imaging_results/SgrB2DS-CH3OH/Mom0/field1/{images[imgnum]}/'#Make sure to include slash after path
-fname=f'/blue/adamginsburg/d.jeff/imaging_results/SgrB2DS_field1_{images[imgnum]}_cube_minimize_medsub.image.fits'
+home=f'/blue/adamginsburg/d.jeff/imaging_results/SgrB2DS-CH3OH/Mom0/field1/{images[imgnum]}stat/'#Make sure to include slash after path
+fname=f'/blue/adamginsburg/d.jeff/imaging_results/SgrB2DS_field1_{images[imgnum]}_cube_minimize_hasbeams.image_line.fits'
 readstart=time.time()
 cube=sc.read(fname)
 readelapsed=time.time()-readstart
@@ -101,6 +102,8 @@ cube_w=cube.wcs
 targetworldcrd=[[0,0,0],[2.66835339e+02, -2.83961660e+01, 0]]
 targetpixcrd=cube_w.all_world2pix(targetworldcrd,1,ra_dec_order=True)
 
+pixxcrd,pixycrd=int(round(targetpixcrd[1][0])),int(round(targetpixcrd[1][1]))
+print(f'x: {pixxcrd}/y: {pixycrd}')
 #data=cube_unmasked[:,368,628]#[:,383,649]#Jy*km/s
 #test=cube_unmasked[:,383:413,649:679]
 
@@ -144,6 +147,7 @@ def linelooplte(line_list,line_width,iterations,quantum_numbers):
     targetspec_K=JybeamtoK(cubebeams,targetpixjybeam)
     print('Compute cube brightness temperature stddev')
     targetspecK_stddev=np.nanstd(targetspec_K)
+    #pdb.set_trace()
     for i in range(iterations):
         line=line_list[i]#*u.Hz
         print(f'Start {quantum_numbers[i]} moment0 procedure')
@@ -173,6 +177,7 @@ def linelooplte(line_list,line_width,iterations,quantum_numbers):
         #print('Moment 0')
         if os.path.isfile(moment0filename):
             print(f'{moment0filename} already exists.\nSkipping transition {quantum_numbers[i]}\n')
+            #stddevs=np.append(targetspecK_stddev)
             pass
         elif tbthick >= targetspecK_stddev*u.K:
             print('Commence moment0')
@@ -184,6 +189,7 @@ def linelooplte(line_list,line_width,iterations,quantum_numbers):
             print('\nSaving...')
             #name='test'+str(i)
             slabmom0.write((home+'CH3OH~'+transition+'.fits'),overwrite=True)
+            stddevs.append(targetspecK_stddev)
             print('Done\n')
         else:
             print('LTE Model max brightnessTemp below 1sigma threshold')
@@ -220,7 +226,7 @@ linewidth=11231152.36688232*u.Hz#0.5*0.0097*u.GHz#from small line @ 219.9808GHz#
 linewidth_vel=vradio(singlecmpntwidth,spwrestfreq)#(singlecmpntwidth*c.to(u.km/u.s)/spwrestfreq).to('km s-1')#vradio(linewidth,spw1restfreq)
 slicedqns=[]
 
-
+stddevs=[]
 
 linelooplte(lines,linewidth,len(lines),qns)
 
@@ -234,7 +240,7 @@ def fluxvalues(xpix,ypix,filenames):
     vals=[]
     for i in filenames:
         data=fits.getdata(i)
-        vals.append(data[(ypix-1),(xpix-1)])#Corrects for different pixel counting procedures
+        vals.append(data[(ypix),(xpix)])#Corrects for different pixel counting procedures
     return vals
 
 '''Gathers beam data from cube headers'''    
@@ -262,7 +268,7 @@ def unscrambler(filenames,sliced_qns,linelist):
         for j in range(len(sliced_qns)):
             #print(f'sliced_qns: {sliced_qns[j]}')
             #print(f'comparison qns: {tempfiles[i][55:]}')
-            comp=(sliced_qns[j]==tempfiles[i][79:])
+            comp=(sliced_qns[j]==tempfiles[i][83:])
             if comp==True:
                 print(f'{sliced_qns[j]} == {tempfiles[i][55:]}\comp==True')
                 unscrambled_qns.append(sliced_qns[j])
@@ -270,6 +276,7 @@ def unscrambler(filenames,sliced_qns,linelist):
                 unscrambled_eus.append(euks[j]/u.K)
                 unscrambled_degs.append(degeneracies[j])
                 unscrambled_aijs.append(aijs[j])
+                #unscrambled_stddevs.append()
                 break
             else: 
                 print(f'{sliced_qns[j]} != {tempfiles[i][55:]}')
@@ -405,7 +412,7 @@ home2=home.replace('spw0/','')
 plt.clf()
 plt.scatter(unscrambledeuks,np.log10(n_us))
 plt.plot(linemod_euks,fit_lin(linemod_euks),label=(f'obsTex: {obsTex*u.K}\nobsNtot: {obsNtot/u.cm**2}'))
-plt.title(f'{images[imgnum]} CH$_3$OH Rotational Diagram')
+plt.title(f'statcont --continuum {images[imgnum]} CH$_3$OH Rotational Diagram')
 plt.xlabel(r'E$_u$ (K)')
 plt.ylabel(r'log$_{10}$(N$_u$/g$_u$)')
 plt.legend()
