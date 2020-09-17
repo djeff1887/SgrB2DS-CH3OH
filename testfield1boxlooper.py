@@ -81,7 +81,7 @@ def vradio(frequency,rest_freq):
     
 '''Loop through a given list of lines (in Hz), computing and saving moment0 maps of the entered data cube'''
 def linelooplte(line_list,line_width,iterations,quantum_numbers):
-    print('\nlinelooperLTE...')
+    print('\ncubelooperLTE...')
     print('Grab cube and reference pixel')
     targetspec_K=cube[:,pixycrd,pixxcrd]
     #targetpixjybeam=targetpixjybeam.mask_channels(np.isnan(targetpixjybeam)==False)
@@ -116,6 +116,7 @@ def linelooplte(line_list,line_width,iterations,quantum_numbers):
         print('Slicing quantum numbers')
         transition=qn_replace(quantum_numbers[i])
         moment0filename=home+'CH3OH~'+transition+'.fits'
+        slabfilename=slabpath+'CH3OH~'+transition+'_slab.fits'
         #print('Done')
         #print('Moment 0')
         if os.path.isfile(moment0filename):
@@ -123,12 +124,18 @@ def linelooplte(line_list,line_width,iterations,quantum_numbers):
             isfilemom0=fits.getdata(moment0filename)*u.K*u.km/u.s
             #isfilepixflux=isfilemom0[pixycrd,pixxcrd]
             isfilebeam=beamer(moment0filename)
-            temptransdict.update([('freq',line),('flux',isfilemom0),('stddev',np.nanstd(isfilemom0)),('beam',isfilebeam),('euk',euks[i]),('eujs',eujs[i]),('degen',degeneracies[i]),('aij',aijs[i])])
+            temptransdict.update([('freq',line),('flux',isfilemom0),('stddev',np.nanstd(isfilemom0)),('beam',isfilebeam),('euk',euks[i]),('eujs',eujs[i]),('degen',degeneracies[i]),('aij',aijs[i]),('filename',moment0filename)])
             transitiondict.update({transition:temptransdict})
             masterslicedqns.append(transition)
             mastereuks.append(euks[i].value)
             masterstddevs.append(targetspecK_stddev)
-            print('\nDictionaries populated for this transition. Proceeding...\n')
+            print('\nDictionaries populated for this transition.')
+            if os.path.isfile(slabfilename):
+                print('Proceeding...\n')
+                pass
+            else:
+                slab.write(slabfilename)
+                print(f'Slab written to {slabfilename}. Proceeding...\n')
             pass
         elif tbthick >= targetspecK_stddev:#*u.K:
             print('Commence moment0')
@@ -139,21 +146,42 @@ def linelooplte(line_list,line_width,iterations,quantum_numbers):
             print(f'{quantum_numbers[i]} elapsed time: {time.strftime("%H:%M:%S", time.gmtime(momend))}')
             print('\nSaving...')
             #name='test'+str(i)
-            slabmom0.write((home+'CH3OH~'+transition+'.fits'),overwrite=True)
+            slabmom0.write((moment0filename),overwrite=True)
             moment0beam=slabmom0.beam.value*u.sr
             targetpixflux=slabmom0[pixycrd,pixxcrd]
-            temptransdict.update([('freq',line),('flux',slabmom0),('stddev',targetspecK_stddev),('beam',moment0beam),('euk',euks[i]),('eujs',eujs[i]),('degen',degeneracies[i]),('aij',aijs[i])])
+            temptransdict.update([('freq',line),('flux',slabmom0),('stddev',targetspecK_stddev),('beam',moment0beam),('euk',euks[i]),('eujs',eujs[i]),('degen',degeneracies[i]),('aij',aijs[i]),('filename',moment0filename)])
             transitiondict.update({transition:temptransdict})
             mastereuks.append(euks[i])
             masterstddevs.append(targetspecK_stddev)
             print(f'{quantum_numbers[i]} calculations complete.\n')
+            if os.path.isfile(slabfilename):
+                print(f'Spectral slab {slabfilename} already exists.\nProceeding...\n')
+                pass
+            else:
+                slab.write(slabfilename)
+                print(f'Slab written to {slabfilename}. Proceeding...\n')
+            pass
         else:
             print('LTE Model max brightnessTemp below 1sigma threshold')
             print(f'{quantum_numbers[i]} skipped\n')
             pass
     spectraKdict.update({images[imgnum]:targetspec_K})
-    print('cores looped.\n')
+    print('lines looped.\n')
 
+'''Compute the pixelwise standard deviation for error calculations'''
+def pixelwisestd(datacube):
+    rowdims=len(cube[1])
+    coldims=len(cube[2])
+    stdarray=np.empty((rowdims,coldims))
+    for row in range(rowdims):
+        print(f'Start Row {row} std calcs')
+        for col in range(coldims):
+            targetpixspecstd=cube[:,row,col].std()
+            stdarray[row,col]=targetpixspecstd.value
+    print('Compute intensity std')
+    intensitystds=(stdarray*u.K)*linewidth_vel
+    return stdarray*u.K,intensitystds
+    
 '''Replaces unwanted characters from the QN table for use in file names'''
 def qn_replace(string):
     string=string.replace('=','')
@@ -306,8 +334,12 @@ for files in datacubes:
     images.append(files[57:61])#[57:61])
 assert 'spw1' in images, f'image name list does not match spw# format'
 fieldpath=f'/blue/adamginsburg/d.jeff/imaging_results/SgrB2DS-CH3OH/Mom0/field1core1testbox/'
+filepath2='/blue/adamginsburg/d.jeff/imaging_results/SgrB2DS-CH3OH/NupperColDens/field1/testcore1/'
+slabpath='/blue/adamginsburg/d.jeff/imaging_results/SgrB2DS-CH3OH/spectralslabs/field1/testcore1box/Hz/'
 
 spwdict={}
+kstddict={}
+kkmsstddict={}
 spectraKdict={}
 
 masterlines=[]
@@ -421,10 +453,30 @@ for imgnum in range(len(datacubes)):
     pixeldict={}
     transitiondict={}
     linelooplte(lines,linewidth,len(lines),qns)
+    
+    stdfitsimgpath=filepath2+f'{images[imgnum]}intensitystd.fits'
+    if os.path.isfile(stdfitsimgpath):
+        print(f'{images[imgnum]} intensity std image already exists')
+        spwstdarray=fits.getdata(stdfitsimgpath)*u.K
+        kkmsstdarray=spwstdarray*linewidth_vel
+        print(f'Retrieved intensity std data from {stdfitsimgpath}')
+    else:
+        print(f'Start {images[imgnum]} std calculations')
+        spwstdarray,kkmsstdarray=pixelwisestd(cube)
+        print('Set Primary HDU')
+        hdu=fits.PrimaryHDU(kkmsstdarray.value)
+        print('Set BUNIT: K km s-1')
+        hdu.header['BUNIT']='K km s-1'
+        print('Wrapping Primary HDU in HDUList')
+        hdul=fits.HDUList([hdu])
+        print(f'Writing to {stdfitsimgpath}')
+        hdul.writeto(stdfitsimgpath)
+        print(f'{images[imgnum]} std calculations complete.\n')
     #transitiondict.update({'restfreq':spwrestfreq})
     spwdict.update([(images[imgnum],transitiondict)])#,('pixel_0',(pixycrd,pixxcrd))])
+    kstddict.update([(images[imgnum],spwstdarray)])
+    kkmsstddict.update([(images[imgnum],kkmsstdarray)])
     #masterqns.append(slicedqns)
-    
 
 print('Computing K km/s intensities and K brightness temperatures')
 intensityerror=[]
@@ -467,45 +519,97 @@ testzshape=len(masterslicedqns)
 nugsmap=np.empty(shape=(testyshape,testxshape,testzshape))
 nugserrormap=np.empty(shape=(testyshape,testxshape,testzshape))
 print(f'Begin pixel loops of shape ({testyshape},{testxshape})')
-for y in range(testyshape):
-    print(f'Row {y} Looping')
-    for x in range(testxshape):
-        #print(f'y: {y}; x: {x}')
+for key in spwdictkeys:
+    transdict=spwdict[key]
+    #print(f'transdict: {transdict}')
+    transitionkeys=list(spwdict[key])
+    #print(f'transitionkeys: {transitionkeys}')
+    for transkey in range(len(transitionkeys)):#Need to figure out way to store the n_us per pixel, per moment map. possibly append in 3D array
         n_us=[]#np.empty(np.shape(intensityerror))
         n_uerr=[]#np.empty(np.shape(intensityerror))
-        for key in spwdictkeys:
-            transdict=spwdict[key]
-            #print(f'transdict: {transdict}')
-            transitionkeys=list(spwdict[key])
-            #print(f'transitionkeys: {transitionkeys}')
-            for transkey in range(len(transitionkeys)):#Need to figure out way to store the n_us per pixel, per moment map. possibly append in 3D array
-                    tempnupper,tempnuerr=N_u(transdict[transitionkeys[transkey]]['freq'],transdict[transitionkeys[transkey]]['aij'],intensities[transitionkeys[transkey]][y,x],intensityerror[transkey])
-                    #print(f'computed nupper: {(tempnupper.to("cm-2")*u.cm**2)/transdict[transitionkeys[transkey]]["degen"]}')
-                    n_us.append((tempnupper.to('cm-2')*u.cm**2)/transdict[transitionkeys[transkey]]['degen'])
-                    n_uerr.append((tempnuerr.to('cm-2')*u.cm**2)/transdict[transitionkeys[transkey]]['degen'])
+        nupperimage_filepath=filepath2+'CH3OH~'+transitionkeys[transkey]+'.fits'
+        nuperrorimage_filepath=filepath2+'CH3OH~'+transitionkeys[transkey]+'error.fits'
+        
+        nupperimgexists=False
+        nuperrorimgexists=False
+        if os.path.isfile(nupperimage_filepath):
+            print(f'{nupperimage_filepath} already exists')
+            tempnupper=fits.getdata(nupperimage_filepath)
+            nupperimgexists=True
+            nugsmap[:,:,transkey]=tempnupper
+        if os.path.isfile(nuperrorimage_filepath):
+            print(f'{nuperrorimage_filepath} already exists')
+            tempnuerr=fits.getdata(nuperrorimage_filepath)
+            nuperrorimgexists=True
+            nugserrormap[:,:,transkey]=tempnuerr
+        elif not nupperimgexists or not nuperrorimgexists:
+            for y in range(testyshape):
+                print(f'Row {y} Looping')
+                for x in range(testxshape):
+                    if nupperimgexists:
+                        n_us.append((tempnupper[y,x])/transdict[transitionkeys[transkey]]['degen'])
+                    if nuperrorimgexists:
+                        n_uerr.append((tempnuerr[y,x])/transdict[transitionkeys[transkey]]['degen'])
+                    else:
+                        tempnupper,tempnuerr=N_u(transdict[transitionkeys[transkey]]['freq'],transdict[transitionkeys[transkey]]['aij'],intensities[transitionkeys[transkey]][y,x],kkmsstddict[key][y,x])
+                        n_us.append((tempnupper.to('cm-2')*u.cm**2)/transdict[transitionkeys[transkey]]['degen'])
+                        n_uerr.append((tempnuerr.to('cm-2')*u.cm**2)/transdict[transitionkeys[transkey]]['degen'])
+                        
+                    nugsmap[y,x,:]=n_us
+                    nugserrormap[y,x,:]=n_uerr
+            if not nupperimgexists:
+                nupperimgdata=nugsmap[:,:,transkey]
+                primaryhdu=fits.PrimaryHDU(nupperimgdata)
+                transmoment0=fits.open(transdict[transitionkeys[transkey]]['filename'])
+                transmom0header=transmoment0[0].header
+                primaryhdu.header=transmom0header
+                primaryhdu.header['BTYPE']='Upper-state column density'
+                primaryhdu.header['BUNIT']='cm-2'
+                hdul=fits.HDUList([primaryhdu])
+                hdul.writeto(nupperimage_filepath,overwrite=True)
+            if not nuperrorimgexists:
+                nuperrorimgdata=nugserrormap[:,:,transkey]
+                primaryhduerr=fits.PrimaryHDU(nuperrorimgdata)
+                transmoment0=fits.open(transdict[transitionkeys[transkey]]['filename'])
+                transmom0header=transmoment0[0].header
+                primaryhduerr.header=transmom0header
+                primaryhduerr.header['BTYPE']='Upper-state column density'
+                primaryhduerr.header['BUNIT']='cm-2'
+                hdulerr=fits.HDUList([primaryhduerr])
+                hdulerr.writeto(nuperrorimage_filepath)
         #print(n_us)
         #print(n_uerr)
-        nugsmap[y,x,:]=n_us
-        nugserrormap[y,x,:]=n_uerr
       
 print('pixels looped.')  
 
-filepath2='/blue/adamginsburg/d.jeff/imaging_results/SgrB2DS-CH3OH/NupperColDens/field1/testcore1/'
+'''
 for key in spwdictkeys:
     transitionkeys=list(spwdict[key])
     for transkey in range(len(transitionkeys)):
         nupperimage_filepath=filepath2+'CH3OH~'+transitionkeys[transkey]+'.fits'
+        nuperrorimage_filepath=filepath2+'CH3OH~'+transitionkeys[transkey]+'error.fits'
         if os.path.isfile(nupperimage_filepath):
-            print(f'Nupper image {nupperimage_filepath} already exists. Skipping...\n')
-        else:
+            print(f'{nupperimage_filepath} already exists')
+        elif os.path.isfile(nupperimage_filepath)==False:
             nupperimgdata=nugsmap[:,:,transkey]
             primaryhdu=fits.PrimaryHDU(nupperimgdata)
+            primaryhdu.header['UNIT']='cm-2'
+            hdul.writeto(nupperimage_filepath,overwrite=True)
             hdul=fits.HDUList([primaryhdu])
-            hdul.writeto(nupperimage_filepath)
+        elif os.path.isfile(nuperrorimage_filepath):
+            print(f'{nuperrorimage_filepath} already exists')
+        elif os.path.isfile(nuperrorimage_filepath)==False:
+            primaryhduerr=fits.PrimaryHDU(nuperrorimgdata)
+            primaryhduerr.header['UNIT']='cm-2'
+            hdulerr=fits.HDUList([primaryhduerr])
+            hdulerr.writeto(nuperrorimage_filepath)
+'''
 
 print('Setting up and executing model fit')
 texmap=np.empty((testyshape,testxshape))
 ntotmap=np.empty((testyshape,testxshape))
+texerrormap=np.empty((testyshape,testxshape))
+
 fitdict={}
 
 for y in range(testyshape):
@@ -516,7 +620,7 @@ for y in range(testyshape):
         nupperstofit=[]
         eukstofit=[]
         for z in range(testzshape):
-            if nugsmap[y,x,z] <= 0:
+            if nugsmap[y,x,z] <= 0 or np.isnan(nugsmap[y,x,z]):
                 continue
             else:
                 nupperstofit.append(nugsmap[y,x,z])
@@ -533,15 +637,35 @@ for y in range(testyshape):
             #print('Compute obsTex and obsNtot')
             obsTex=-np.log10(np.e)/(fit_lin.slope)
             obsNtot=qrot_partfunc*10**(np.log10(nugsmap[y,x,0])+fit_lin.slope*eukstofit[0])
+            dobsTex=(eukstofit[0]*u.K*np.log(10)*np.log(np.e))/(np.log(nupperstofit[0]/spwdict['spw2']['10_2--9_3-vt0']['degen'])-np.log(obsNtot/qrot_partfunc))**2
+            
             texmap[y,x]=obsTex
             ntotmap[y,x]=obsNtot
+            texerrormap[y,x]=dobsTex.to('K').value
+            
+transmoment0=fits.open(transdict[transitionkeys[transkey]]['filename'])
+transmom0header=transmoment0[0].header
             
 primaryhdutex=fits.PrimaryHDU(texmap)
+primaryhdutex.header=transmom0header
+primaryhdutex.header['BTYPE']='Excitation temperature'
+primaryhdutex.header['BUNIT']='K'
 hdultex=fits.HDUList([primaryhdutex])
-hdultex.writeto(filepath2+'texmap_allspw.fits',overwrite=True)
+hdultex.writeto(filepath2+'texmap_allspw_reset.fits',overwrite=True)
+
 primaryhduntot=fits.PrimaryHDU(ntotmap)
+primaryhduntot.header=transmom0header
+primaryhduntot.header['BTYPE']='Total column density'
+primaryhduntot.header['BUNIT']='cm-2'
 hdulntot=fits.HDUList([primaryhduntot])
-hdulntot.writeto(filepath2+'ntotmap_allspw.fits',overwrite=True)
+hdulntot.writeto(filepath2+'ntotmap_allspw_reset.fits',overwrite=True)
+
+primaryhdutexerr=fits.PrimaryHDU(texerrormap)
+primaryhdutexerr.header=transmom0header
+primaryhdutexerr.header['BTYPE']='Excitation temperature'
+primaryhdutexerr.header['BUNIT']='K'
+hdultexerror=fits.HDUList([primaryhdutexerr])
+hdultexerror.writeto(filepath2+'texmap_error_allspw_reset.fits',overwrite=True)
 
 print('Finished.')
 
