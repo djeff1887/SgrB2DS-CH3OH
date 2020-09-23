@@ -10,7 +10,7 @@ import radio_beam
 import os
 from astropy.modeling import models, fitting
 import time
-#import pdb
+import pdb
 
 Splatalogue.QUERY_URL= 'https://splatalogue.online/c_export.php'
 
@@ -268,7 +268,7 @@ def brightnessTandintensities(fluxdict):
     for key in dictkeys:
         temptransdict=fluxdict[key]
         temptransdictkeys=list(temptransdict.keys())
-        print(temptransdictkeys)
+        print(f'Transition keys in brightnessTandintensities: {temptransdictkeys}')
         for i in range(len(temptransdictkeys)):
             if 'restfreq' in temptransdictkeys[i]:
                 continue
@@ -334,7 +334,7 @@ for files in datacubes:
     images.append(files[57:61])#[57:61])
 assert 'spw1' in images, f'image name list does not match spw# format'
 fieldpath=f'/blue/adamginsburg/d.jeff/imaging_results/SgrB2DS-CH3OH/Mom0/field1core1testbox/'
-filepath2='/blue/adamginsburg/d.jeff/imaging_results/SgrB2DS-CH3OH/NupperColDens/field1/testcore1/'
+filepath2='/blue/adamginsburg/d.jeff/imaging_results/SgrB2DS-CH3OH/NupperColDens/field1/testcore1/debug/'
 slabpath='/blue/adamginsburg/d.jeff/imaging_results/SgrB2DS-CH3OH/spectralslabs/field1/testcore1box/Hz/'
 
 spwdict={}
@@ -453,27 +453,33 @@ for imgnum in range(len(datacubes)):
     pixeldict={}
     transitiondict={}
     linelooplte(lines,linewidth,len(lines),qns)
+    spwdict.update([(images[imgnum],transitiondict)])
+    tempkeys=list(spwdict[images[imgnum]].keys())
     
-    stdfitsimgpath=filepath2+f'{images[imgnum]}intensitystd.fits'
+    
+    stdfitsimgpath=filepath2+f'/spwbrightnessstd/{images[imgnum]}intensitystd.fits'
     if os.path.isfile(stdfitsimgpath):
-        print(f'{images[imgnum]} intensity std image already exists')
+        print(f'{images[imgnum]} brightness std image already exists')
         spwstdarray=fits.getdata(stdfitsimgpath)*u.K
         kkmsstdarray=spwstdarray*linewidth_vel
-        print(f'Retrieved intensity std data from {stdfitsimgpath}')
+        print(f'Retrieved brightness std data from {stdfitsimgpath}')
     else:
         print(f'Start {images[imgnum]} std calculations')
         spwstdarray,kkmsstdarray=pixelwisestd(cube)
         print('Set Primary HDU')
         hdu=fits.PrimaryHDU(kkmsstdarray.value)
-        print('Set BUNIT: K km s-1')
-        hdu.header['BUNIT']='K km s-1'
+        transmoment0=fits.open(spwdict[images[imgnum]][tempkeys[0]]['filename'])
+        transmom0header=transmoment0[0].header
+        print(f'Set header from {spwdict[images[imgnum]][tempkeys[0]]["filename"]}')
+        hdu.header=transmom0header
+        #hdu.header['BUNIT']='K km s-1'
         print('Wrapping Primary HDU in HDUList')
         hdul=fits.HDUList([hdu])
         print(f'Writing to {stdfitsimgpath}')
         hdul.writeto(stdfitsimgpath)
         print(f'{images[imgnum]} std calculations complete.\n')
     #transitiondict.update({'restfreq':spwrestfreq})
-    spwdict.update([(images[imgnum],transitiondict)])#,('pixel_0',(pixycrd,pixxcrd))])
+    #,('pixel_0',(pixycrd,pixxcrd))])
     kstddict.update([(images[imgnum],spwstdarray)])
     kkmsstddict.update([(images[imgnum],kkmsstdarray)])
     #masterqns.append(slicedqns)
@@ -482,7 +488,7 @@ print('Computing K km/s intensities and K brightness temperatures')
 intensityerror=[]
 intensities,t_brights=brightnessTandintensities(spwdict)#JybeamtoKkms(spwdict)
 
-print(t_brights)
+#print(t_brights)
 print(intensityerror)
 
 '''    
@@ -519,32 +525,37 @@ testzshape=len(masterslicedqns)
 nugsmap=np.empty(shape=(testyshape,testxshape,testzshape))
 nugserrormap=np.empty(shape=(testyshape,testxshape,testzshape))
 print(f'Begin pixel loops of shape ({testyshape},{testxshape})')
+pixelzcoord_nupper=0
+pixelzcoord_nuperr=0
 for key in spwdictkeys:
     transdict=spwdict[key]
     #print(f'transdict: {transdict}')
     transitionkeys=list(spwdict[key])
     #print(f'transitionkeys: {transitionkeys}')
     for transkey in range(len(transitionkeys)):#Need to figure out way to store the n_us per pixel, per moment map. possibly append in 3D array
-        n_us=[]#np.empty(np.shape(intensityerror))
-        n_uerr=[]#np.empty(np.shape(intensityerror))
+        print(f'Transition: {transitionkeys[transkey]}/Nupper array z-coord: {pixelzcoord_nupper}')
         nupperimage_filepath=filepath2+'CH3OH~'+transitionkeys[transkey]+'.fits'
         nuperrorimage_filepath=filepath2+'CH3OH~'+transitionkeys[transkey]+'error.fits'
         
         nupperimgexists=False
         nuperrorimgexists=False
         if os.path.isfile(nupperimage_filepath):
-            print(f'{nupperimage_filepath} already exists')
+            print(f'{nupperimage_filepath} already exists.\nPopulating nuppers array...\n')
             tempnupper=fits.getdata(nupperimage_filepath)
             nupperimgexists=True
-            nugsmap[:,:,transkey]=tempnupper
+            nugsmap[:,:,pixelzcoord_nupper]=tempnupper
+            pixelzcoord_nupper+=1
         if os.path.isfile(nuperrorimage_filepath):
-            print(f'{nuperrorimage_filepath} already exists')
+            print(f'{nuperrorimage_filepath} already exists\nPopulating nupper error array...\n')
             tempnuerr=fits.getdata(nuperrorimage_filepath)
             nuperrorimgexists=True
-            nugserrormap[:,:,transkey]=tempnuerr
+            nugserrormap[:,:,pixelzcoord_nuperr]=tempnuerr
+            pixelzcoord_nuperr+=1
         elif not nupperimgexists or not nuperrorimgexists:
             for y in range(testyshape):
                 print(f'Row {y} Looping')
+                n_us=[]#np.empty(np.shape(intensityerror))
+                n_uerr=[]#np.empty(np.shape(intensityerror))
                 for x in range(testxshape):
                     if nupperimgexists:
                         n_us.append((tempnupper[y,x])/transdict[transitionkeys[transkey]]['degen'])
@@ -553,12 +564,11 @@ for key in spwdictkeys:
                     else:
                         tempnupper,tempnuerr=N_u(transdict[transitionkeys[transkey]]['freq'],transdict[transitionkeys[transkey]]['aij'],intensities[transitionkeys[transkey]][y,x],kkmsstddict[key][y,x])
                         n_us.append((tempnupper.to('cm-2')*u.cm**2)/transdict[transitionkeys[transkey]]['degen'])
-                        n_uerr.append((tempnuerr.to('cm-2')*u.cm**2)/transdict[transitionkeys[transkey]]['degen'])
-                        
-                    nugsmap[y,x,:]=n_us
-                    nugserrormap[y,x,:]=n_uerr
+                        n_uerr.append((tempnuerr.to('cm-2')*u.cm**2)/transdict[transitionkeys[transkey]]['degen'])  
+                nugsmap[y,:,pixelzcoord_nupper]=n_us
+                nugserrormap[y,:,pixelzcoord_nuperr]=n_uerr
             if not nupperimgexists:
-                nupperimgdata=nugsmap[:,:,transkey]
+                nupperimgdata=nugsmap[:,:,pixelzcoord_nupper]
                 primaryhdu=fits.PrimaryHDU(nupperimgdata)
                 transmoment0=fits.open(transdict[transitionkeys[transkey]]['filename'])
                 transmom0header=transmoment0[0].header
@@ -568,7 +578,7 @@ for key in spwdictkeys:
                 hdul=fits.HDUList([primaryhdu])
                 hdul.writeto(nupperimage_filepath,overwrite=True)
             if not nuperrorimgexists:
-                nuperrorimgdata=nugserrormap[:,:,transkey]
+                nuperrorimgdata=nugserrormap[:,:,pixelzcoord_nuperr]
                 primaryhduerr=fits.PrimaryHDU(nuperrorimgdata)
                 transmoment0=fits.open(transdict[transitionkeys[transkey]]['filename'])
                 transmom0header=transmoment0[0].header
@@ -577,6 +587,9 @@ for key in spwdictkeys:
                 primaryhduerr.header['BUNIT']='cm-2'
                 hdulerr=fits.HDUList([primaryhduerr])
                 hdulerr.writeto(nuperrorimage_filepath)
+            pixelzcoord_nupper+=1
+            pixelzcoord_nuperr+=1
+            pdb.set_trace()
         #print(n_us)
         #print(n_uerr)
       
@@ -611,7 +624,7 @@ ntotmap=np.empty((testyshape,testxshape))
 texerrormap=np.empty((testyshape,testxshape))
 
 fitdict={}
-
+pdb.set_trace()
 for y in range(testyshape):
     print(f'Start Row {y} fitting')
     for x in range(testxshape):
@@ -620,7 +633,7 @@ for y in range(testyshape):
         nupperstofit=[]
         eukstofit=[]
         for z in range(testzshape):
-            if nugsmap[y,x,z] <= 0 or np.isnan(nugsmap[y,x,z]):
+            if nugsmap[y,x,z] <= 0:# or np.isnan(nugsmap[y,x,z]):
                 continue
             else:
                 nupperstofit.append(nugsmap[y,x,z])
@@ -651,21 +664,21 @@ primaryhdutex.header=transmom0header
 primaryhdutex.header['BTYPE']='Excitation temperature'
 primaryhdutex.header['BUNIT']='K'
 hdultex=fits.HDUList([primaryhdutex])
-hdultex.writeto(filepath2+'texmap_allspw_reset.fits',overwrite=True)
+hdultex.writeto(filepath2+'texmap_allspw_debug.fits',overwrite=True)
 
 primaryhduntot=fits.PrimaryHDU(ntotmap)
 primaryhduntot.header=transmom0header
 primaryhduntot.header['BTYPE']='Total column density'
 primaryhduntot.header['BUNIT']='cm-2'
 hdulntot=fits.HDUList([primaryhduntot])
-hdulntot.writeto(filepath2+'ntotmap_allspw_reset.fits',overwrite=True)
+hdulntot.writeto(filepath2+'ntotmap_allspw_debug.fits',overwrite=True)
 
 primaryhdutexerr=fits.PrimaryHDU(texerrormap)
 primaryhdutexerr.header=transmom0header
 primaryhdutexerr.header['BTYPE']='Excitation temperature'
 primaryhdutexerr.header['BUNIT']='K'
 hdultexerror=fits.HDUList([primaryhdutexerr])
-hdultexerror.writeto(filepath2+'texmap_error_allspw_reset.fits',overwrite=True)
+hdultexerror.writeto(filepath2+'texmap_error_allspw_debug.fits',overwrite=True)
 
 print('Finished.')
 
