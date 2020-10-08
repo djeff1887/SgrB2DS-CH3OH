@@ -12,6 +12,8 @@ import radio_beam
 
 from astropy.modeling import models, fitting#Fittable1DModel, Parameter, fitting
 
+Splatalogue.QUERY_URL= 'https://splatalogue.online/c_export.php'
+
 plt.close('all')
 linelist='JPL'
 
@@ -33,7 +35,9 @@ f=1
 
 files=glob.glob('/blue/adamginsburg/d.jeff/imaging_results/SgrB2DS_field1_*.fits')
 z=0.000234806#<<<avg of the two to the left#0.000236254#0.0002333587
-imgnames=['spw0','spw2','spw1','spw3']
+imgnames=['spw1','spw3','spw2','spw0']
+
+assert imgnames[0] in files[0], 'Files out of order'
 
 def gauss(x,A,mu,sig):#Standard Gaussian equation
     return A*np.exp((-1/2)*((x-mu)/sig)**2)
@@ -142,8 +146,8 @@ def kkms(beams,data):
         #intensitylist.append(velflux_T)
     return t_bright
     
-imgnum=2
-testline=0
+imgnum=3
+testline=4
 print('Getting ready - '+imgnames[imgnum])
 cube=sc.read(files[imgnum])
 
@@ -194,7 +198,7 @@ mdegs=methanol_table['Upper State Degeneracy']
 mlog10aijs=minmethtable['log10_Aij']
 maijs=10**mlog10aijs*u.s**-1
 
-plotwidth=linewidth*1.5
+plotwidth=linewidth
 lwvel=vradio(lw2,mlines[testline])
 print(f'Transition: {mqns[testline]}\nEU_K: {meuks[testline]}')
 
@@ -322,6 +326,8 @@ plt.plot(plot,comboplotprofile,label=('combo'))
 #plt.plot(plot,testfit2(plot),label='Cmpnt 2 LMLSQ fit',color='purple')
 #plt.plot(plot,testcombo(plot),label='Both cmpnts LMLSQ fit',color='cyan')
 '''
+
+
 plt.plot(spwwindow.spectral_axis[linemin:linemax],t_brights[linemin:linemax],drawstyle='steps',color='orange')
 #plt.plot(plot,testfit1(plot),label='LMLSQ fit',color='red')
 annotation_shift=7500000*u.Hz#5.25*1.85 km/s in frequency units

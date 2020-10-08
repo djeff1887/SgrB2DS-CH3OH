@@ -11,6 +11,7 @@ import os
 from astropy.modeling import models, fitting
 import time
 import pdb
+import pickle
 
 Splatalogue.QUERY_URL= 'https://splatalogue.online/c_export.php'
 
@@ -139,7 +140,7 @@ def linelooplte(line_list,line_width,iterations,quantum_numbers):
             pass
         elif tbthick >= targetspecK_stddev:#*u.K:
             print('Commence moment0')
-            slab=slab.with_spectral_unit((u.km/u.s),velocity_convention='radio',rest_value=spwrestfreq)
+            slab=slab.with_spectral_unit((u.km/u.s),velocity_convention='radio',rest_value=lines[i])#spwrestfreq)
             momstart=time.time()
             slabmom0=slab.moment0()
             momend=time.time()-momstart
@@ -328,14 +329,16 @@ sanitytable2 = utils.minimize_table(Splatalogue.query_lines(200*u.GHz, 300*u.GHz
                                     line_lists=['JPL'],
                                     show_upper_degeneracy=True))
 
-datacubes=glob.glob('/blue/adamginsburg/d.jeff/imaging_results/field1core1box/*.fits')
+datacubes=glob.glob('/blue/adamginsburg/d.jeff/imaging_results/field1core1box2/*.fits')
 images=[]#'spw0','spw2','spw1','spw3']
 for files in datacubes:
-    images.append(files[57:61])#[57:61])
+    images.append(files[58:62])#[57:61])
 assert 'spw1' in images, f'image name list does not match spw# format'
-fieldpath=f'/blue/adamginsburg/d.jeff/imaging_results/SgrB2DS-CH3OH/Mom0/field1core1testbox/'
-filepath2='/blue/adamginsburg/d.jeff/imaging_results/SgrB2DS-CH3OH/NupperColDens/field1/testcore1/debug/'
-slabpath='/blue/adamginsburg/d.jeff/imaging_results/SgrB2DS-CH3OH/spectralslabs/field1/testcore1box/Hz/'
+sourcepath='/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/SgrB2S/'
+nupperpath='/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/SgrB2S/nuppers/'
+stdpath='/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/SgrB2S/errorimgs/std/'
+slabpath='/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/SgrB2S/spectralslabs/km_s/'
+picklepath='/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/SgrB2S/testbox2dict.obj'
 
 spwdict={}
 kstddict={}
@@ -359,7 +362,7 @@ masterstddevs=[]
 for imgnum in range(len(datacubes)):
     print(f'Accessing data cube {datacubes[imgnum]}')
     assert images[imgnum] in datacubes[imgnum], f'{images[imgnum]} not in filename {datacubes[imgnum]}'
-    home=fieldpath+f'{images[imgnum]}/'#Make sure to include slash after path
+    home=sourcepath+'mom0/'#f'{images[imgnum]}/'#Make sure to include slash after path
     readstart=time.time()
     cube=sc.read(datacubes[imgnum])
     readelapsed=time.time()-readstart
@@ -428,7 +431,7 @@ for imgnum in range(len(datacubes)):
                                     
     
     print('Gathering Splatalogue table parameters')    
-    lines=maintable['Freq']*10**9*u.Hz/(1+z)
+    lines=maintable['Freq']*10**9*u.Hz/(1+z)#Redshifted to Sgr B2
     #masterlines.append(lines)
     #vel_lines=vradio(lines,spw1restfreq)
     qns=maintable['QNs']
@@ -446,7 +449,7 @@ for imgnum in range(len(datacubes)):
     plt.show()
     '''
     singlecmpntwidth=(0.00485/8)*u.GHz
-    linewidth=11231152.36688232*u.Hz#0.5*0.0097*u.GHz#from small line @ 219.9808GHz# 0.0155>>20.08km/s 
+    linewidth=0.005*u.GHz#11231152.36688232*u.Hz#0.5*0.0097*u.GHz#from small line @ 219.9808GHz# 0.0155>>20.08km/s 
     linewidth_vel=vradio(singlecmpntwidth,spwrestfreq)#(singlecmpntwidth*c.to(u.km/u.s)/spwrestfreq).to('km s-1')#vradio(linewidth,spw1restfreq)
     #slicedqns=[]
     
@@ -457,12 +460,12 @@ for imgnum in range(len(datacubes)):
     tempkeys=list(spwdict[images[imgnum]].keys())
     
     
-    stdfitsimgpath=filepath2+f'/spwbrightnessstd/{images[imgnum]}intensitystd.fits'
+    stdfitsimgpath=stdpath+f'{images[imgnum]}intensitystd.fits'
     if os.path.isfile(stdfitsimgpath):
         print(f'{images[imgnum]} brightness std image already exists')
         spwstdarray=fits.getdata(stdfitsimgpath)*u.K
         kkmsstdarray=spwstdarray*linewidth_vel
-        print(f'Retrieved brightness std data from {stdfitsimgpath}')
+        print(f'Retrieved brightness std data from {stdfitsimgpath}\n')
     else:
         print(f'Start {images[imgnum]} std calculations')
         spwstdarray,kkmsstdarray=pixelwisestd(cube)
@@ -482,7 +485,19 @@ for imgnum in range(len(datacubes)):
     #,('pixel_0',(pixycrd,pixxcrd))])
     kstddict.update([(images[imgnum],spwstdarray)])
     kkmsstddict.update([(images[imgnum],kkmsstdarray)])
+    print(f'Finished loop for {images[imgnum]}')
     #masterqns.append(slicedqns)
+
+
+
+if os.path.isfile(picklepath):
+    print(f'pickle {picklepath} already exists.')
+else:
+    print('Saving dictionary pickle...')
+    f=open(picklepath,'wb')
+    pickle.dump(spwdict,f)
+    f.close()
+    print(f'Dictionary pickle saved at {picklepath}')
 
 print('Computing K km/s intensities and K brightness temperatures')
 intensityerror=[]
@@ -534,8 +549,8 @@ for key in spwdictkeys:
     #print(f'transitionkeys: {transitionkeys}')
     for transkey in range(len(transitionkeys)):#Need to figure out way to store the n_us per pixel, per moment map. possibly append in 3D array
         print(f'Transition: {transitionkeys[transkey]}/Nupper array z-coord: {pixelzcoord_nupper}')
-        nupperimage_filepath=filepath2+'CH3OH~'+transitionkeys[transkey]+'.fits'
-        nuperrorimage_filepath=filepath2+'CH3OH~'+transitionkeys[transkey]+'error.fits'
+        nupperimage_filepath=nupperpath+'CH3OH~'+transitionkeys[transkey]+'.fits'
+        nuperrorimage_filepath=nupperpath+'CH3OH~'+transitionkeys[transkey]+'error.fits'
         
         nupperimgexists=False
         nuperrorimgexists=False
@@ -589,7 +604,7 @@ for key in spwdictkeys:
                 hdulerr.writeto(nuperrorimage_filepath)
             pixelzcoord_nupper+=1
             pixelzcoord_nuperr+=1
-            pdb.set_trace()
+            #pdb.set_trace()
         #print(n_us)
         #print(n_uerr)
       
@@ -622,6 +637,8 @@ print('Setting up and executing model fit')
 texmap=np.empty((testyshape,testxshape))
 ntotmap=np.empty((testyshape,testxshape))
 texerrormap=np.empty((testyshape,testxshape))
+texsigclipmap=np.empty((testyshape,testxshape))
+texsnrmap=np.empty((testyshape,testxshape))
 
 fitdict={}
 pdb.set_trace()
@@ -651,10 +668,16 @@ for y in range(testyshape):
             obsTex=-np.log10(np.e)/(fit_lin.slope)
             obsNtot=qrot_partfunc*10**(np.log10(nugsmap[y,x,0])+fit_lin.slope*eukstofit[0])
             dobsTex=(eukstofit[0]*u.K*np.log(10)*np.log(np.e))/(np.log(nupperstofit[0]/spwdict['spw2']['10_2--9_3-vt0']['degen'])-np.log(obsNtot/qrot_partfunc))**2
+            sigTex=(obsTex/dobsTex).to('')
             
             texmap[y,x]=obsTex
             ntotmap[y,x]=obsNtot
             texerrormap[y,x]=dobsTex.to('K').value
+            texsnrmap[y,x]=sigTex
+            if sigTex >= 3:
+                texsigclipmap[y,x]=obsTex
+            else:
+                texsigclipmap[y,x]=np.nan
             
 transmoment0=fits.open(transdict[transitionkeys[transkey]]['filename'])
 transmom0header=transmoment0[0].header
@@ -664,21 +687,35 @@ primaryhdutex.header=transmom0header
 primaryhdutex.header['BTYPE']='Excitation temperature'
 primaryhdutex.header['BUNIT']='K'
 hdultex=fits.HDUList([primaryhdutex])
-hdultex.writeto(filepath2+'texmap_allspw_debug.fits',overwrite=True)
+hdultex.writeto(sourcepath+'texmap_allspw.fits',overwrite=True)
 
 primaryhduntot=fits.PrimaryHDU(ntotmap)
 primaryhduntot.header=transmom0header
 primaryhduntot.header['BTYPE']='Total column density'
 primaryhduntot.header['BUNIT']='cm-2'
 hdulntot=fits.HDUList([primaryhduntot])
-hdulntot.writeto(filepath2+'ntotmap_allspw_debug.fits',overwrite=True)
+hdulntot.writeto(sourcepath+'ntotmap_allspw.fits',overwrite=True)
 
 primaryhdutexerr=fits.PrimaryHDU(texerrormap)
 primaryhdutexerr.header=transmom0header
 primaryhdutexerr.header['BTYPE']='Excitation temperature'
 primaryhdutexerr.header['BUNIT']='K'
 hdultexerror=fits.HDUList([primaryhdutexerr])
-hdultexerror.writeto(filepath2+'texmap_error_allspw_debug.fits',overwrite=True)
+hdultexerror.writeto(sourcepath+'texmap_error_allspw.fits',overwrite=True)
+
+primaryhdutexclip=fits.PrimaryHDU(texsigclipmap)
+primaryhdutexclip.header=transmom0header
+primaryhdutexclip.header['BTYPE']='Excitation temperature'
+primaryhdutexclip.header['BUNIT']='K'
+hdultexclip=fits.HDUList([primaryhdutexclip])
+hdultexclip.writeto(sourcepath+'texmap_3sigma_allspw.fits',overwrite=True)
+
+primaryhdutexsnr=fits.PrimaryHDU(texsnrmap)
+primaryhdutexsnr.header=transmom0header
+primaryhdutexsnr.header['BTYPE']='Excitation temperature SNR'
+primaryhdutexsnr.header['BUNIT']=''
+hdultexsnr=fits.HDUList([primaryhdutexsnr])
+hdultexsnr.writeto(sourcepath+'texmap_snr_allspw.fits',overwrite=True)
 
 print('Finished.')
 
