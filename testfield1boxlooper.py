@@ -329,16 +329,35 @@ sanitytable2 = utils.minimize_table(Splatalogue.query_lines(200*u.GHz, 300*u.GHz
                                     line_lists=['JPL'],
                                     show_upper_degeneracy=True))
 
-datacubes=glob.glob('/blue/adamginsburg/d.jeff/imaging_results/field1core1box2/*.fits')
+datacubes=glob.glob('/blue/adamginsburg/d.jeff/imaging_results/field1core1box/*.fits')
 images=[]#'spw0','spw2','spw1','spw3']
 for files in datacubes:
-    images.append(files[58:62])#[57:61])
+    images.append(files[57:61])#[57:61])
 assert 'spw1' in images, f'image name list does not match spw# format'
-sourcepath='/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/SgrB2S/'
-nupperpath='/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/SgrB2S/nuppers/'
-stdpath='/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/SgrB2S/errorimgs/std/'
-slabpath='/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/SgrB2S/spectralslabs/km_s/'
-picklepath='/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/SgrB2S/testbox2dict.obj'
+sourcepath='/blue/adamginsburg/d.jeff/imaging_results/field1core1box/11mhzwidth/'
+nupperpath=sourcepath+'nuppers/'
+stdpath=sourcepath+'errorimgs/std/'
+slabpath=sourcepath+'spectralslabs/km_s/'
+mom0path=sourcepath+'mom0/'
+
+picklepath=sourcepath+'testbox2dict.obj'
+
+if os.path.isdir(slabpath):
+    print(f'Source path directory tree {sourcepath} already exists.\n')
+    pass
+else:
+    print(f'Making source path {sourcepath}')
+    os.mkdir(sourcepath)
+    print(f'Making nupper folder {nupperpath}')
+    os.mkdir(nupperpath)
+    print(f'Making error folder {stdpath}')
+    os.makedirs(stdpath)
+    print(f'Making spectral slab folder {slabpath}\n')
+    os.makedirs(slabpath)
+    print(f'Making mom0 folder {mom0path}')
+    os.mkdir(mom0path)
+
+#pdb.set_trace()
 
 spwdict={}
 kstddict={}
@@ -449,7 +468,7 @@ for imgnum in range(len(datacubes)):
     plt.show()
     '''
     singlecmpntwidth=(0.00485/8)*u.GHz
-    linewidth=0.005*u.GHz#11231152.36688232*u.Hz#0.5*0.0097*u.GHz#from small line @ 219.9808GHz# 0.0155>>20.08km/s 
+    linewidth=11231152.36688232*u.Hz#0.005*u.GHz###0.5*0.0097*u.GHz#from small line @ 219.9808GHz# 0.0155>>20.08km/s 
     linewidth_vel=vradio(singlecmpntwidth,spwrestfreq)#(singlecmpntwidth*c.to(u.km/u.s)/spwrestfreq).to('km s-1')#vradio(linewidth,spw1restfreq)
     #slicedqns=[]
     
@@ -534,11 +553,12 @@ def T_ex(tb,datums):
 print('Begin fitting procedure\nCompute N_uppers')
 spwdictkeys=spwdict.keys()
 print(f'spwdictkeys: {spwdictkeys}')
-testyshape=60
-testxshape=60
-testzshape=len(masterslicedqns)
+testyshape=np.shape(cube)[1]#60
+testxshape=np.shape(cube)[2]#60
+testzshape=len(mastereuks)
 nugsmap=np.empty(shape=(testyshape,testxshape,testzshape))
 nugserrormap=np.empty(shape=(testyshape,testxshape,testzshape))
+orderedeuks=[]
 print(f'Begin pixel loops of shape ({testyshape},{testxshape})')
 pixelzcoord_nupper=0
 pixelzcoord_nuperr=0
@@ -551,6 +571,7 @@ for key in spwdictkeys:
         print(f'Transition: {transitionkeys[transkey]}/Nupper array z-coord: {pixelzcoord_nupper}')
         nupperimage_filepath=nupperpath+'CH3OH~'+transitionkeys[transkey]+'.fits'
         nuperrorimage_filepath=nupperpath+'CH3OH~'+transitionkeys[transkey]+'error.fits'
+        orderedeuks.append(transdict[transitionkeys[transkey]]['euk'])
         
         nupperimgexists=False
         nuperrorimgexists=False
@@ -639,9 +660,10 @@ ntotmap=np.empty((testyshape,testxshape))
 texerrormap=np.empty((testyshape,testxshape))
 texsigclipmap=np.empty((testyshape,testxshape))
 texsnrmap=np.empty((testyshape,testxshape))
+snr=3
 
 fitdict={}
-pdb.set_trace()
+#pdb.set_trace()
 for y in range(testyshape):
     print(f'Start Row {y} fitting')
     for x in range(testxshape):
@@ -649,35 +671,51 @@ for y in range(testyshape):
         fit=fitting.LinearLSQFitter()
         nupperstofit=[]
         eukstofit=[]
+        nuperrors=[]
         for z in range(testzshape):
-            if nugsmap[y,x,z] <= 0:# or np.isnan(nugsmap[y,x,z]):
+            if nugsmap[y,x,z] <= 0 or np.isnan(nugsmap[y,x,z]):
                 continue
             else:
                 nupperstofit.append(nugsmap[y,x,z])
                 eukstofit.append(mastereuks[z])
+                nuperrors.append(nugserrormap[y,x,z])
+                
         if len(nupperstofit)==0:
             obsTex=np.nan
             obsNtot=np.nan
             texmap[y,x]=obsTex
             ntotmap[y,x]=obsNtot
+            texsnrmap[y,x]=np.nan
+            texsigclipmap[y,x]=obsTex
+            texerrormap[y,x]=np.nan
         else:
-            fit_lin=fit(linemod,eukstofit,np.log10(nupperstofit))
+            #log10nuerr=[]
+            errstofit=[]
+            
+            for num in range(len(nupperstofit)):
+                templog10=(1/nupperstofit[num])*nuperrors[num]
+                temperrfit=1/templog10
+                #log10nuerr.append(templog10)
+                errstofit.append(temperrfit)
+            
+            fit_lin=fit(linemod,eukstofit,np.log10(nupperstofit),weights=errstofit)
             linemod_euks=np.linspace(min(eukstofit),max(mastereuks),100)
             #print('Model fit complete')
             #print('Compute obsTex and obsNtot')
             obsTex=-np.log10(np.e)/(fit_lin.slope)
-            obsNtot=qrot_partfunc*10**(np.log10(nugsmap[y,x,0])+fit_lin.slope*eukstofit[0])
+            obsNtot=qrot_partfunc*10**(np.log10(nupperstofit[0])+fit_lin.slope*eukstofit[0])
             dobsTex=(eukstofit[0]*u.K*np.log(10)*np.log(np.e))/(np.log(nupperstofit[0]/spwdict['spw2']['10_2--9_3-vt0']['degen'])-np.log(obsNtot/qrot_partfunc))**2
-            sigTex=(obsTex/dobsTex).to('')
+            sigTex=(obsTex*u.K/dobsTex).to('')
             
             texmap[y,x]=obsTex
             ntotmap[y,x]=obsNtot
             texerrormap[y,x]=dobsTex.to('K').value
             texsnrmap[y,x]=sigTex
-            if sigTex >= 3:
+            if sigTex >= snr:
                 texsigclipmap[y,x]=obsTex
             else:
                 texsigclipmap[y,x]=np.nan
+
             
 transmoment0=fits.open(transdict[transitionkeys[transkey]]['filename'])
 transmom0header=transmoment0[0].header
@@ -687,35 +725,36 @@ primaryhdutex.header=transmom0header
 primaryhdutex.header['BTYPE']='Excitation temperature'
 primaryhdutex.header['BUNIT']='K'
 hdultex=fits.HDUList([primaryhdutex])
-hdultex.writeto(sourcepath+'texmap_allspw.fits',overwrite=True)
+hdultex.writeto(sourcepath+'texmap_allspw_withnans_weighted.fits',overwrite=True)
 
 primaryhduntot=fits.PrimaryHDU(ntotmap)
 primaryhduntot.header=transmom0header
 primaryhduntot.header['BTYPE']='Total column density'
 primaryhduntot.header['BUNIT']='cm-2'
 hdulntot=fits.HDUList([primaryhduntot])
-hdulntot.writeto(sourcepath+'ntotmap_allspw.fits',overwrite=True)
+hdulntot.writeto(sourcepath+'ntotmap_allspw_withnans_weighted.fits',overwrite=True)
 
 primaryhdutexerr=fits.PrimaryHDU(texerrormap)
 primaryhdutexerr.header=transmom0header
 primaryhdutexerr.header['BTYPE']='Excitation temperature'
 primaryhdutexerr.header['BUNIT']='K'
 hdultexerror=fits.HDUList([primaryhdutexerr])
-hdultexerror.writeto(sourcepath+'texmap_error_allspw.fits',overwrite=True)
+hdultexerror.writeto(sourcepath+'texmap_error_allspw_withnans_weighted.fits',overwrite=True)
+
 
 primaryhdutexclip=fits.PrimaryHDU(texsigclipmap)
 primaryhdutexclip.header=transmom0header
 primaryhdutexclip.header['BTYPE']='Excitation temperature'
 primaryhdutexclip.header['BUNIT']='K'
 hdultexclip=fits.HDUList([primaryhdutexclip])
-hdultexclip.writeto(sourcepath+'texmap_3sigma_allspw.fits',overwrite=True)
+hdultexclip.writeto(sourcepath+f'texmap_{snr}sigma_allspw_withnans_weighted.fits',overwrite=True)
 
 primaryhdutexsnr=fits.PrimaryHDU(texsnrmap)
 primaryhdutexsnr.header=transmom0header
 primaryhdutexsnr.header['BTYPE']='Excitation temperature SNR'
 primaryhdutexsnr.header['BUNIT']=''
 hdultexsnr=fits.HDUList([primaryhdutexsnr])
-hdultexsnr.writeto(sourcepath+'texmap_snr_allspw.fits',overwrite=True)
+hdultexsnr.writeto(sourcepath+'texmap_snr_allspw.fits_weighted',overwrite=True)
 
 print('Finished.')
 
