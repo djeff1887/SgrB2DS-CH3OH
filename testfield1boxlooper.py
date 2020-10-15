@@ -35,6 +35,8 @@ R_i=1
 f=1
 Tbg=2.7355*u.K
 
+z=0.0002306756533745274#<<average of 2 components of 5_2-4_1 transition using old redshift(0.000236254)#0.000234806#0.0002333587
+
 print('Setting input LTE parameters')
 testT=500*u.K
 testntot=1e17*u.cm**-2
@@ -329,12 +331,12 @@ sanitytable2 = utils.minimize_table(Splatalogue.query_lines(200*u.GHz, 300*u.GHz
                                     line_lists=['JPL'],
                                     show_upper_degeneracy=True))
 
-datacubes=glob.glob('/blue/adamginsburg/d.jeff/imaging_results/field1core1box/*.fits')
+datacubes=glob.glob('/blue/adamginsburg/d.jeff/imaging_results/field1core1box2/*.fits')
 images=[]#'spw0','spw2','spw1','spw3']
 for files in datacubes:
-    images.append(files[57:61])#[57:61])
+    images.append(files[58:62])#[57:61])
 assert 'spw1' in images, f'image name list does not match spw# format'
-sourcepath='/blue/adamginsburg/d.jeff/imaging_results/field1core1box/11mhzwidth/'
+sourcepath='/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/SgrB2S/z0_0002306756533745274_testbox2_5-6mhzwidth/'
 nupperpath=sourcepath+'nuppers/'
 stdpath=sourcepath+'errorimgs/std/'
 slabpath=sourcepath+'spectralslabs/km_s/'
@@ -427,7 +429,6 @@ for imgnum in range(len(datacubes)):
     #plt.plot(spec[:,0],spec[:,1])
     #plt.show()
     
-    z=0.000234806#0.0002333587
     freq_min=freqs[0]*(1+z)#215*u.GHz
     #print(freq_max)
     freq_max=freqs[(len(freqs)-1)]*(1+z)#235*u.GHz
@@ -468,7 +469,7 @@ for imgnum in range(len(datacubes)):
     plt.show()
     '''
     singlecmpntwidth=(0.00485/8)*u.GHz
-    linewidth=11231152.36688232*u.Hz#0.005*u.GHz###0.5*0.0097*u.GHz#from small line @ 219.9808GHz# 0.0155>>20.08km/s 
+    linewidth=(11231152.36688232*u.Hz/2)#0.005*u.GHz####0.5*0.0097*u.GHz#from small line @ 219.9808GHz# 0.0155>>20.08km/s 
     linewidth_vel=vradio(singlecmpntwidth,spwrestfreq)#(singlecmpntwidth*c.to(u.km/u.s)/spwrestfreq).to('km s-1')#vradio(linewidth,spw1restfreq)
     #slicedqns=[]
     
@@ -719,7 +720,7 @@ for y in range(testyshape):
             
 transmoment0=fits.open(transdict[transitionkeys[transkey]]['filename'])
 transmom0header=transmoment0[0].header
-            
+
 primaryhdutex=fits.PrimaryHDU(texmap)
 primaryhdutex.header=transmom0header
 primaryhdutex.header['BTYPE']='Excitation temperature'
@@ -741,7 +742,6 @@ primaryhdutexerr.header['BUNIT']='K'
 hdultexerror=fits.HDUList([primaryhdutexerr])
 hdultexerror.writeto(sourcepath+'texmap_error_allspw_withnans_weighted.fits',overwrite=True)
 
-
 primaryhdutexclip=fits.PrimaryHDU(texsigclipmap)
 primaryhdutexclip.header=transmom0header
 primaryhdutexclip.header['BTYPE']='Excitation temperature'
@@ -754,25 +754,6 @@ primaryhdutexsnr.header=transmom0header
 primaryhdutexsnr.header['BTYPE']='Excitation temperature SNR'
 primaryhdutexsnr.header['BUNIT']=''
 hdultexsnr=fits.HDUList([primaryhdutexsnr])
-hdultexsnr.writeto(sourcepath+'texmap_snr_allspw.fits_weighted',overwrite=True)
+hdultexsnr.writeto(sourcepath+'texmap_snr_allspw_weighted.fits',overwrite=True)
 
 print('Finished.')
-
-'''
-log10nuerr=[]
-for num in range(len(n_us)):
-    templog10=(1/n_us[num])*n_uerr[num]
-    log10nuerr.append(templog10)
-plt.clf()
-print('Begin plotting')
-plt.errorbar(mastereuks,np.log10(n_us),yerr=log10nuerr,fmt='o')
-plt.plot(linemod_euks,fit_lin(linemod_euks),label=(f'obsTex: {obsTex*u.K}\nobsNtot: {obsNtot/u.cm**2}'))
-plt.title(f'field1 {spwdict.keys()} CH$_3$OH Rotational Diagram')
-plt.xlabel(r'E$_u$ (K)')
-plt.ylabel(r'log$_{10}$(N$_u$/g$_u$)')
-plt.legend()
-plt.savefig((fieldpath+'rotdiag.png'),dpi=100,overwrite=True)
-plt.show()
-print('cubes loopered.')
-'''
-

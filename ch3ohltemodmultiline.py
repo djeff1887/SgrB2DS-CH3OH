@@ -14,7 +14,7 @@ import math
 
 plt.close('all')
 files=glob.glob('/blue/adamginsburg/d.jeff/imaging_results/*.fits')
-z=0.000234806#0.000236254#0.0002333587
+z=0.0002306756533745274#<<average of 2 components of 5_2-4_1 transition using old redshift(0.000236254)#0.000234806#0.000236254#0.0002333587
 c=cnst.c*u.m/u.s
 k=cnst.k*u.J/u.K
 h=cnst.h*u.J*u.s
@@ -25,6 +25,7 @@ c_0=23769.70*u.MHz
 m=b_0**2/(a_0*c_0)
 Tbg=2.7355*u.K
 
+Splatalogue.QUERY_URL= 'https://splatalogue.online/c_export.php'
 
 R_i=1
 kappa=((2*b_0)-a_0-c_0)/(a_0-c_0)
@@ -42,7 +43,9 @@ linelistlist=['JPL','CDMS','SLAIM']
 
 mdict={}
 contamdata={}
-imgnames=['spw0','spw2','spw1','spw3']
+imgnames=['spw1','spw3','spw2','spw0']
+
+assert imgnames[0] in files[0], 'Files out of order'
 
 def specmaker(plot,x,y,xmin,xmax,center,trans,ymax,ymin,moddata,thickmoddata):
     plot.set_xlim(xmin.value,xmax.value)
@@ -156,9 +159,9 @@ def contamlines(plot,contamlinelist):
     return
     
 pixelcoords=[]
-for i in range(len(files)-2):
+for i in range(len(files)):
     print('Getting ready - '+imgnames[i])
-    cube=sc.read(files[i])
+    cube=sc.read(files[i],use_dask=True)
     header=fits.getheader(files[i])
     
     cube_w=cube.wcs
@@ -355,9 +358,9 @@ for i in range(len(files)-2):
     fig.suptitle(f'{imgnames[i]}, Tkin: {testT}, N_total: {n_total}')
     plt.legend(loc=0,bbox_to_anchor=(1.7,2.12))
     fig.subplots_adjust(wspace=0.2,hspace=0.55)
-    print('Plotting complete. plt.show()')
-    plt.show()
-    '''    
+print('Plotting complete. plt.show()')
+plt.show()
+'''    
     elif i >= 2:
         print('Setting figure and ax variables')
         numcols=5
@@ -366,15 +369,15 @@ for i in range(len(files)-2):
         print('Number of rows: ', numrows)
 
         
-    '''
-    '''        
+'''
+'''        
         plt.plot(freqs,spw.value,drawstyle='steps')
         plt.ylabel('Jy/beam')
         plt.xlabel('Frequency (Hz)')
         plt.title((imgnames[i]+' '+'Contaminant-labeled Spectra'))
         ax=plt.subplot(111)
-    '''
-    '''
+'''
+'''
         print('Gathering mlines and plot widths')
         for line in mlines:
             centroid=line*u.Hz
@@ -437,20 +440,20 @@ for i in range(len(files)-2):
                     reymin=preymin
 
                 print(f'row: {row} col:{col}')
-    '''
-    '''
+'''
+'''
                 print(f'tempymax: {tempymax} spw max: {spw.max().to("mJy/beam")}')
                 print(f'tempymin: {tempymin} spw min: {spw.min().to("mJy/beam")}')
                 print(f'reymax: {reymax} reymin: {reymin}')
-    '''
-    '''
+'''
+'''
 
                 specmaker(ax[row,col],spw.spectral_axis,spwtbs,mins[col+rowoffset],maxs[col+rowoffset], mlines[col+rowoffset], mqns[col+rowoffset],reymax,reymin,modeltbs,thickmodeltbs)
                 preymax=reymax
                 preymin=reymin
                 
-    '''
-    '''
+'''
+'''
                 if row == 0:
                     specmaker(ax[row,col],freqs,spw.to('mJy/beam'),mins[col],maxs[col],mlines[col],mqns[col])
                     continue
@@ -463,8 +466,8 @@ for i in range(len(files)-2):
                     else:
                         specmaker(ax[row,col],freqs,spw.to('mJy/beam'),mins[col+10],maxs[col+10], mlines[col+10], mqns[col+10])
                         continue
-    '''
-    '''
+'''
+'''
             rowoffset+=5
         fig.subplots_adjust(wspace=0.2,hspace=0.55) 
         fig.suptitle(f'{imgnames[i]}, Tkin: {testT}, N_total: {n_total}')
@@ -474,8 +477,8 @@ for i in range(len(files)-2):
         #plt.legend(loc=0,bbox_to_anchor=(1.7,2.12))
         print('Plotting complete. plt.show()')
         plt.show()
-    '''
-    '''
+'''
+'''
             if b == 0:
                 ax.axvline(x=centroid.value,color='green',label='CH3OH')
             else:
@@ -484,8 +487,8 @@ for i in range(len(files)-2):
                 ax.plot(freqs[cube.closest_spectral_channel(minfreq):cube.closest_spectral_channel(maxfreq)],spw.value[cube.closest_spectral_channel(minfreq):cube.closest_spectral_channel(maxfreq)],drawstyle='steps',color='orange')
             else:
                 ax.plot(freqs[cube.closest_spectral_channel(maxfreq):cube.closest_spectral_channel(minfreq)],spw.value[cube.closest_spectral_channel(maxfreq):cube.closest_spectral_channel(minfreq)],drawstyle='steps',color='orange')
-    '''
-    '''
+'''
+'''
         print('Begin plotting contaminant lines')
         for k in range(len(contaminants)):
             print('Checking'+contaminants[k]+'...')
@@ -508,4 +511,4 @@ for i in range(len(files)-2):
                             ax.axvline(x=line[f],color=colors[k])
         plt.legend()
         plt.show()
-    '''
+'''

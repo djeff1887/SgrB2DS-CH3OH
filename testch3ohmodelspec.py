@@ -5,12 +5,15 @@ from spectral_cube import SpectralCube as sc
 import matplotlib.pyplot as plt
 from astroquery.splatalogue import utils, Splatalogue
 import scipy.constants as cnst
+from scipy.optimize import curve_fit as cf
 from astropy.io import fits
 import glob
 import radio_beam
 
 plt.close('all')
 linelist='JPL'
+
+'''Collect constants for N_tot and N_upper calculations'''
 
 c=cnst.c*u.m/u.s
 k=cnst.k*u.J/u.K
@@ -27,10 +30,10 @@ kappa=((2*b_0)-a_0-c_0)/(a_0-c_0)
 f=1
 
 files=glob.glob('/blue/adamginsburg/d.jeff/imaging_results/*.fits')
-z=0.0002333587
+z=0.000236254#0.0002333587
 imgnames=['spw3','spw0','spw2','spw1']
 
-def gauss(x,A,mu,sig):
+def gauss(x,A,mu,sig):#Standard Gaussian equation
     return A*np.exp((-1/2)*((x-mu)/sig)**2)
 
 def Q_rot_asym(T):#Eq 58, (Magnum & Shirley 2015); sigma=1, defined in Table 1 of M&S 2015
@@ -39,11 +42,11 @@ def Q_rot_asym(T):#Eq 58, (Magnum & Shirley 2015); sigma=1, defined in Table 1 o
 def mulu(aij,nu):#Rearranged from Eq 11 (Magnum & Shirley 2015), returns product in units of cm5 g s-2
     return (3*h*c**3*aij)/(64*np.pi**4*nu**3)
     
-def vradio(frequency,rest_freq):
+def vradio(frequency,rest_freq):#Converts between frequency to radio velocity (used to convert the model line width to velocity for column density calculations
     velocity=c.to(u.km/u.s)*(1-((rest_freq-frequency)/rest_freq))
     return velocity.to('cm s-1')
     
-def component_restfrequency(cmpntvel,rest_freq):
+def component_restfrequency(cmpntvel,rest_freq):#Computes new rest velocities of new velocity components for methanol
     ref_freq=minmethtable['Freq'][testline]*10**9*u.Hz
     c_kms=c.to('km s-1')
     z_vel=z*c_kms
@@ -53,7 +56,7 @@ def component_restfrequency(cmpntvel,rest_freq):
     
     return cmpnt_restfreq
     
-def KtoJ(T):
+def KtoJ(T):#Convert from excitation temperature (Kelvin) to energy (Joules)
     return (3/2)*k*T
     
 def qngrabber(nums):
@@ -88,9 +91,11 @@ def Tb3(ntot,nu,line_width,mulu_2,g,q,eu_J,T_ex):#Rearranged from Eq 82, M&S 201
     
 def Tbthick(ntot,nu,line_width,mulu_2,g,q,eu_J,T_ex):
     return (1-np.exp(((-8*np.pi**3*mulu_2*R_i*g)/(3*h*q*line_width))*((np.exp((h*nu)/(k*T_ex))-1)/np.exp((eu_J)/(k*T_ex)))*ntot))*(f*(rjequivtemp(nu,T_ex)-rjequivtemp(nu,Tbg)))
-   
+
+'''#Used pyspeckit equations to get brightness temperature with optical depth, does not work though   
 def Tbthick2(nupper,nu,line_width,aij,eu_J,T_ex):
     return (1-np.exp(((-c**2*aij)/(8*np.pi*nu**2))*(np.exp((h*nu)/(k*T_ex)))*nupper))*(f*(rjequivtemp(nu,T_ex)-rjequivtemp(nu,Tbg)))
+'''
 
 def opticaldepth(Tr,nu,T_ex):
     return -np.log(1-(Tr/(f*(rjequivtemp(nu,T_ex)-rjequivtemp(nu,Tbg)))))
@@ -98,7 +103,7 @@ def opticaldepth(Tr,nu,T_ex):
 def opticaldepth2(mulu_2,nu,line_width,T_ex,nupper):
     return ((8*np.pi**3*nu*mulu_2)/(3*h*c*line_width))*(np.exp((h*nu)/(k*T_ex))-1)*nupper
     
-def N_u(ntot,qrot,gu,eu_J,T_ex):
+def N_u(ntot,qrot,gu,eu_J,T_ex):#Computes upper-state column density for a given molecule (methanol in this case)
     return ntot/((qrot/gu)*np.exp(eu_J/(k*T_ex)))
     
 def t_brightness(eu_J,gu,qrot,ntot,n_u):

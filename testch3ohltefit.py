@@ -34,7 +34,7 @@ kappa=((2*b_0)-a_0-c_0)/(a_0-c_0)
 f=1
 
 files=glob.glob('/blue/adamginsburg/d.jeff/imaging_results/SgrB2DS_field1_*.fits')
-z=0.000234806#<<<avg of the two to the left#0.000236254#0.0002333587
+z=0.0002306756533745274#<<average of 2 components of 5_2-4_1 transition using old redshift(0.000236254)##0.000234806 <<<avg of the two to the left#0.000236254#0.0002333587
 imgnames=['spw1','spw3','spw2','spw0']
 
 assert imgnames[0] in files[0], 'Files out of order'
@@ -290,10 +290,10 @@ linemin2=0
 linemax2=15
 linemin3=0
 linemax3=31
-testmod1=models.Gaussian1D(mean=mlines[testline], stddev=1 * u.MHz, amplitude=(t_brights[np.argmax(t_brights)]) * u.K)#testtbthick,mlines[testline],lw2)
+testmod1=models.Gaussian1D(mean=(mlines[testline]-cmpnt2frqoffset), stddev=1 * u.MHz, amplitude=(t_brights[np.argmax(t_brights)]) * u.K)#testtbthick,mlines[testline],lw2)
 testmod2=models.Gaussian1D(mean=(mlines[testline]+cmpnt2frqoffset), stddev=1 * u.MHz, amplitude=(t_brights[np.argmax(t_brights)]/1.2) * u.K)
 testmod3=testmod1+testmod2
-testfit1=fit_g(testmod1,spwwindow.spectral_axis[linemin:linemax],t_brights[linemin:linemax]*u.K,epsilon=1e-11)
+#testfit1=fit_g(testmod1,spwwindow.spectral_axis[linemin:linemax],t_brights[linemin:linemax]*u.K,epsilon=1e-11)
 #testfit2=fit_g(testmod2,spwwindow.spectral_axis[linemin2:linemax2],t_brights[linemin2:linemax2]*u.K)
 testfit3=fit_g(testmod3,spwwindow.spectral_axis[linemin3:linemax3],t_brights[linemin3:linemax3]*u.K,epsilon=1e-11)
 #testcombo=testfit1+testfit2
