@@ -35,6 +35,8 @@ R_i=1
 f=1
 Tbg=2.7355*u.K
 
+#z=0.00017594380066803095
+#z=0.000186431
 z=0.0002306756533745274#<<average of 2 components of 5_2-4_1 transition using old redshift(0.000236254)#0.000234806#0.0002333587
 
 print('Setting input LTE parameters')
@@ -331,16 +333,18 @@ sanitytable2 = utils.minimize_table(Splatalogue.query_lines(200*u.GHz, 300*u.GHz
                                     line_lists=['JPL'],
                                     show_upper_degeneracy=True))
 
-datacubes=glob.glob('/blue/adamginsburg/d.jeff/imaging_results/field1core1box2/*.fits')
+datacubes=glob.glob('/blue/adamginsburg/d.jeff/imaging_results/DSii_iiibox1/*.fits')#'/blue/adamginsburg/d.jeff/imaging_results/field1core1box2/*.fits')
 images=[]#'spw0','spw2','spw1','spw3']
 for files in datacubes:
-    images.append(files[58:62])#[57:61])
+    images.append(files[55:59])#[50:54])#[57:61])
 assert 'spw1' in images, f'image name list does not match spw# format'
-sourcepath='/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/SgrB2S/z0_0002306756533745274_testbox2_5-6mhzwidth/'
+sourcepath='/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/DSii_iii/z_0_00017594380066803095_box1_5-6mhzwidth/'
 nupperpath=sourcepath+'nuppers/'
 stdpath=sourcepath+'errorimgs/std/'
 slabpath=sourcepath+'spectralslabs/km_s/'
 mom0path=sourcepath+'mom0/'
+rotdiagpath=sourcepath+'pixelwiserotationaldiagrams/'
+figpath=sourcepath+'figures/'
 
 picklepath=sourcepath+'testbox2dict.obj'
 
@@ -358,6 +362,11 @@ else:
     os.makedirs(slabpath)
     print(f'Making mom0 folder {mom0path}')
     os.mkdir(mom0path)
+    print(f'Making rotational diagram folder')
+    os.mkdir(rotdiagpath)
+    print(f'Making figures folder')
+    os.mkdir(figpath)
+    
 
 #pdb.set_trace()
 
@@ -410,7 +419,7 @@ for imgnum in range(len(datacubes)):
     cube_unmasked=velcube.unmasked_data
     
     cube_w=cube.wcs
-    targetworldcrd=[[0,0,0],[2.66835339e+02, -2.83961660e+01, 0]]
+    targetworldcrd=[[0,0,0],[266.8332569, -28.3969, 0]]#[[0,0,0],[266.8316149,-28.3972040,0]]#[[0,0,0],[2.66835339e+02, -2.83961660e+01, 0]]
     targetpixcrd=cube_w.all_world2pix(targetworldcrd,1,ra_dec_order=True)
     
     pixxcrd,pixycrd=int(round(targetpixcrd[1][0])),int(round(targetpixcrd[1][1]))
@@ -755,5 +764,30 @@ primaryhdutexsnr.header['BTYPE']='Excitation temperature SNR'
 primaryhdutexsnr.header['BUNIT']=''
 hdultexsnr=fits.HDUList([primaryhdutexsnr])
 hdultexsnr.writeto(sourcepath+'texmap_snr_allspw_weighted.fits',overwrite=True)
+
+nugs_swapaxis2toaxis0=np.swapaxes(nugsmap,0,2)
+nugserr_swapaxis2toaxis0=np.swapaxes(nugserrormap,0,2)
+
+nugs_swapxwithy=np.swapaxes(nugs_swapaxis2toaxis0,1,2)
+nugserr_swapxwithy=np.swapaxes(nugserr_swapaxis2toaxis0,1,2)
+
+nugscube=fits.PrimaryHDU(nugs_swapxwithy)
+nugserrcube=fits.PrimaryHDU(nugserr_swapxwithy)
+
+nugscube.header=transmom0header
+nugserrcube.header=transmom0header
+
+nugscube.header['BUNIT']='cm-2'
+nugserrcube.header['BUNIT']='cm-2'
+
+nugserrcube.header['BTYPE']='Upper-state column density error'
+nugscube.header['BTYPE']='Upper-state column density'
+
+nugshdul=fits.HDUList([nugscube])
+nugserrhdul=fits.HDUList([nugserrcube])
+
+nugshdul.writeto(sourcepath+'alltransitions_nuppers.fits',overwrite=True)
+nugserrhdul.writeto(sourcepath+'alltransitions_nupper_error.fits',overwrite=True)
+np.savetxt(sourcepath+'mastereuks.txt',mastereuks,header='Methanol excitation temperatures for the transitions used in this folder. All in units of K')
 
 print('Finished.')

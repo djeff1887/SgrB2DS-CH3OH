@@ -31,25 +31,36 @@ R_i=1
 f=1
 Tbg=2.7355*u.K
 
-home='/blue/adamginsburg/d.jeff/imaging_results/SgrB2DS-CH3OH/NupperColDens/field1/testcore1/debug/correctedcubesandmaps/'
-filepath='/blue/adamginsburg/d.jeff/imaging_results/SgrB2DS-CH3OH/NupperColDens/field1/testcore1/debug/pixelwiserotationaldiagrams/'
-infile=open('NupperColDens/field1/testcore1/debug/allspwdict.obj','rb')
+sourceid='SgrB2DSIII'
+sourcepath="/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/DSii_iii/z_0_00017594380066803095_box1_5-6mhzwidth/"#'/blue/adamginsburg/d.jeff/imaging_results/SgrB2DS-CH3OH/NupperColDens/field1/testcore1/debug/correctedcubesandmaps/'
+home=sourcepath
+rotdiagpath=home+'pixelwiserotationaldiagrams/'
+
+if os.path.isdir(rotdiagpath):
+    print(f'Rotational diagram folder {rotdiagpath} already exists.')
+    pass
+else:
+    print(f'Making rotational diagram folder {rotdiagpath}')
+    os.mkdir(rotdiagpath)
+    print('Directory created.\n')
+#filepath='/blue/adamginsburg/d.jeff/imaging_results/SgrB2DS-CH3OH/NupperColDens/field1/testcore1/debug/pixelwiserotationaldiagrams/'
+infile=open(sourcepath+'/testbox2dict.obj','rb')
 spwdict=pickle.load(infile)
 
-fulltexmap=fits.getdata(home+'texmap_allspw_debug.fits')
+fulltexmap=fits.getdata(home+'texmap_3sigma_allspw_withnans_weighted.fits')
 testT=500*u.K
 qrot_partfunc=Q_rot_asym(testT).to('')
 
 print('Setting up and executing model fit')
-testyshape=60
-testxshape=60
+testyshape=np.shape(fulltexmap)[0]
+testxshape=np.shape(fulltexmap)[1]
 
 texmap=np.empty((testyshape,testxshape))
 ntotmap=np.empty((testyshape,testxshape))
 texerrormap=np.empty((testyshape,testxshape))
 nugsmap=fits.getdata(home+'alltransitions_nuppers.fits')
 nugserrmap=fits.getdata(home+'alltransitions_nupper_error.fits')
-mastereuks=np.loadtxt(home+'CH3OHmastereuks.txt')
+mastereuks=np.loadtxt(home+'mastereuks.txt')
 testzshape=len(mastereuks)
 
 ypix=int(input('y coord:'))
@@ -60,7 +71,7 @@ pixellist=list([pixel])
 for px in pixellist:
     y=px[0]
     x=px[1]
-    rotdiagfilename=filepath+f'rotdiag_pixel_{y}-{x}_weighted2.png'
+    rotdiagfilename=rotdiagpath+f'rotdiag_pixel_{y}-{x}_weighted2.png'
     if os.path.isfile(rotdiagfilename):
         print(f'Pixel ({y},{x}) already has rotational diagram.')
         print(f'See {rotdiagfilename}')
@@ -110,7 +121,7 @@ for px in pixellist:
             print('Begin plotting')
             plt.errorbar(eukstofit,np.log10(nupperstofit),yerr=log10nuerr,fmt='o')
             plt.plot(linemod_euks,fit_lin(linemod_euks),label=(f'obsTex: {round(obsTex, 4)} $\pm$ {round(dobsTex.value, 2)*u.K}\nobsNtot: {round(obsNtot.value,4)/u.cm**2}'))
-            plt.title(f'field1 core1 testbox pixel ({y},{x}) CH$_3$OH Rotational Diagram')
+            plt.title(f'field1 {sourceid} testbox pixel ({y},{x}) CH$_3$OH Rotational Diagram')
             plt.xlabel(r'E$_u$ (K)')
             plt.ylabel(r'log$_{10}$(N$_u$/g$_u$)')
             plt.legend()

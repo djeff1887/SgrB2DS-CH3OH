@@ -31,6 +31,7 @@ R_i=1
 f=1
 Tbg=2.7355*u.K
 
+pdb.set_trace()#Remember to update the below paths
 home='/blue/adamginsburg/d.jeff/imaging_results/SgrB2DS-CH3OH/NupperColDens/field1/testcore1/debug/correctedcubesandmaps/'
 filepath='/blue/adamginsburg/d.jeff/imaging_results/SgrB2DS-CH3OH/NupperColDens/field1/testcore1/debug/'
 infile=open('NupperColDens/field1/testcore1/debug/allspwdict.obj','rb')
@@ -60,6 +61,7 @@ for y in range(testyshape):
         nupperstofit=[]
         eukstofit=[]
         nuperrors=[]
+        print('Gathering nuppers and euks to fit')
         for z in range(testzshape):
             if nugsmap[z,y,x] <= 0:# or np.isnan(nugsmap[y,x,z]):
                 continue
@@ -118,4 +120,5 @@ hdultexerror=fits.HDUList([primaryhdutexerr])
 hdultexerror.writeto(filepath+'texmap_error_allspw_debug_weighted2.fits',overwrite=True)
             
 plt.imshow(texmap,origin='lower')
+plt.clim(10,500)
 plt.show()
