@@ -35,9 +35,9 @@ R_i=1
 f=1
 Tbg=2.7355*u.K
 
-#z=0.00017594380066803095
-#z=0.000186431
-z=0.0002306756533745274#<<average of 2 components of 5_2-4_1 transition using old redshift(0.000236254)#0.000234806#0.0002333587
+#z=0.00017594380066803095 #SgrB2DSII?
+#z=0.000186431 #SgrB2DSi
+z=0.0002306756533745274#<<average of 2 components of 5_2-4_1 transition using old redshift(0.000236254)#0.000234806#0.0002333587 SgrB2S
 
 print('Setting input LTE parameters')
 testT=500*u.K
@@ -116,8 +116,9 @@ def linelooplte(line_list,line_width,iterations,quantum_numbers):
         mulu2=(mulu(aijs[i],line)).to('cm5 g s-2')
         linewidth_vel=vradio(singlecmpntwidth,line)
         tbthick=Tbthick(testntot,line,linewidth_vel,mulu2,degeneracies[i],qrot_partfunc,eujs[i],testT).to('K')
+        peak_amplitude=slab_K.max(axis=0)
         print('LTE params calculated')
-        print(f'tbthick: {tbthick} targetspecK_stddev: {targetspecK_stddev}')
+        print(f'tbthick: {tbthick}\n targetspecK_stddev: {targetspecK_stddev}\n peak_amplitude: {peak_amplitude}')
         print('Slicing quantum numbers')
         transition=qn_replace(quantum_numbers[i])
         moment0filename=home+'CH3OH~'+transition+'.fits'
@@ -129,7 +130,8 @@ def linelooplte(line_list,line_width,iterations,quantum_numbers):
             isfilemom0=fits.getdata(moment0filename)*u.K*u.km/u.s
             #isfilepixflux=isfilemom0[pixycrd,pixxcrd]
             isfilebeam=beamer(moment0filename)
-            temptransdict.update([('freq',line),('flux',isfilemom0),('stddev',np.nanstd(isfilemom0)),('beam',isfilebeam),('euk',euks[i]),('eujs',eujs[i]),('degen',degeneracies[i]),('aij',aijs[i]),('filename',moment0filename)])
+            isfilestdflux=fits.getdata(f'{stdpath}{images[imgnum]}fluxstd.fits')*u.K#This is confusing, notation-wise, but I'm leaving it this way for now since it's consistent between the two forks in the loop. For future reference: isfilestdflux is the error on the measured brightnesstemp in K, whereas isfilemom0 pulls from the moment0 maps and is in K km/s
+            temptransdict.update([('freq',line),('flux',isfilemom0),('stddev',isfilestdflux),('beam',isfilebeam),('euk',euks[i]),('eujs',eujs[i]),('degen',degeneracies[i]),('aij',aijs[i]),('filename',moment0filename)])
             transitiondict.update({transition:temptransdict})
             masterslicedqns.append(transition)
             mastereuks.append(euks[i].value)
@@ -142,7 +144,7 @@ def linelooplte(line_list,line_width,iterations,quantum_numbers):
                 slab.write(slabfilename)
                 print(f'Slab written to {slabfilename}. Proceeding...\n')
             pass
-        elif tbthick >= targetspecK_stddev:#*u.K:
+        elif tbthick >= targetspecK_stddev and peak_amplitude >= 3* targetspecK_stddev:#*u.K:
             print('Commence moment0')
             slab=slab.with_spectral_unit((u.km/u.s),velocity_convention='radio',rest_value=lines[i])#spwrestfreq)
             momstart=time.time()
@@ -167,9 +169,17 @@ def linelooplte(line_list,line_width,iterations,quantum_numbers):
                 print(f'Slab written to {slabfilename}. Proceeding...\n')
             pass
         else:
-            print('LTE Model max brightnessTemp below 1sigma threshold')
-            print(f'{quantum_numbers[i]} skipped\n')
-            pass
+            if not tbthick >= targetspecK_stddev and peak_amplitude >= 3* targetspecK_stddev:
+                print('LTE Model max brightnessTemp below 1sigma threshold')
+                print(f'{quantum_numbers[i]} skipped, possible contamination\n')
+                pass
+            elif tbthick >= targetspecK_stddev and not peak_amplitude >= 3* targetspecK_stddev:
+                print(f'Line amplitude ({peak_amplitude}) less than 3 sigma criterion ({3*targetspecK_stddev})')
+                print(f'{quantum_numbers[i]} skipped\n')
+            elif not tbthick >= targetspecK_stddev and not peak_amplitude >= 3* targetspecK_stddev:
+                print('1 sigma LTE model and 3 sigma amplitude criteria not met')
+                print(f'{quantum_numbers[i]} skipped\n')
+                pass
     spectraKdict.update({images[imgnum]:targetspec_K})
     print('lines looped.\n')
 
@@ -333,12 +343,21 @@ sanitytable2 = utils.minimize_table(Splatalogue.query_lines(200*u.GHz, 300*u.GHz
                                     line_lists=['JPL'],
                                     show_upper_degeneracy=True))
 
-datacubes=glob.glob('/blue/adamginsburg/d.jeff/imaging_results/DSii_iiibox1/*.fits')#'/blue/adamginsburg/d.jeff/imaging_results/field1core1box2/*.fits')
-images=[]#'spw0','spw2','spw1','spw3']
-for files in datacubes:
-    images.append(files[55:59])#[50:54])#[57:61])
-assert 'spw1' in images, f'image name list does not match spw# format'
-sourcepath='/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/DSii_iii/z_0_00017594380066803095_box1_5-6mhzwidth/'
+incubes=glob.glob("/blue/adamginsburg/d.jeff/SgrB2DSminicubes/SgrB2S/OctReimage/*.fits")#'/blue/adamginsburg/d.jeff/imaging_results/field1core1box2/*.fits')
+
+images=['spw0','spw1','spw2','spw3']
+
+datacubes=[]
+
+for spew in images:
+    for f1 in incubes:
+        if spew in f1:
+            datacubes.append(f1)
+            continue
+    
+assert 'spw0' in datacubes[0], f'Cube list out of order'
+
+sourcepath='/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/SgrB2S/OctReimage_z0_0002306756533745274_5-6mhzwidth_stdfixes/'
 nupperpath=sourcepath+'nuppers/'
 stdpath=sourcepath+'errorimgs/std/'
 slabpath=sourcepath+'spectralslabs/km_s/'
@@ -419,7 +438,7 @@ for imgnum in range(len(datacubes)):
     cube_unmasked=velcube.unmasked_data
     
     cube_w=cube.wcs
-    targetworldcrd=[[0,0,0],[266.8332569, -28.3969, 0]]#[[0,0,0],[266.8316149,-28.3972040,0]]#[[0,0,0],[2.66835339e+02, -2.83961660e+01, 0]]
+    targetworldcrd=[[0,0,0],[2.66835339e+02, -2.83961660e+01, 0]]#[[0,0,0],[266.8332569, -28.3969, 0]]#[[0,0,0],[266.8316149,-28.3972040,0]]
     targetpixcrd=cube_w.all_world2pix(targetworldcrd,1,ra_dec_order=True)
     
     pixxcrd,pixycrd=int(round(targetpixcrd[1][0])),int(round(targetpixcrd[1][1]))
@@ -488,27 +507,32 @@ for imgnum in range(len(datacubes)):
     spwdict.update([(images[imgnum],transitiondict)])
     tempkeys=list(spwdict[images[imgnum]].keys())
     
-    
-    stdfitsimgpath=stdpath+f'{images[imgnum]}intensitystd.fits'
-    if os.path.isfile(stdfitsimgpath):
+    kstdimgpath=stdpath+f'{images[imgnum]}fluxstd.fits'
+    kkmsstdimgpath=stdpath+f'{images[imgnum]}intensitystd.fits'
+    if os.path.isfile(kkmsstdimgpath):
         print(f'{images[imgnum]} brightness std image already exists')
-        spwstdarray=fits.getdata(stdfitsimgpath)*u.K
-        kkmsstdarray=spwstdarray*linewidth_vel
-        print(f'Retrieved brightness std data from {stdfitsimgpath}\n')
+        spwstdarray=fits.getdata(kstdimgpath)*u.K
+        kkmsstdarray=fits.getdata(kkmsstdimgpath)*u.K*u.km/u.s
+        print(f'Retrieved brightness std data from {kstdimgpath} and {kkmsstdimgpath}\n')
     else:
         print(f'Start {images[imgnum]} std calculations')
         spwstdarray,kkmsstdarray=pixelwisestd(cube)
-        print('Set Primary HDU')
-        hdu=fits.PrimaryHDU(kkmsstdarray.value)
-        transmoment0=fits.open(spwdict[images[imgnum]][tempkeys[0]]['filename'])
-        transmom0header=transmoment0[0].header
-        print(f'Set header from {spwdict[images[imgnum]][tempkeys[0]]["filename"]}')
-        hdu.header=transmom0header
-        #hdu.header['BUNIT']='K km s-1'
-        print('Wrapping Primary HDU in HDUList')
-        hdul=fits.HDUList([hdu])
-        print(f'Writing to {stdfitsimgpath}')
-        hdul.writeto(stdfitsimgpath)
+        for stdarray, imgpath in zip([spwstdarray,kkmsstdarray],[kstdimgpath,kkmsstdimgpath]):
+            print('Set Primary HDU')
+            hdu=fits.PrimaryHDU(stdarray.value)
+            '''This transmoment0 file has intensity (K km/s) units'''
+            transmoment0=fits.open(spwdict[images[imgnum]][tempkeys[0]]['filename'])
+            transmom0header=transmoment0[0].header
+            print(f'Set header from {spwdict[images[imgnum]][tempkeys[0]]["filename"]}')
+            hdu.header=transmom0header
+            if np.all(stdarray==spwstdarray):
+                hdu.header['BUNIT']='K'
+            else:
+                hdu.header['BUNIT']='K km s-1'
+            print('Wrapping Primary HDU in HDUList')
+            hdul=fits.HDUList([hdu])
+            print(f'Writing to {imgpath}')
+            hdul.writeto(imgpath)
         print(f'{images[imgnum]} std calculations complete.\n')
     #transitiondict.update({'restfreq':spwrestfreq})
     #,('pixel_0',(pixycrd,pixxcrd))])
@@ -639,7 +663,7 @@ for key in spwdictkeys:
         #print(n_us)
         #print(n_uerr)
       
-print('pixels looped.')  
+print('pixels looped, Nupper calcs complete\n')  
 
 '''
 for key in spwdictkeys:
