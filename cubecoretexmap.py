@@ -12,14 +12,102 @@ from astropy.modeling import models, fitting
 import time
 import pdb
 import pickle
-
+from astropy.wcs import WCS
+import matplotlib as mpl
+import copy
 
 Splatalogue.QUERY_URL= 'https://splatalogue.online/c_export.php'
 
-sanitytable1 = utils.minimize_table(Splatalogue.query_lines(200*u.GHz, 300*u.GHz, chemical_name=' HCN ',
-                                    energy_max=1840, energy_type='eu_k',
-                                    line_lists=['JPL'],
-                                    show_upper_degeneracy=True))
+'''This wing of the script takes in continuum-subtracted cubes, cuts out a subcube around a region of interest based on a DS9 region, and converts the subcubes into brightness temperature (K) units'''
+
+print('Begin Jy/beam-to-K and region subcube conversion\n')
+
+source='DSi'#'SgrB2S'
+
+inpath='/blue/adamginsburg/d.jeff/imaging_results/data/OctReimage/'
+beamcubes=glob.glob(inpath+'*.fits')
+home='/blue/adamginsburg/d.jeff/imaging_results/products/OctReimage/'
+cubes=glob.glob(home+'*pbcor_line.fits')
+region='fk5; box(266.8316387, -28.3971867, 0.0010556, 0.0010556)'#DSi-large
+#box(266.8353410,-28.3962005,0.0016806,0.0016806)'#SgrB2S-box2
+#box(266.8333438, -28.3966103, 0.0014028, 0.0014028)' #DSii/iii
+#box(266.8315833, -28.3971867, 0.0006528, 0.0006528)' #DSi-small
+outpath=f'/blue/adamginsburg/d.jeff/SgrB2DSminicubes/{source}/OctReimage/'#imaging_results/DSii_iiibox1/'
+statfixpath=f'/blue/adamginsburg/d.jeff/SgrB2DSstatcontfix/{source}/OctReimage/'
+
+if os.path.isdir(outpath):
+    print(f'Minicube directory "{outpath}" already exists. Proceeding to line loops/LTE fitting procedure.\n')
+    pass
+else:
+    cubestobox=[]
+    
+    images=['spw0','spw1','spw2','spw3']
+    
+    orderedcubes=[]
+    orderedbeamcubes=[]
+    
+    for spew in images:
+        for f1,f2 in zip(cubes,beamcubes):
+            if spew in f1:
+                orderedcubes.append(f1)
+            if spew in f2:
+                orderedbeamcubes.append(f2)
+        #images.append(files[77:81])#[57:61])
+        
+    assert 'spw0' in orderedcubes[0] and 'spw0' in orderedbeamcubes[0], f'Cube list out of order'
+    
+    print('Cube lists successfully reordered')
+    
+    if not os.path.isdir(outpath):
+        print(f'Creating filepath {outpath}')
+        os.makedirs(outpath)
+    else:
+        print(f'{outpath} already exists. Proceeding...\n')
+        
+    if 'products' in home:
+        print('STATCONT products detected\n')
+        if not os.path.isdir(statfixpath):
+            print(f'Creating beamfix directory {statfixpath}')
+            os.makedirs(statfixpath)
+        else:
+            print(f'{statfixpath} already exists. Proceeding...')
+        for beamcube,statcube in zip(orderedbeamcubes,orderedcubes):
+            print(f'Extracting beams from {beamcube}')
+            beamfits=fits.open(beamcube)
+            cubefits=fits.open(statcube)
+            beams=beamfits[1]
+            cubedata=cubefits[0]
+            newhdulist=fits.HDUList([cubedata,beams])
+            print(f'Beamlist merged with Primary HDU in {statcube}')
+            cubewithbeampath=statcube.replace(home,statfixpath)
+            print(f'Saving new fits file {cubewithbeampath}\n')
+            newhdulist.writeto(cubewithbeampath)
+            cubestobox.append(cubewithbeampath)
+    else:
+        cubestobox=cubes
+            
+            
+    for spw, cube in zip(images, cubestobox):
+        boxcubename=outpath+spw+'minimize.image.pbcor_line.fits'
+        if os.path.isfile(boxcubename):
+            print(f'{boxcubename} already exists. Skipping...\n')
+            continue
+        else:
+            print(f'Grabbing datacube from {cube}')
+            fullsizecube=sc.read(cube,use_dask=True)
+            spwrestfreq=fullsizecube.header['RESTFRQ']*u.Hz
+            print('Creating subcube and converting from Jy/beam to K')
+            boxedsubcubeK=fullsizecube.subcube_from_ds9region(region).to(u.K)
+            #print('Converting spectral axis to km/s')
+            #boxedsubcubeKkms=boxedsubcubeK.with_spectral_unit((u.km/u.s),velocity_convention='radio',rest_value=spwrestfreq)
+            print(f'Saving to {boxcubename}')
+            boxedsubcubeK.write(boxcubename,format='fits',overwrite=True)
+            print('Finished\n')
+        
+       
+'''This wing of the code runs the linelooper LTE modeling and kinetic temperature determination on the newly created region-specific subcubes'''
+
+print('Begin core cube to Tex map process\n') 
 
 '''Collect constants and CH3OH-specific quantum parameters'''
 print('Setting constants')
@@ -37,8 +125,9 @@ f=1
 Tbg=2.7355*u.K
 
 #z=0.00017594380066803095 #SgrB2DSII?
-#z=0.000186431 #SgrB2DSi
-z=0.0002306756533745274#<<average of 2 components of 5_2-4_1 transition using old redshift(0.000236254)#0.000234806#0.0002333587 SgrB2S
+z=0.000186431 #SgrB2DSi
+#z=0.0002306756533745274#<<average of 2 components of 5_2-4_1 transition using old redshift(0.000236254)#0.000234806#0.0002333587 SgrB2S
+print(f'Doppler shift: {z} / {(z*c).to("km s-1")}\n')
 
 print('Setting input LTE parameters')
 testT=500*u.K
@@ -344,7 +433,7 @@ sanitytable2 = utils.minimize_table(Splatalogue.query_lines(200*u.GHz, 300*u.GHz
                                     line_lists=['JPL'],
                                     show_upper_degeneracy=True))
 
-incubes=glob.glob("/blue/adamginsburg/d.jeff/SgrB2DSminicubes/SgrB2S/OctReimage/*.fits")#'/blue/adamginsburg/d.jeff/imaging_results/field1core1box2/*.fits')
+incubes=glob.glob(outpath+"*.fits")#'/blue/adamginsburg/d.jeff/imaging_results/field1core1box2/*.fits')
 
 images=['spw0','spw1','spw2','spw3']
 
@@ -356,9 +445,9 @@ for spew in images:
             datacubes.append(f1)
             continue
     
-assert 'spw0' in datacubes[0], f'Cube list out of order'
+assert 'spw0' in datacubes[0], 'Cube list out of order'
 
-sourcepath='/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/SgrB2S/OctReimage_z0_0002306756533745274_5-6mhzwidth_stdfixes/'
+sourcepath='/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/DSi/OctReimage_z0_000186431_5-6mhzwidth_stdfixes/'
 nupperpath=sourcepath+'nuppers/'
 stdpath=sourcepath+'errorimgs/std/'
 slabpath=sourcepath+'spectralslabs/km_s/'
@@ -366,7 +455,7 @@ mom0path=sourcepath+'mom0/'
 rotdiagpath=sourcepath+'pixelwiserotationaldiagrams/'
 figpath=sourcepath+'figures/'
 
-picklepath=sourcepath+'testbox2dict.obj'
+picklepath=sourcepath+'ch3ohlinesdict.obj'
 
 if os.path.isdir(slabpath):
     print(f'Source path directory tree {sourcepath} already exists.\n')
@@ -439,24 +528,15 @@ for imgnum in range(len(datacubes)):
     cube_unmasked=velcube.unmasked_data
     
     cube_w=cube.wcs
-    targetworldcrd=[[0,0,0],[2.66835339e+02, -2.83961660e+01, 0]]#[[0,0,0],[266.8332569, -28.3969, 0]]#[[0,0,0],[266.8316149,-28.3972040,0]]
+    targetworldcrd=[[0,0,0],[266.8316149,-28.3972040,0]] #DSi
+    #[[0,0,0],[2.66835339e+02, -2.83961660e+01, 0]] #SgrB2S
+    #[[0,0,0],[266.8332569, -28.3969, 0]] #DSii/iii
     targetpixcrd=cube_w.all_world2pix(targetworldcrd,1,ra_dec_order=True)
     
     pixxcrd,pixycrd=int(round(targetpixcrd[1][0])),int(round(targetpixcrd[1][1]))
     print(f'x: {pixxcrd}/y: {pixycrd}')
-    #data=cube_unmasked[:,368,628]#[:,383,649]#Jy*km/s
-    #test=cube_unmasked[:,383:413,649:679]
     
-    #print(np.shape(data))
-    
-    #sum=np.sum(test[:,0:,0:])
-    #print(np.shape(sum))
-    
-    #spec=np.stack((freqs,data),axis=1)
-    #print(np.shape(spec))
-    
-    #plt.plot(spec[:,0],spec[:,1])
-    #plt.show()
+    assert pixxcrd >= 0 and pixycrd >= 0, 'Negative pixel coords'
     
     freq_min=freqs[0]*(1+z)#215*u.GHz
     #print(freq_max)
@@ -760,7 +840,7 @@ primaryhdutex.header=transmom0header
 primaryhdutex.header['BTYPE']='Excitation temperature'
 primaryhdutex.header['BUNIT']='K'
 hdultex=fits.HDUList([primaryhdutex])
-print(f'Saving raw temperature map at {sourcepath+"texmap_allspw_withnans_weighted.fits"}')
+print(f'Saving raw temperature map at {sourcepath+"texmap_allspw_withnans_weighted.fits"}\n')
 hdultex.writeto(sourcepath+'texmap_allspw_withnans_weighted.fits',overwrite=True)
 
 primaryhduntot=fits.PrimaryHDU(ntotmap)
@@ -768,7 +848,7 @@ primaryhduntot.header=transmom0header
 primaryhduntot.header['BTYPE']='Total column density'
 primaryhduntot.header['BUNIT']='cm-2'
 hdulntot=fits.HDUList([primaryhduntot])
-print(f'Saving raw ntot map at {sourcepath+"ntotmap_allspw_withnans_weighted.fits"}')
+print(f'Saving raw ntot map at {sourcepath+"ntotmap_allspw_withnans_weighted.fits"}\n')
 hdulntot.writeto(sourcepath+'ntotmap_allspw_withnans_weighted.fits',overwrite=True)
 
 primaryhdutexerr=fits.PrimaryHDU(texerrormap)
@@ -776,7 +856,7 @@ primaryhdutexerr.header=transmom0header
 primaryhdutexerr.header['BTYPE']='Excitation temperature'
 primaryhdutexerr.header['BUNIT']='K'
 hdultexerror=fits.HDUList([primaryhdutexerr])
-print(f'Saving temperature error map at {sourcepath+"texmap_error_allspw_withnans_weighted.fits"}')
+print(f'Saving temperature error map at {sourcepath+"texmap_error_allspw_withnans_weighted.fits"}\n')
 hdultexerror.writeto(sourcepath+'texmap_error_allspw_withnans_weighted.fits',overwrite=True)
 
 primaryhdutexclip=fits.PrimaryHDU(texsigclipmap)
@@ -784,15 +864,16 @@ primaryhdutexclip.header=transmom0header
 primaryhdutexclip.header['BTYPE']='Excitation temperature'
 primaryhdutexclip.header['BUNIT']='K'
 hdultexclip=fits.HDUList([primaryhdutexclip])
-print(f'Saving {snr}sigma temperature map at {sourcepath+"texmap_{snr}sigma_allspw_withnans_weighted.fits"}')
-hdultexclip.writeto(sourcepath+f'texmap_{snr}sigma_allspw_withnans_weighted.fits',overwrite=True)
+nsigmatexpath=sourcepath+f'texmap_{snr}sigma_allspw_withnans_weighted.fits'
+print(f'Saving {snr}sigma temperature map at {nsigmatexpath}')
+hdultexclip.writeto(nsigmatexpath,overwrite=True)
 
 primaryhdutexsnr=fits.PrimaryHDU(texsnrmap)
 primaryhdutexsnr.header=transmom0header
 primaryhdutexsnr.header['BTYPE']='Excitation temperature SNR'
 primaryhdutexsnr.header['BUNIT']=''
 hdultexsnr=fits.HDUList([primaryhdutexsnr])
-print(f'Saving {snr}sigma temperature map at {sourcepath+"texmap_{snr}sigma_allspw_withnans_weighted.fits"}')
+print(f'Saving {snr}sigma temperature map at {sourcepath+"texmap_{snr}sigma_allspw_withnans_weighted.fits"}\n')
 hdultexsnr.writeto(sourcepath+'texmap_snr_allspw_weighted.fits',overwrite=True)
 
 nugs_swapaxis2toaxis0=np.swapaxes(nugsmap,0,2)
@@ -816,9 +897,35 @@ nugscube.header['BTYPE']='Upper-state column density'
 nugshdul=fits.HDUList([nugscube])
 nugserrhdul=fits.HDUList([nugserrcube])
 
-print('Saving alltransition and E_U(K) lists')
+print('Saving alltransition and E_U(K) lists\n')
 nugshdul.writeto(sourcepath+'alltransitions_nuppers.fits',overwrite=True)
 nugserrhdul.writeto(sourcepath+'alltransitions_nupper_error.fits',overwrite=True)
 np.savetxt(sourcepath+'mastereuks.txt',mastereuks,header='Methanol excitation temperatures for the transitions used in this folder. All in units of K')
 
-print('Finished.')
+'''This wing of the code plots up the temperature and ntot maps'''
+
+print('Begin plotting procedure.\n')
+
+cm= copy.copy(mpl.cm.get_cmap("inferno"))
+cm.set_bad('black')
+
+plottexhdu=fits.open(nsigmatexpath)[0]
+
+plottexwcs=WCS(plottexhdu)
+
+sliced=['y','x']
+ax=plt.subplot(projection=plottexwcs,slices=sliced)
+
+ra=ax.coords[1]
+dec=ax.coords[0]
+
+plottedtex=ax.imshow(plottexhdu.data,cmap=cm,vmax=550,vmin=10)
+
+dec.set_axislabel('Dec (J2000)',fontsize=14,minpad=0.1)
+ra.set_axislabel('RA (J2000)',fontsize=14,minpad=0.5)
+ax.tick_params(fontsize=14)
+cbar1=plt.colorbar(plottedtex,pad=0)#plt.colorbar()
+#plt.savefig(saveimgpath)
+plt.show()
+
+print('Cube-->core-->Texmap complete.')
