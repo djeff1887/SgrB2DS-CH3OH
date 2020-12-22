@@ -11,10 +11,17 @@ import glob
 import radio_beam
 import regions
 import math
+import matplotlib as mpl
 
 plt.close('all')
 files=glob.glob('/blue/adamginsburg/d.jeff/imaging_results/*.fits')
-z=0.0002306756533745274#<<average of 2 components of 5_2-4_1 transition using old redshift(0.000236254)#0.000234806#0.000236254#0.0002333587
+
+mpl.interactive(True)
+
+z=0.000186431
+#z=0.00017594380066803095#DSii/iii
+#z=0.000186431#DSi
+#z=0.0002306756533745274#<<average of 2 components of 5_2-4_1 transition using old redshift(0.000236254)#0.000234806#0.000236254#0.0002333587#SgrB2S
 c=cnst.c*u.m/u.s
 k=cnst.k*u.J/u.K
 h=cnst.h*u.J*u.s
@@ -41,11 +48,25 @@ colors=cm.rainbow(np.linspace(0,1,len(contaminants)))
 linelist='JPL'
 linelistlist=['JPL','CDMS','SLAIM']
 
+images=['spw0','spw1','spw2','spw3']
+
+datacubes=[]
+
+for spew in images:
+    for f1 in files:
+        if spew in f1:
+            datacubes.append(f1)
+            continue
+    
+assert 'spw0' in datacubes[0], 'Cube list out of order'
+
 mdict={}
 contamdata={}
+'''
 imgnames=['spw1','spw3','spw2','spw0']
 
 assert imgnames[0] in files[0], 'Files out of order'
+'''
 
 def specmaker(plot,x,y,xmin,xmax,center,trans,ymax,ymin,moddata,thickmoddata):
     plot.set_xlim(xmin.value,xmax.value)
@@ -55,6 +76,7 @@ def specmaker(plot,x,y,xmin,xmax,center,trans,ymax,ymin,moddata,thickmoddata):
     plot.plot(x,moddata,color='brown', label=(r'$\tau<<1$'))
     plot.plot(x,thickmoddata,color='cyan',label=(r'$\tau>1'))
     plot.set_title(trans)
+    '''
     for mols in range(len(contaminants)):
         contamlabel=0
         linelistcheck=0
@@ -80,6 +102,7 @@ def specmaker(plot,x,y,xmin,xmax,center,trans,ymax,ymin,moddata,thickmoddata):
                             contamlabel+=1
                         else:
                             ax[row,col].axvline(x=line[g],color=colors[mols])
+    '''
     '''
     print(f'ymin: {y.min()}')
     print(f'yvaluemin: {y.value.min()}')
@@ -160,14 +183,19 @@ def contamlines(plot,contamlinelist):
     
 pixelcoords=[]
 for i in range(len(files)):
-    print('Getting ready - '+imgnames[i])
-    cube=sc.read(files[i],use_dask=True)
-    header=fits.getheader(files[i])
+    print('Getting ready - '+datacubes[i])
+    cube=sc.read(datacubes[i],use_dask=True)
+    header=fits.getheader(datacubes[i])
     
     cube_w=cube.wcs
-    targetworldcrd=[[0,0,0],[2.66835339e+02, -2.83961660e+01, 0]]
+    targetworldcrd=[[0,0,0],[266.8323912,-28.3954383,0]]#DSiv
+    #[[0,0,0],[266.8332640,-28.3969259,0]]#DSii/iii
+    #[266.8316149,-28.3972040,0]]#DSi
+    #[[0,0,0],[2.66835339e+02, -2.83961660e+01, 0]]#SgrB2S
     targetpixcrd=cube_w.all_world2pix(targetworldcrd,1,ra_dec_order=True)
     pixelcoords.append(targetpixcrd[1])
+    
+    assert targetpixcrd[1,0] > 0, 'Negative pixel coords'
     
     cubebeams=(cube.beams.value)*u.sr/u.beam
     targetpixspec=cube[:,int(round(targetpixcrd[1][1])),int(round(targetpixcrd[1][0]))]
@@ -195,7 +223,7 @@ for i in range(len(files)):
     mtable1=Splatalogue.query_lines(freq_min, freq_max, chemical_name=' CH3OH ', energy_max=1840, energy_type='eu_k', line_lists=[linelist], show_upper_degeneracy=True)
     methanol_table= utils.minimize_table(mtable1)
         
-    mdict[i]={imgnames[i]:methanol_table}
+    mdict[i]={datacubes[i]:methanol_table}
     mlines=(methanol_table['Freq']*10**9)/(1+z)
     mqns=methanol_table['QNs']
     meuks=methanol_table['EU_K']*u.K
@@ -298,7 +326,7 @@ for i in range(len(files)):
                 ax[row,col].xaxis.set_major_formatter(mtick.FormatStrFormatter('%.2e'))
                 preymax=reymax
                 preymin=reymin
-
+                '''
                 for mols in range(len(contaminants)):
                     contamlabel=0
                     linelistcheck=0
@@ -323,6 +351,7 @@ for i in range(len(files)):
                                         contamlabel+=1
                                     else:
                                         ax[row,col].axvline(x=line[g],color=colors[mols])
+                '''
             else:
                 print('Line below 1sigma threshold')
                 pass        
@@ -355,7 +384,7 @@ for i in range(len(files)):
                     else:
                         ax.axvline(x=line[g],color=colors[j])
         '''
-    fig.suptitle(f'{imgnames[i]}, Tkin: {testT}, N_total: {n_total}')
+    fig.suptitle(f'{datacubes[i]}, Tkin: {testT}, N_total: {n_total}')
     plt.legend(loc=0,bbox_to_anchor=(1.7,2.12))
     fig.subplots_adjust(wspace=0.2,hspace=0.55)
 print('Plotting complete. plt.show()')

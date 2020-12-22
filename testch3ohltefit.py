@@ -34,12 +34,21 @@ kappa=((2*b_0)-a_0-c_0)/(a_0-c_0)
 f=1
 
 files=glob.glob('/blue/adamginsburg/d.jeff/imaging_results/SgrB2DS_field1_*.fits')
-z=0.00017594380066803095
-#z=0.000186431
-#z=0.0002306756533745274#<<average of 2 components of 5_2-4_1 transition using old redshift(0.000236254)##0.000234806 <<<avg of the two to the left#0.000236254#0.0002333587
-imgnames=['spw1','spw3','spw2','spw0']
+z=z=0.000186425
+#z=0.00017594380066803095#DSii/iii
+#z=0.000186431#DSi
+#z=0.0002306756533745274#<<average of 2 components of 5_2-4_1 transition using old redshift(0.000236254)##0.000234806 <<<avg of the two to the left#0.000236254#0.0002333587#SgrB2S
+imgnames=['spw0','spw1','spw2','spw3']
 
-assert imgnames[0] in files[0], 'Files out of order'
+datacubes=[]
+
+for spew in imgnames:
+    for f1 in files:
+        if spew in f1:
+            datacubes.append(f1)
+            continue
+    
+assert 'spw0' in datacubes[0], 'Cube list out of order'
 
 def gauss(x,A,mu,sig):#Standard Gaussian equation
     return A*np.exp((-1/2)*((x-mu)/sig)**2)
@@ -148,20 +157,25 @@ def kkms(beams,data):
         #intensitylist.append(velflux_T)
     return t_bright
     
-imgnum=2
-testline=8
-print('Getting ready - '+imgnames[imgnum])
-cube=sc.read(files[imgnum])
+imgnum=0
+testline=4
+print('Getting ready - '+datacubes[imgnum])
+cube=sc.read(datacubes[imgnum])
 
 '''Set WCS params [RA,DEC,FRQ].(For non-contsub cubes not using spectral-cube, the Stokes axis hasn't been removed, so the input array must be [RA,DEC,STOKES,FRQ]. '''
 cube_w=cube.wcs#WCS(files[imgnum])
-if 'medsub' in files[imgnum]:
+if 'medsub' in datacubes[imgnum]:
     contsub=True
 else:
     contsub=False
 
-targetworldcrd=[[0,0,0],[266.8332569, -28.3969436, 0]]#[266.8316149,-28.3972040,0]]#[[0,0,0],[2.66835339e+02, -2.83961660e+01, 0]]
+targetworldcrd=[[0,0,0],[266.8323912,-28.3954383,0]]
+#[[0,0,0],[266.8332569, -28.3969436, 0]]#DSii/iii
+#[266.8316149,-28.3972040,0]]#DSi
+#[[0,0,0],[2.66835339e+02, -2.83961660e+01, 0]]#SgrB2S
 targetpixcrd=cube_w.all_world2pix(targetworldcrd,1,ra_dec_order=True)
+
+assert targetpixcrd[1,0] > 0, 'Negative pixel coords'
 
 #header=fits.getheader(files[0])
 #beamer=radio_beam.Beam.from_fits_header(hdu).value

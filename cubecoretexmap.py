@@ -22,13 +22,14 @@ Splatalogue.QUERY_URL= 'https://splatalogue.online/c_export.php'
 
 print('Begin Jy/beam-to-K and region subcube conversion\n')
 
-source='DSi'#'SgrB2S'
+source='DSiv'#'SgrB2S'
 
 inpath='/blue/adamginsburg/d.jeff/imaging_results/data/OctReimage/'
 beamcubes=glob.glob(inpath+'*.fits')
 home='/blue/adamginsburg/d.jeff/imaging_results/products/OctReimage/'
 cubes=glob.glob(home+'*pbcor_line.fits')
-region='fk5; box(266.8316387, -28.3971867, 0.0010556, 0.0010556)'#DSi-large
+region='fk5; box(266.8324225,-28.3954419, 0.0010417, 0.0010417)'#DSiv
+#box(266.8316387, -28.3971867, 0.0010556, 0.0010556)'#DSi-large
 #box(266.8353410,-28.3962005,0.0016806,0.0016806)'#SgrB2S-box2
 #box(266.8333438, -28.3966103, 0.0014028, 0.0014028)' #DSii/iii
 #box(266.8315833, -28.3971867, 0.0006528, 0.0006528)' #DSi-small
@@ -65,7 +66,7 @@ else:
         print(f'{outpath} already exists. Proceeding...\n')
         
     if 'products' in home:
-        print('STATCONT products detected\n')
+        print('***STATCONT products detected***\n')
         if not os.path.isdir(statfixpath):
             print(f'Creating beamfix directory {statfixpath}')
             os.makedirs(statfixpath)
@@ -125,7 +126,7 @@ f=1
 Tbg=2.7355*u.K
 
 #z=0.00017594380066803095 #SgrB2DSII?
-z=0.000186431 #SgrB2DSi
+z=0.000186431 #SgrB2DSi/DSiv(?)
 #z=0.0002306756533745274#<<average of 2 components of 5_2-4_1 transition using old redshift(0.000236254)#0.000234806#0.0002333587 SgrB2S
 print(f'Doppler shift: {z} / {(z*c).to("km s-1")}\n')
 
@@ -447,7 +448,7 @@ for spew in images:
     
 assert 'spw0' in datacubes[0], 'Cube list out of order'
 
-sourcepath='/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/DSi/OctReimage_z0_000186431_5-6mhzwidth_stdfixes/'
+sourcepath=f'/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/{source}/OctReimage_z0_000186431_5-6mhzwidth_stdfixes/'
 nupperpath=sourcepath+'nuppers/'
 stdpath=sourcepath+'errorimgs/std/'
 slabpath=sourcepath+'spectralslabs/km_s/'
@@ -462,7 +463,7 @@ if os.path.isdir(slabpath):
     pass
 else:
     print(f'Making source path {sourcepath}')
-    os.mkdir(sourcepath)
+    os.makedirs(sourcepath)
     print(f'Making nupper folder {nupperpath}')
     os.mkdir(nupperpath)
     print(f'Making error folder {stdpath}')
@@ -528,7 +529,8 @@ for imgnum in range(len(datacubes)):
     cube_unmasked=velcube.unmasked_data
     
     cube_w=cube.wcs
-    targetworldcrd=[[0,0,0],[266.8316149,-28.3972040,0]] #DSi
+    targetworldcrd=[[0,0,0],[266.8324225,-28.3954419,0]]#DSiv
+    #[[0,0,0],[266.8316149,-28.3972040,0]] #DSi
     #[[0,0,0],[2.66835339e+02, -2.83961660e+01, 0]] #SgrB2S
     #[[0,0,0],[266.8332569, -28.3969, 0]] #DSii/iii
     targetpixcrd=cube_w.all_world2pix(targetworldcrd,1,ra_dec_order=True)
