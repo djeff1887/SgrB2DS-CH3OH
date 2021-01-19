@@ -5,10 +5,37 @@ import glob
 import numpy as np
 import copy
 import matplotlib as mpl
+import astropy.units as u
+import radio_beam
+from astropy import wcs
+import astropy.units as u
+from astropy import coordinates
 
+mpl.interactive(True)
 
-cm= copy.copy(mpl.cm.get_cmap("inferno"))
+def make_scalebar(ax, left_side, length, color='black', linestyle='-', label='',
+                  fontsize=12, text_offset=0.1*u.arcsec, coordsys='icrs'):
+    axlims = ax.axis()
+    lines = ax.plot(u.Quantity([left_side.ra, left_side.ra-length]),
+                    u.Quantity([left_side.dec]*2),
+                    color=color, linestyle=linestyle, marker=None,
+                    transform=ax.get_transform(coordsys),
+                   zorder=3)
+    txt = ax.text((left_side.ra-length/2).to(u.deg).value,
+                  (left_side.dec+text_offset).to(u.deg).value,
+                  label,
+                  verticalalignment='bottom',
+                  horizontalalignment='center',
+                  transform=ax.get_transform(coordsys),
+                  color=color,
+                  fontsize=fontsize,
+                 zorder=2,bbox=dict(facecolor='white', alpha=0.6))
+    ax.axis(axlims)
+    return lines,txt
+
+cm= copy.copy(mpl.cm.get_cmap("inferno"))#mom0 bone, temp inferno, nupper Blues_r
 cm.set_bad('black')
+dGC=8.34*u.kpc#per Meng et al. 2019 https://www.aanda.org/articles/aa/pdf/2019/10/aa35920-19.pdf
 
 home='/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/'
 sourcepath=home+'SgrB2S/z0_0002306756533745274_testbox2_5-6mhzwidth/'+'figures/'
@@ -41,27 +68,55 @@ for y in range(cntrshape[0]):
 assert upperntot not in cntrhdu.data, 'Unphysical values in Ntot image'
 '''
 cntrrms=np.nanstd(cntrhdu.data)
-cntrlist=cntrrms*np.array([1,2,4,8,16,32,64])
+cntrlist=cntrrms*np.array([3,6,8,16,32,48])
 
-cntrdata=cntrhdu.data
+cntrdata=np.squeeze(cntrhdu.data)
 
 hduwcs=WCS(hdu)
+cntrwcs=WCS(cntrhdu).celestial
+texmaxpix=hduwcs.array_shape
+hdubeam=radio_beam.Beam.from_fits_header(hdu.header)
 
-sliced=['y','x']
+sliced=['x','y']#Must be in same order as axes are given in fits header, at least. 
 ax=plt.subplot(projection=hduwcs,slices=sliced)
+plt.rcParams['figure.dpi'] = 300
 
-ra=ax.coords[1]
-dec=ax.coords[0]
+ra=ax.coords[0]
+dec=ax.coords[1]
 
-img=ax.imshow(hdu.data,vmax=550,cmap=cm)#tmax=550, tmin=10, ntotmax=6.26e17, dsintotmax=2.21e17
-
-ax.contour(cntrhdu.data, levels=cntrlist, colors='white')#, alpha=0.5)#ax.contour(data=hdu.data)#, colors='black')#binary/Greys are other good cmaps
+img=ax.imshow(hdu.data,interpolation=None, vmax=550,cmap=cm)#tmax=550, tmin=10, ntotmax=6.26e17, dsintotmax=2.21e17
+lims=ax.axis()
+ax.contour(cntrdata, levels=cntrlist, colors='white',transform=ax.get_transform(cntrwcs),linewidths=1)#, alpha=0.5)#ax.contour(data=hdu.data)#, colors='black')#binary/Greys are other good cmaps
 #ax.contour(cntrhdu.data,levels=(-1*cntrlist),colors='white',linestyles='dashed')#YlGn is alt for both
+
+scale=5000*u.AU
+lenn=np.arctan(scale/dGC)
+'''#SgrB2S
+make_scalebar(ax, coordinates.SkyCoord('17:47:20.6618 -28:23:48.734', unit=(u.hour, u.deg), 
+                                       frame='icrs'),
+              length=lenn, label=f'{int(scale.value)} AU', fontsize=12, 
+              text_offset=0.02*u.arcsec)
+crd=coordinates.SkyCoord('17:47:20.6590 -28:23:48.772', unit=(u.hour,u.deg), frame='icrs')
+
+'''
+#DSi
+make_scalebar(ax, coordinates.SkyCoord('17:47:19.5180 -28:23:51.359', unit=(u.hour, u.deg), 
+                                       frame='icrs'),
+              length=lenn, label=f'{int(scale.value)} AU', fontsize=12, 
+              text_offset=0.02*u.arcsec)
+crd=coordinates.SkyCoord('17:47:19.4976 -28:23:51.384', unit=(u.hour,u.deg), frame='icrs')
+
+pixscale=np.mean(wcs.utils.proj_plane_pixel_scales(hduwcs))*u.deg
+hdubeamplot=hdubeam.ellipse_to_plot(10,10,pixscale)
+hdubeamplot.set_facecolor('none')
+hdubeamplot.set_edgecolor('cyan')
     
-dec.set_axislabel('Dec (J2000)',fontsize=14,minpad=0.1)
-ra.set_axislabel('RA (J2000)',fontsize=14,minpad=0.5)
+ax.axis(lims)
+ra.set_axislabel('RA (J2000)',fontsize=14,minpad=0.9)
+ra.set_ticklabel(exclude_overlapping=True)
+dec.set_axislabel('Dec (J2000)',fontsize=14,minpad=-0.7)
 ax.tick_params(fontsize=14)
-cbar1=plt.colorbar(img,pad=0)#plt.colorbar()
+cbar1=plt.colorbar(img,pad=0,label='K')#plt.colorbar()
 #plt.savefig(saveimgpath)
 plt.show()
 

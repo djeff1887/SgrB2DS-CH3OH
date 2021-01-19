@@ -60,6 +60,8 @@ for y in range(np.shape(texmapdata)[0]):
             centrtopix.append((np.sqrt((y-texpeakpix[0])**2+(x-texpeakpix[1])**2)*pixtophysicalsize).value)
         else:
             pass
+            
+plt.rcParams["figure.dpi"]=100
 
 ax=plt.subplot(111)
 plt.scatter(centrtopix,texinradius)
