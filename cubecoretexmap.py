@@ -15,6 +15,7 @@ import pickle
 from astropy.wcs import WCS
 import matplotlib as mpl
 import copy
+from astropy import coordinates
 
 Splatalogue.QUERY_URL= 'https://splatalogue.online/c_export.php'
 
@@ -22,15 +23,17 @@ Splatalogue.QUERY_URL= 'https://splatalogue.online/c_export.php'
 
 print('Begin Jy/beam-to-K and region subcube conversion\n')
 
-source='DSiv'#'SgrB2S'
+source='DSi'
+#source='SgrB2S'
+fnum=10
 
 inpath='/blue/adamginsburg/d.jeff/imaging_results/data/OctReimage/'
 beamcubes=glob.glob(inpath+'*.fits')
 home='/blue/adamginsburg/d.jeff/imaging_results/products/OctReimage/'
 cubes=glob.glob(home+'*pbcor_line.fits')
-region='fk5; box(266.8324225,-28.3954419, 0.0010417, 0.0010417)'#DSiv
-#box(266.8316387, -28.3971867, 0.0010556, 0.0010556)'#DSi-large
-#box(266.8353410,-28.3962005,0.0016806,0.0016806)'#SgrB2S-box2
+#region='fk5; box(266.8324225,-28.3954419, 0.0010417, 0.0010417)'#DSiv
+#region='fk5; box(266.8316387, -28.3971867, 0.0010556, 0.0010556)'#DSi-large
+region='fk5; box(266.8353410,-28.3962005,0.0016806,0.0016806)'#SgrB2S-box2
 #box(266.8333438, -28.3966103, 0.0014028, 0.0014028)' #DSii/iii
 #box(266.8315833, -28.3971867, 0.0006528, 0.0006528)' #DSi-small
 outpath=f'/blue/adamginsburg/d.jeff/SgrB2DSminicubes/{source}/OctReimage/'#imaging_results/DSii_iiibox1/'
@@ -125,8 +128,11 @@ R_i=1
 f=1
 Tbg=2.7355*u.K
 
+dopplershifts={'SgrB2S':0.0002306756533745274,'DSi':0.000186431}
+
+z=dopplershifts[source]
 #z=0.00017594380066803095 #SgrB2DSII?
-z=0.000186431 #SgrB2DSi/DSiv(?)
+#z=0.000186431 #SgrB2DSi/DSiv(?)
 #z=0.0002306756533745274#<<average of 2 components of 5_2-4_1 transition using old redshift(0.000236254)#0.000234806#0.0002333587 SgrB2S
 print(f'Doppler shift: {z} / {(z*c).to("km s-1")}\n')
 
@@ -227,6 +233,8 @@ def linelooplte(line_list,line_width,iterations,quantum_numbers):
             masterslicedqns.append(transition)
             mastereuks.append(euks[i].value)
             masterstddevs.append(targetspecK_stddev)
+            masterqns.append(quantum_numbers[i])
+            masterlines.append(line_list[i].value)
             print('\nDictionaries populated for this transition.')
             if os.path.isfile(slabfilename):
                 print('Proceeding...\n')
@@ -251,6 +259,8 @@ def linelooplte(line_list,line_width,iterations,quantum_numbers):
             transitiondict.update({transition:temptransdict})
             mastereuks.append(euks[i])
             masterstddevs.append(targetspecK_stddev)
+            masterqns.append(quantum_numbers[i])
+            masterlines.append(line_list[i].value)
             print(f'{quantum_numbers[i]} calculations complete.\n')
             if os.path.isfile(slabfilename):
                 print(f'Spectral slab {slabfilename} already exists.\nProceeding...\n')
@@ -448,7 +458,9 @@ for spew in images:
     
 assert 'spw0' in datacubes[0], 'Cube list out of order'
 
-sourcepath=f'/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/{source}/OctReimage_z0_000186431_5-6mhzwidth_stdfixes/'
+sourcelocs={'SgrB2S':'OctReimage_z0_0002306756533745274_5-6mhzwidth_stdfixes/','DSi':'/field10originals_z0_000186431_5-6mhzwidth_stdfixes/'}
+
+sourcepath=f'/blue/adamginsburg/d.jeff/SgrB2DSreorg/field{fnum}/CH3OH/{source}/'+sourcelocs[source]
 nupperpath=sourcepath+'nuppers/'
 stdpath=sourcepath+'errorimgs/std/'
 slabpath=sourcepath+'spectralslabs/km_s/'
@@ -529,9 +541,9 @@ for imgnum in range(len(datacubes)):
     cube_unmasked=velcube.unmasked_data
     
     cube_w=cube.wcs
-    targetworldcrd=[[0,0,0],[266.8324225,-28.3954419,0]]#DSiv
-    #[[0,0,0],[266.8316149,-28.3972040,0]] #DSi
-    #[[0,0,0],[2.66835339e+02, -2.83961660e+01, 0]] #SgrB2S
+    #targetworldcrd=[[0,0,0],[266.8324225,-28.3954419,0]]#DSiv
+    targetworldcrd=[[0,0,0],[266.8316149,-28.3972040,0]] #DSi
+    #targetworldcrd=[[0,0,0],[2.66835339e+02, -2.83961660e+01, 0]] #SgrB2S
     #[[0,0,0],[266.8332569, -28.3969, 0]] #DSii/iii
     targetpixcrd=cube_w.all_world2pix(targetworldcrd,1,ra_dec_order=True)
     
@@ -562,7 +574,7 @@ for imgnum in range(len(datacubes)):
                                     
     
     print('Gathering Splatalogue table parameters')    
-    lines=maintable['Freq']*10**9*u.Hz/(1+z)#Redshifted to Sgr B2
+    lines=maintable['Freq']*10**9*u.Hz/(1+z)#Redshifted to source
     #masterlines.append(lines)
     #vel_lines=vradio(lines,spw1restfreq)
     qns=maintable['QNs']
@@ -777,6 +789,7 @@ ntotmap=np.empty((testyshape,testxshape))
 texerrormap=np.empty((testyshape,testxshape))
 texsigclipmap=np.empty((testyshape,testxshape))
 texsnrmap=np.empty((testyshape,testxshape))
+numtransmap=np.empty((testyshape,testxshape))
 snr=3
 
 fitdict={}
@@ -789,14 +802,15 @@ for y in range(testyshape):
         nupperstofit=[]
         eukstofit=[]
         nuperrors=[]
-        for z in range(testzshape):
-            if nugsmap[y,x,z] <= 0 or np.isnan(nugsmap[y,x,z]):
+        for zed in range(testzshape):
+            if nugsmap[y,x,zed] <= 0 or np.isnan(nugsmap[y,x,zed]):
                 continue
             else:
-                nupperstofit.append(nugsmap[y,x,z])
-                eukstofit.append(mastereuks[z])
-                nuperrors.append(nugserrormap[y,x,z])
-                
+                nupperstofit.append(nugsmap[y,x,zed])
+                eukstofit.append(mastereuks[zed])
+                nuperrors.append(nugserrormap[y,x,zed])
+        
+        numtransmap[y,x]=len(nupperstofit)        
         if len(nupperstofit)==0:
             obsTex=np.nan
             obsNtot=np.nan
@@ -833,6 +847,9 @@ for y in range(testyshape):
             else:
                 texsigclipmap[y,x]=np.nan
 
+detectnum=5
+transmaskarr=np.ma.masked_where(numtransmap<detectnum,texsigclipmap)
+transmasktexmap=transmaskarr.filled(fill_value=np.nan)#np.array(np.ma.masked_where(numtransmap<detectnum,texsigclipmap))
             
 transmoment0=fits.open(transdict[transitionkeys[transkey]]['filename'])
 transmom0header=transmoment0[0].header
@@ -878,6 +895,23 @@ hdultexsnr=fits.HDUList([primaryhdutexsnr])
 print(f'Saving {snr}sigma temperature map at {sourcepath+"texmap_{snr}sigma_allspw_withnans_weighted.fits"}\n')
 hdultexsnr.writeto(sourcepath+'texmap_snr_allspw_weighted.fits',overwrite=True)
 
+primaryhdunumtrans=fits.PrimaryHDU(numtransmap)
+primaryhdunumtrans.header=transmom0header
+primaryhdunumtrans.header['BTYPE']='Number CH3OH 3sigma Detected Transitions'
+primaryhdunumtrans.header['BUNIT']=''
+hdulnumtrans=fits.HDUList([primaryhdunumtrans])
+print(f'Saving number of {snr}sigma detected CH3OH lines map at {sourcepath+"ch3ohdetections_{snr}sigma_allspw_withnans_weighted.fits"}\n')
+hdulnumtrans.writeto(sourcepath+f"ch3ohdetections{detectnum}_{snr}sigma_allspw_withnans_weighted.fits",overwrite=True)
+
+primaryhdutransmasktex=fits.PrimaryHDU(transmasktexmap)
+primaryhdutransmasktex.header=transmom0header
+primaryhdutransmasktex.header['BTYPE']='Excitation temperature'
+primaryhdutransmasktex.header['BUNIT']='K'
+hdultransmasktex=fits.HDUList([primaryhdutransmasktex])
+nsigmatransmaskedpath=sourcepath+"texmap_{detectnum}transmask_{snr}sigma_allspw_withnans_weighted.fits"
+print(f'Saving {detectnum} transition masked temperature map at {nsigmatransmaskedpath}\n')
+hdultransmasktex.writeto(nsigmatransmaskedpath,overwrite=True)
+
 nugs_swapaxis2toaxis0=np.swapaxes(nugsmap,0,2)
 nugserr_swapaxis2toaxis0=np.swapaxes(nugserrormap,0,2)
 
@@ -902,31 +936,74 @@ nugserrhdul=fits.HDUList([nugserrcube])
 print('Saving alltransition and E_U(K) lists\n')
 nugshdul.writeto(sourcepath+'alltransitions_nuppers.fits',overwrite=True)
 nugserrhdul.writeto(sourcepath+'alltransitions_nupper_error.fits',overwrite=True)
-np.savetxt(sourcepath+'mastereuks.txt',mastereuks,header='Methanol excitation temperatures for the transitions used in this folder. All in units of K')
+eukqns=np.column_stack((mastereuks,masterqns,masterlines))
+np.savetxt(sourcepath+'mastereuksqnsfreqs.txt',eukqns,fmt='%s',header='Methanol transitions and excitation temperatures used in this folder. Temperatures in units of K, frequencies are redshifted ({z}/{(z*c).to("km s-1")}) and in Hz.')
 
 '''This wing of the code plots up the temperature and ntot maps'''
 
 print('Begin plotting procedure.\n')
 
-cm= copy.copy(mpl.cm.get_cmap("inferno"))
-cm.set_bad('black')
+def make_scalebar(ax, left_side, length, color='black', linestyle='-', label='',
+                  fontsize=12, text_offset=0.1*u.arcsec, coordsys='icrs'):
+    axlims = ax.axis()
+    lines = ax.plot(u.Quantity([left_side.ra, left_side.ra-length]),
+                    u.Quantity([left_side.dec]*2),
+                    color=color, linestyle=linestyle, marker=None,
+                    transform=ax.get_transform(coordsys),
+                   zorder=3)
+    txt = ax.text((left_side.ra-length/2).to(u.deg).value,
+                  (left_side.dec+text_offset).to(u.deg).value,
+                  label,
+                  verticalalignment='bottom',
+                  horizontalalignment='center',
+                  transform=ax.get_transform(coordsys),
+                  color=color,
+                  fontsize=fontsize,
+                 zorder=2,bbox=dict(facecolor='white', alpha=0.6))
+    ax.axis(axlims)
+    return lines,txt
 
-plottexhdu=fits.open(nsigmatexpath)[0]
+colormap= copy.copy(mpl.cm.get_cmap("inferno"))
+colormap.set_bad('black')
+dGC=8.34*u.kpc#per Meng et al. 2019 https://www.aanda.org/articles/aa/pdf/2019/10/aa35920-19.pdf
+
+plottexhdu=fits.open(nsigmatransmaskedpath)[0]
 
 plottexwcs=WCS(plottexhdu)
 
-sliced=['y','x']
+sliced=['x','y']
 ax=plt.subplot(projection=plottexwcs,slices=sliced)
+plt.rcParams['figure.dpi'] = 150
 
-ra=ax.coords[1]
-dec=ax.coords[0]
+ra=ax.coords[0]
+dec=ax.coords[1]
 
-plottedtex=ax.imshow(plottexhdu.data,cmap=cm,vmax=550,vmin=10)
+plottedtex=ax.imshow(plottexhdu.data,cmap=colormap,vmax=605,vmin=10)
 
-dec.set_axislabel('Dec (J2000)',fontsize=14,minpad=0.1)
-ra.set_axislabel('RA (J2000)',fontsize=14,minpad=0.5)
+scale=5000*u.AU
+lenn=np.arctan(scale/dGC)
+
+if source == 'DSi':
+    print(f'Scalebar source : DSi')
+    make_scalebar(ax, coordinates.SkyCoord('17:47:19.5180 -28:23:51.359', unit=(u.hour, u.deg), 
+                                       frame='icrs'),
+              length=lenn, label=f'{int(scale.value)} AU', fontsize=12, 
+              text_offset=0.02*u.arcsec)
+    crd=coordinates.SkyCoord('17:47:19.4976 -28:23:51.384', unit=(u.hour,u.deg), frame='icrs')
+
+elif source == 'SgrB2S':
+    print(f'Scalebar source: SgrB2S')
+    make_scalebar(ax, coordinates.SkyCoord('17:47:20.6618 -28:23:48.734', unit=(u.hour, u.deg), 
+                                       frame='icrs'),
+              length=lenn, label=f'{int(scale.value)} AU', fontsize=12, 
+              text_offset=0.02*u.arcsec)
+    crd=coordinates.SkyCoord('17:47:20.6590 -28:23:48.772', unit=(u.hour,u.deg), frame='icrs')
+
+ra.set_axislabel('RA (J2000)',fontsize=14,minpad=0.9)
+ra.set_ticklabel(exclude_overlapping=True)
+dec.set_axislabel('Dec (J2000)',fontsize=14,minpad=-0.7)
 ax.tick_params(fontsize=14)
-cbar1=plt.colorbar(plottedtex,pad=0)#plt.colorbar()
+cbar1=plt.colorbar(plottedtex,pad=0,label='K')#plt.colorbar()
 #plt.savefig(saveimgpath)
 plt.show()
 

@@ -19,15 +19,20 @@ def circle(data,ycenter,xcenter,rad):
                 edgey.append(i)
     return np.vstack((edgex,edgey))
     
-home='/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/DSi/OctReimage_z0_000186431_5-6mhzwidth_stdfixes/'
+source='DSi'
+fnum=10
+base=f'/blue/adamginsburg/d.jeff/SgrB2DSreorg/field{fnum}/CH3OH/{source}/'
+home=base+'field10originals_z0_000186431_5-6mhzwidth_stdfixes/'
+#home='/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSi/OctReimage_z0_000186431_5-6mhzwidth_stdfixes/'
 #"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/SgrB2S/OctReimage_z0_0002306756533745274_5-6mhzwidth_stdfixes/"
-texmap=home+"texmap_3sigma_allspw_withnans_weighted.fits"
+texmap=home+"texmap_3transmask_3sigma_allspw_withnans_weighted.fits"
 
-texmapdata=fits.getdata(texmap)*u.K
+texmap=fits.open(texmap)
+texmapdata=texmap[0].data*u.K
 
 dGC=8.34*u.kpc#per Meng et al. 2019 https://www.aanda.org/articles/aa/pdf/2019/10/aa35920-19.pdf
 
-cellsize=0.05*u.arcsec
+cellsize=(np.abs(texmap[0].header['CDELT1']*u.deg)).to('arcsec')
 
 pixtophysicalsize=(np.tan(cellsize)*dGC).to('AU')
 
@@ -61,7 +66,7 @@ for y in range(np.shape(texmapdata)[0]):
         else:
             pass
             
-plt.rcParams["figure.dpi"]=100
+plt.rcParams["figure.dpi"]=150
 
 ax=plt.subplot(111)
 plt.scatter(centrtopix,texinradius)

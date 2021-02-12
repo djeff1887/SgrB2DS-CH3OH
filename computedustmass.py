@@ -60,10 +60,12 @@ sigmasb=cnst.sigma*u.W/(u.m**2*u.K**4)
 mu=2.8*u.Dalton
 G=cnst.G*u.m**3/(u.kg*u.s**2)
 
-cntmimage=fits.open('/blue/adamginsburg/d.jeff/imaging_results/adamcleancontinuum/Sgr_B2_DS_B6_uid___A001_X1290_X46_continuum_merged_12M_robust2_selfcal4_finaliter.image.tt0.pbcor.fits')
+cntminfile='/blue/adamginsburg/d.jeff/imaging_results/adamcleancontinuum/Sgr_B2_DS_B6_uid___A001_X1290_X46_continuum_merged_12M_robust0_selfcal4_finaliter.image.tt0.pbcor.fits'
+cntmimage=fits.open(cntminfile)
+print(f'Continuum image: {cntminfile}')
+#texmap=fits.open("/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSi/field10originals_z0_000186431_5-6mhzwidth_stdfixes/texmap_3transmask_3sigma_allspw_withnans_weighted.fits")
 texmap=fits.open("/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/SgrB2S/OctReimage_z0_0002306756533745274_5-6mhzwidth_stdfixes/texmap_3sigma_allspw_withnans_weighted.fits")
 source='SgrB2S'
-#texmap=fits.open(r'C:/Users/zen83/Dropbox/Data/SgrB2DeepSouth/field1/CH3OH/DSi/OctReimage_z0_000186431_5-6mhzwidth_stdfixes/texmap_3sigma_allspw_withnans_weighted.fits')
 #source='DSi'
 
 texmapdata=texmap[0].data*u.K
@@ -89,10 +91,11 @@ cntmwcs=WCS(cntmimage[0].header)
 texwcs=WCS(texmap[0].header)
 
 '''Round down for both x and y when converting from DS9 (I think)'''
+#texmappix=[36,43]#DSi field10 hotspot
 #texmappix=[35,44]#DSi hotspot
 #texmappix=[73,56]#SgrB2S hotspot
-#texmappix=[69,58]#SgrB2S hotspot-adjacent
-texmappix=[79,63]#SgrB2S HII hotpost
+texmappix=[69,58]#SgrB2S hotspot-adjacent
+#texmappix=[79,63]#SgrB2S HII hotpost
 
 hotspottex=texmapdata[texmappix[0],texmappix[1]]
 targetpixtoworld=texwcs.pixel_to_world([0,0],texmappix)#wcs_pix2world(([0,0],texmappix),ra_dec_order=True)
@@ -128,8 +131,8 @@ def circle(data,ycenter,xcenter):
 #cntmpixinbeam,cntmbeam=circle(cntmdatasqee,cntmypix,cntmxpix)
 hotspotjy=cntmdatasqee[cntmypix,cntmxpix]/beamarea_sr#The equations we're using start from the Plank function, so this gets us to spectral radiance units
 #hotspotjy=np.sum(cntmbeam)*u.Jy/beamarea_sr
-print(f'Results for HII region in {source}\nTex pixel {texmappix}):\nCntm pixel: {cntmypix,cntmxpix}')
-print(f'target flux density: {cntmdatasqee[cntmypix,cntmxpix]}, target temperature {hotspottex}')
+print(f'Results for region in {source}\nTex pixel {texmappix}):\nCntm pixel: {cntmypix,cntmxpix}')
+print(f'target flux density: {cntmdatasqee[cntmypix,cntmxpix].to("mJy")}, target temperature {hotspottex}')
 equiv=u.brightness_temperature(cntmimage[0].header['RESTFRQ']*u.Hz)
 jysrtoK=hotspotjy.to(u.K,equivalencies=equiv)
 targetlum=luminosity(bmajtophyssize,jysrtoK).to("solLum")#per Ginsburg+2017, this uses the peak of the continuum, not methanol
