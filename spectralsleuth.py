@@ -9,7 +9,9 @@ import glob
 import radio_beam
 import regions
 
-files=glob.glob('/ufrc/adamginsburg/d.jeff/imaging_results/*.fits')
+Splatalogue.QUERY_URL= 'https://splatalogue.online/c_export.php'
+
+files=glob.glob('/blue/adamginsburg/d.jeff/imaging_results/*.fits')
 z=0.0002333587
 chem= input('Molecule?: ')
 chem=(' '+chem+' ')
@@ -18,10 +20,20 @@ linewidth=0.00485*u.GHz
 
 
 speciesdata={}
-imgnames=['spw2','spw1','spw0']
+imgnames=['spw0','spw1','spw2','spw3']
+
+datacubes=[]
+
+for spew in imgnames:
+    for f1 in files:
+        if spew in f1:
+            datacubes.append(f1)
+            continue
+    
+assert 'spw0' in datacubes[0], 'Cube list out of order'
 
 for i in range(len(files)):
-    fname=files[i]#'/ufrc/adamginsburg/d.jeff/imaging_results/SgrB2DS_field1_spw1_cube_medsub.image.fits'#'/ufrc/adamginsburg/d.jeff/imaging_results/SgrB2DS_field1_spw0_cube.image.fits'
+    fname=datacubes[i]#'/ufrc/adamginsburg/d.jeff/imaging_results/SgrB2DS_field1_spw1_cube_medsub.image.fits'#'/ufrc/adamginsburg/d.jeff/imaging_results/SgrB2DS_field1_spw0_cube.image.fits'
     cube=sc.read(fname)
     header=fits.getheader(fname)
 
@@ -56,36 +68,50 @@ for i in range(len(files)):
     speciesdata[imgnames[i]]={'freqs':(lines*u.Hz),'qns':qns,'EU_K':(table['EU_K']),'methanoltable':methanol_table}#'lines':lines,'qns':qns}
     
     print('Plotting lines...')
-    if i == 2:
-        spw=cube[:,762,496]
-        fig=plt.figure()
-        ax=plt.subplot(111)
-        plt.plot(freqs,spw.value,drawstyle='steps')
-        for j in range(len(mlines)):
-            centroid=mlines[j]*u.Hz
-            minfreq=centroid-linewidth
-            maxfreq=centroid+linewidth
-            centrchan=int(cube.closest_spectral_channel(centroid))
-            #interval=np.linspace(cube.closest_spectral_channel(maxfreq.value),cube.closest_spectral_channel(minfreq.value),numchans*2)
-            ax.axvline(x=centroid.value,color='green')
-            ax.plot(freqs[cube.closest_spectral_channel(maxfreq):cube.closest_spectral_channel(minfreq)],spw.value[cube.closest_spectral_channel(maxfreq):cube.closest_spectral_channel(minfreq)],drawstyle='steps',color='orange')
-        for k in range(len(lines)):
-            ax.axvline(x=lines[k],color='red')
-            #plt.annotate((lines[i]),xy=(lines[i],0),xytext=(lines[i],(spw1[i].value+0.01)),rotation=90)
-        ax.set_title((imgnames[i]+chem+linelist+' '+'Spectral Sleuthing'))
-        ax.set_ylabel('Jy/beam')
-        ax.set_xlabel('Frequency (Hz)')
-        plt.show()
-        continue
+    
+    cube_w=cube.wcs
+    #targetworldcrd=[[0,0,0],[266.8324225,-28.3954419,0]]#DSiv
+    #targetworldcrd=[[0,0,0],[266.8316149,-28.3972040,0]] #DSi
+    targetworldcrd=[[0,0,0],[2.66835339e+02, -2.83961660e+01, 0]] #SgrB2S
+    #[[0,0,0],[266.8332569, -28.3969, 0]] #DSii/iii
+    targetpixcrd=cube_w.all_world2pix(targetworldcrd,1,ra_dec_order=True)
+    
+    pixxcrd,pixycrd=int(round(targetpixcrd[1][0])),int(round(targetpixcrd[1][1]))
+    print(f'x: {pixxcrd}/y: {pixycrd}')
+    
+    assert pixxcrd >= 0 and pixycrd >= 0, 'Negative pixel coords'
+    
+    spw=cube[:,pixycrd,pixxcrd]
+    fig=plt.figure()
+    ax=plt.subplot(111)
+    plt.plot(freqs,spw.value,drawstyle='steps')
+    for j in range(len(mlines)):
+        centroid=mlines[j]*u.Hz
+        minfreq=centroid-linewidth
+        maxfreq=centroid+linewidth
+        centrchan=int(cube.closest_spectral_channel(centroid))
+        #interval=np.linspace(cube.closest_spectral_channel(maxfreq.value),cube.closest_spectral_channel(minfreq.value),numchans*2)
+        ax.axvline(x=centroid.value,color='green')
+        ax.plot(freqs[cube.closest_spectral_channel(maxfreq):cube.closest_spectral_channel(minfreq)],spw.value[cube.closest_spectral_channel(maxfreq):cube.closest_spectral_channel(minfreq)],drawstyle='steps',color='orange')
+    for k in range(len(lines)):
+        ax.axvline(x=lines[k],color='red')
+        #plt.annotate((lines[i]),xy=(lines[i],0),xytext=(lines[i],(spw1[i].value+0.01)),rotation=90)
+    ax.set_title((imgnames[i]+chem+linelist+' '+'Spectral Sleuthing'))
+    ax.set_ylabel('Jy/beam')
+    ax.set_xlabel('Frequency (Hz)')
+    plt.show()
+    '''
     elif i != 2:
         spw=cube[:,649,383]
-        '''
+    '''
+    '''
         if (freqs[0]-freqs[1])<0:
             freqs=freqs[::-1]
             pass
         else:
             pass
-        '''
+    '''
+    '''
         fig=plt.figure()
         ax=plt.subplot(111)
         plt.plot(freqs,spw.value,drawstyle='steps')
@@ -109,5 +135,6 @@ for i in range(len(files)):
         ax.set_ylabel('Jy/beam')
         plt.show()
         continue
+    '''
 
 print('Red lines are'+chem+', green lines are CH3OH.')

@@ -51,8 +51,6 @@ def tff(rho):
     return np.sqrt((3*np.pi)/(32*G*rho))
 
 
-
-
 c=cnst.c*u.m/u.s
 k=cnst.k*u.J/u.K
 d=8.34*u.kpc##Meng et al. 2019 https://www.aanda.org/articles/aa/pdf/2019/10/aa35920-19.pdf
@@ -93,8 +91,8 @@ texwcs=WCS(texmap[0].header)
 '''Round down for both x and y when converting from DS9 (I think)'''
 #texmappix=[36,43]#DSi field10 hotspot
 #texmappix=[35,44]#DSi hotspot
-#texmappix=[73,56]#SgrB2S hotspot
-texmappix=[69,58]#SgrB2S hotspot-adjacent
+texmappix=[73,56]#SgrB2S hotspot
+#texmappix=[69,58]#SgrB2S hotspot-adjacent
 #texmappix=[79,63]#SgrB2S HII hotpost
 
 hotspottex=texmapdata[texmappix[0],texmappix[1]]

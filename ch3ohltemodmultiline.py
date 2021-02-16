@@ -12,13 +12,15 @@ import radio_beam
 import regions
 import math
 import matplotlib as mpl
+import pdb
 
 plt.close('all')
-files=glob.glob('/blue/adamginsburg/d.jeff/imaging_results/*.fits')
+files=glob.glob('/blue/adamginsburg/d.jeff/SgrB2DSminicubes/DSi/field10originals/*.fits')
 
 mpl.interactive(True)
 
-z=0.000186431
+z=0.000190713#DSv#Average of 0.00019597214240510706 (main) and 0.0001854542074721255 (2nd) from goodfit
+#z=0.000186431
 #z=0.00017594380066803095#DSii/iii
 #z=0.000186431#DSi
 #z=0.0002306756533745274#<<average of 2 components of 5_2-4_1 transition using old redshift(0.000236254)#0.000234806#0.000236254#0.0002333587#SgrB2S
@@ -38,7 +40,7 @@ R_i=1
 kappa=((2*b_0)-a_0-c_0)/(a_0-c_0)
 f=1
 
-testT=500*u.K
+testT=200*u.K
 #n_totes=[1e13,1e14,1e15,1e16,1e17,1e18,1e19,1e20,1e21,1e22,1e23]*u.cm**-2
 n_total=1e17*u.cm**-2
 
@@ -72,6 +74,7 @@ def specmaker(plot,x,y,xmin,xmax,center,trans,ymax,ymin,moddata,thickmoddata):
     plot.set_xlim(xmin.value,xmax.value)
     plot.axvline(x=center,color='green',linestyle='--',linewidth=2.0,label='CH3OH')
     plot.set_ylim(ymin,ymax)
+    #pdb.set_trace()
     plot.plot(x,y,drawstyle='steps')
     plot.plot(x,moddata,color='brown', label=(r'$\tau<<1$'))
     plot.plot(x,thickmoddata,color='cyan',label=(r'$\tau>1'))
@@ -188,9 +191,10 @@ for i in range(len(files)):
     header=fits.getheader(datacubes[i])
     
     cube_w=cube.wcs
-    targetworldcrd=[[0,0,0],[266.8323912,-28.3954383,0]]#DSiv
+    targetworldcrd=[[0,0,0],[266.8320995,-28.3976633,0]]#DSv
+    #targetworldcrd=[[0,0,0],[266.8323912,-28.3954383,0]]#DSiv
     #[[0,0,0],[266.8332640,-28.3969259,0]]#DSii/iii
-    #[266.8316149,-28.3972040,0]]#DSi
+    #targetworldcrd=[[0,0,0],[266.8316149,-28.3972040,0]]#DSi
     #[[0,0,0],[2.66835339e+02, -2.83961660e+01, 0]]#SgrB2S
     targetpixcrd=cube_w.all_world2pix(targetworldcrd,1,ra_dec_order=True)
     pixelcoords.append(targetpixcrd[1])
@@ -199,8 +203,15 @@ for i in range(len(files)):
     
     cubebeams=(cube.beams.value)*u.sr/u.beam
     targetpixspec=cube[:,int(round(targetpixcrd[1][1])),int(round(targetpixcrd[1][0]))]
-    targetpixspec_K=JybeamtoK(cubebeams,targetpixspec)
-    targetpixK_std=np.nanstd(targetpixspec_K)
+    if cube.header['BUNIT']=='K':
+        print('K cube detected\nNo conversion performed')
+        targetpixspec_K=targetpixspec
+    if cube.header['BUNIT']=='Jy beam-1':
+        print('Jy/beam cube detected\nPerforming JybeamtoK conversion')
+        targetpixspec_K=JybeamtoK(cubebeams,targetpixspec)
+    elif cube.header['BUNIT']!= 'K' and cube.header['BUNIT']!='Jy beam-1':
+        raise Exception(f'Improper brightness unit {cube.header["BUNIT"]}')
+    targetpixK_std=targetpixspec_K.std()#np.nanstd(targetpixspec_K)
     
     freqs=cube.spectral_axis
     freqflip=False
@@ -259,8 +270,8 @@ for i in range(len(files)):
         
     print('Begin figure plot loops')
     rowoffset=0
-    preymax=-100
-    preymin=100
+    preymax=-100#u.Quantity(-100,unit=(cube.header['BUNIT']))
+    preymin=100#u.Quantity(100,unit=(cube.header['BUNIT']))
     for row in range(numrows):
         print('Start Row '+str(row)+'.')
         for col in range(numcols):
@@ -272,9 +283,16 @@ for i in range(len(files)):
                 f1,f2 = f2,f1
             sub=cube.spectral_slab(f1,f2)
             spw=sub[:,int(round(targetpixcrd[1][1])),int(round(targetpixcrd[1][0]))]
-            beamlist=spw.beams
-            beamlist=(beamlist.value)*u.sr/u.beam
-            spwtbs=JybeamtoK(beamlist,spw)
+            if sub.header['BUNIT']=='K':
+                print('K cube detected\nNo conversion performed')
+                spwtbs=spw
+            if sub.header['BUNIT']=='Jy beam-1':
+                print('Jy/beam cube detected\nPerforming JybeamtoK conversion')
+                beamlist=spw.beams
+                beamlist=(beamlist.value)*u.sr/u.beam
+                spwtbs=JybeamtoK(beamlist,spw)
+            elif sub.header['BUNIT']!= 'K' and sub.header['BUNIT']!='Jy beam-1':
+                raise Exception(f'Improper brightness unit {cube.header["BUNIT"]}')
             
             spwtbs_stddev=np.std(spwtbs)
             
@@ -287,7 +305,7 @@ for i in range(len(files)):
             tbright=Tb3(n_total,mlines[col+rowoffset]*u.Hz,lw2vel,mulu2,s_j,mdegs[col+rowoffset],q,meujs[col+rowoffset],testT).to('K')#Tb2(mlines[col+rowoffset]*u.Hz,lw2vel,s_j,n_upper).to('K')
             tbthick=Tbthick(n_total,mlines[col+rowoffset]*u.Hz,lw2vel,mulu2,mdegs[col+rowoffset],q,meujs[col+rowoffset],testT).to('K')
             print(f'targetpixK_std: {targetpixK_std}')
-            if tbthick.value >= targetpixK_std:
+            if tbthick.value >= targetpixK_std.value:
                 tau=opticaldepth(tbthick,mlines[col+rowoffset]*u.Hz,testT)
                 print(f'tau: {tau}')
                 
@@ -298,20 +316,20 @@ for i in range(len(files)):
                 for hz in spw.spectral_axis:
                     modeltbs.append((gauss(hz,tbright,mlines[col+rowoffset]*u.Hz,lw2)/u.K))    
                     thickmodeltbs.append((gauss(hz,tbthick,mlines[col+rowoffset]*u.Hz,lw2)/u.K))
-                tempymax=max(spwtbs)
-                tempymin=min(spwtbs)
+                tempymax=spwtbs.max()
+                tempymin=spwtbs.min()
 
                 if row*col > numrows*numcols:
                     break
                 
-                if tempymax > preymax:
-                    reymax=tempymax#+yoffset2
+                if tempymax.value > preymax:
+                    reymax=tempymax.value#+yoffset2
                     #print('new max: ',reymax)
                 else:
                     reymax=preymax
 
-                if tempymin < preymin:
-                    reymin=tempymin#-yoffset2
+                if tempymin.value < preymin:
+                    reymin=tempymin.value#-yoffset2
                     #print('new min: ',reymin)
                 else:
                     reymin=preymin
@@ -322,7 +340,7 @@ for i in range(len(files)):
                 print(f'reymax: {reymax} reymin: {reymin}')
                 '''
 
-                specmaker(ax[row,col],spw.spectral_axis,spwtbs,mins[col+rowoffset],maxs[col+rowoffset], mlines[col+rowoffset], mqns[col+rowoffset],reymax,reymin,modeltbs,thickmodeltbs)
+                specmaker(ax[row,col],spw.spectral_axis.value,spwtbs.value,mins[col+rowoffset],maxs[col+rowoffset], mlines[col+rowoffset], mqns[col+rowoffset],reymax,reymin,modeltbs,thickmodeltbs)
                 ax[row,col].xaxis.set_major_formatter(mtick.FormatStrFormatter('%.2e'))
                 preymax=reymax
                 preymin=reymin

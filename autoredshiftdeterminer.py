@@ -31,9 +31,22 @@ R_i=1
 kappa=((2*b_0)-a_0-c_0)/(a_0-c_0)
 f=1
 
-files=glob.glob('/blue/adamginsburg/d.jeff/imaging_results/SgrB2DS_field1_*.fits')
-z=0.000234806#<<<avg of the two to the left#0.000236254#0.0002333587
-imgnames=['spw0','spw2','spw1','spw3']
+files=glob.glob('/blue/adamginsburg/d.jeff/SgrB2DSstatcontfix/field10originals/*.fits')
+
+z=0.0001854542074721255#0.000190713#DSv#Average of 0.00019597214240510706 (2nd) and 0.0001854542074721255 (main) from goodfit
+#z=0.000186431#DSi
+#z=0.000234806#<<<avg of the two to the left#0.000236254#0.0002333587
+imgnames=['spw0','spw1','spw2','spw3']
+
+datacubes=[]
+
+for spew in imgnames:
+    for f1 in files:
+        if spew in f1:
+            datacubes.append(f1)
+            continue
+    
+assert 'spw0' in datacubes[0], 'Cube list out of order'
 
 def gauss(x,A,mu,sig):#Standard Gaussian equation
     return A*np.exp((-1/2)*((x-mu)/sig)**2)
@@ -148,19 +161,21 @@ def kkms(beams,data):
         #intensitylist.append(velflux_T)
     return t_bright
     
-imgnum=3
-testline=16
+imgnum=1
+testline=0
 print('Getting ready - '+imgnames[imgnum])
-cube=sc.read(files[imgnum])
+cube=sc.read(datacubes[imgnum])
 
 '''Set WCS params [RA,DEC,FRQ].(For non-contsub cubes not using spectral-cube, the Stokes axis hasn't been removed, so the input array must be [RA,DEC,STOKES,FRQ]. '''
 cube_w=cube.wcs#WCS(files[imgnum])
-if 'medsub' in files[imgnum]:
+if 'medsub' or '_line' in datacubes[imgnum]:
     contsub=True
 else:
     contsub=False
 
-targetworldcrd=[[0,0,0],[2.66835339e+02, -2.83961660e+01, 0]]
+#targetworldcrd=[[0,0,0],[266.8316149,-28.3972040,0]]#DSi
+targetworldcrd=[[0,0,0],[266.8321311,-28.3976633,0]]#DSv
+#targetworldcrd=[[0,0,0],[2.66835339e+02, -2.83961660e+01, 0]]#SgrB2S
 targetpixcrd=cube_w.all_world2pix(targetworldcrd,1,ra_dec_order=True)
 
 #header=fits.getheader(files[0])
@@ -200,7 +215,7 @@ mdegs=methanol_table['Upper State Degeneracy']
 mlog10aijs=minmethtable['log10_Aij']
 maijs=10**mlog10aijs*u.s**-1
 
-plotwidth=linewidth*1.5
+plotwidth=linewidth*1.25#decreased from 1.5
 lwvel=vradio(lw2,mlines[testline])
 print(f'Transition: {mqns[testline]}\nEU_K: {meuks[testline]}')
 
@@ -218,7 +233,7 @@ t_brights=kkms(beamlist,spwwindow)
 peakK=spwwindow[np.argmax(spwwindow)]
 
 Tphys=np.linspace(1,1000,100)*u.K
-testT=550*u.K
+testT=750*u.K#550*u.K for SgrB2S and DSi
 n_totes=[1e13,1e14,1e15,1e16,1e17,1e18,1e19,1e20,1e21,1e22,1e23]*u.cm**-2
 plot=np.linspace((mlines[testline]-plotwidth),(mlines[testline]+plotwidth),30)
 #plotcmpnt=

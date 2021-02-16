@@ -9,7 +9,7 @@ import glob
 import radio_beam
 import regions
 
-fname='/ufrc/adamginsburg/d.jeff/imaging_results/SgrB2DS_field1_spw2_cube_medsub.image.fits'#glob.glob('/ufrc/adamginsburg/d.jeff/imaging_results/*.fits')
+fname='/blue/adamginsburg/d.jeff/imaging_results/SgrB2DS_field1_spw2_cube_medsub.image.fits'#glob.glob('/ufrc/adamginsburg/d.jeff/imaging_results/*.fits')
 z=0.0002333587
 #chem= input('Molecule?: ')
 #chem=(' '+chem+' ')

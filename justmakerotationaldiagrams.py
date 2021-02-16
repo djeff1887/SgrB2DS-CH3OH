@@ -12,6 +12,9 @@ from astropy.modeling import models, fitting
 import time
 import pdb
 import pickle
+import matplotlib as mpl
+
+mpl.interactive(True)
 
 def Q_rot_asym(T):#Eq 58, (Magnum & Shirley 2015); sigma=1, defined in Table 1 of M&S 2015
     return np.sqrt(m*np.pi*((k*T)/(h*b_0))**3)
@@ -30,9 +33,10 @@ mu_a=(0.896e-18*u.statC*u.cm).to('cm(3/2) g(1/2) s-1 cm')
 R_i=1
 f=1
 Tbg=2.7355*u.K
-
-sourceid='SgrB2S'
-sourcepath="/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/SgrB2S/OctReimage_z0_0002306756533745274_5-6mhzwidth/"#"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/DSii_iii/z_0_00017594380066803095_box1_5-6mhzwidth/"#'/blue/adamginsburg/d.jeff/imaging_results/SgrB2DS-CH3OH/NupperColDens/field1/testcore1/debug/correctedcubesandmaps/'
+sourceid='DSv'
+sourcepath="/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSv/field10originals_z0_000190713_5-6mhzwidth_stdfixes/"
+#sourceid='SgrB2S'
+#sourcepath="/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/SgrB2S/OctReimage_z0_0002306756533745274_5-6mhzwidth/"#"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/DSii_iii/z_0_00017594380066803095_box1_5-6mhzwidth/"#'/blue/adamginsburg/d.jeff/imaging_results/SgrB2DS-CH3OH/NupperColDens/field1/testcore1/debug/correctedcubesandmaps/'
 home=sourcepath
 rotdiagpath=home+'pixelwiserotationaldiagrams/'
 
@@ -44,7 +48,7 @@ else:
     os.mkdir(rotdiagpath)
     print('Directory created.\n')
 #filepath='/blue/adamginsburg/d.jeff/imaging_results/SgrB2DS-CH3OH/NupperColDens/field1/testcore1/debug/pixelwiserotationaldiagrams/'
-infile=open(sourcepath+'/testbox2dict.obj','rb')
+infile=open(sourcepath+'ch3ohlinesdict.obj','rb')
 spwdict=pickle.load(infile)
 
 fulltexmap=fits.getdata(home+'texmap_3sigma_allspw_withnans_weighted.fits')
@@ -60,7 +64,13 @@ ntotmap=np.empty((testyshape,testxshape))
 texerrormap=np.empty((testyshape,testxshape))
 nugsmap=fits.getdata(home+'alltransitions_nuppers.fits')
 nugserrmap=fits.getdata(home+'alltransitions_nupper_error.fits')
-mastereuks=np.loadtxt(home+'mastereuks.txt')
+allmaster=np.loadtxt(home+'mastereuksqnsfreqs.txt',dtype=str)[:,0]
+mastereuks=[]
+eukshape=np.shape(mastereuks)
+for master in range(len(allmaster)):
+    mastereuks.append(float(allmaster[master]))
+masterdegens=np.loadtxt(home+'masterdegens.txt')
+    
 testzshape=len(mastereuks)
 
 ypix=int(input('y coord:'))
@@ -111,7 +121,7 @@ for px in pixellist:
             #print('Compute obsTex and obsNtot')
             obsTex=-np.log10(np.e)/(fit_lin.slope)
             obsNtot=qrot_partfunc*10**(np.log10(nugsmap[0,y,x])+fit_lin.slope*eukstofit[0])
-            dobsTex=(eukstofit[0]*u.K*np.log(10)*np.log(np.e))/(np.log(nupperstofit[0]/spwdict['spw2']['10_2--9_3-vt0']['degen'])-np.log(obsNtot/qrot_partfunc))**2
+            dobsTex=(eukstofit[0]*u.K*np.log(10)*np.log(np.e))/(np.log(nupperstofit[0]/masterdegens[0])-np.log(obsNtot/qrot_partfunc))**2
             
             texmap[y,x]=obsTex
             ntotmap[y,x]=obsNtot
@@ -121,7 +131,7 @@ for px in pixellist:
             print('Begin plotting')
             plt.errorbar(eukstofit,np.log10(nupperstofit),yerr=log10nuerr,fmt='o')
             plt.plot(linemod_euks,fit_lin(linemod_euks),label=(f'obsTex: {round(obsTex, 4)} $\pm$ {round(dobsTex.value, 2)*u.K}\nobsNtot: {round(obsNtot.value,4)/u.cm**2}'))
-            plt.title(f'field1 {sourceid} testbox pixel ({y},{x}) CH$_3$OH Rotational Diagram')
+            plt.title(f'field10 {sourceid} testbox pixel ({y},{x}) CH$_3$OH Rotational Diagram')
             plt.xlabel(r'E$_u$ (K)')
             plt.ylabel(r'log$_{10}$(N$_u$/g$_u$)')
             plt.legend()

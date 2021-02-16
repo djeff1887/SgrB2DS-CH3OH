@@ -23,21 +23,24 @@ Splatalogue.QUERY_URL= 'https://splatalogue.online/c_export.php'
 
 print('Begin Jy/beam-to-K and region subcube conversion\n')
 
-source='DSi'
+source='DSv'
 #source='SgrB2S'
 fnum=10
 
-inpath='/blue/adamginsburg/d.jeff/imaging_results/data/OctReimage/'
+inpath="/orange/adamginsburg/sgrb2/d.jeff/data/field10originalimages/"
+#inpath='/blue/adamginsburg/d.jeff/imaging_results/data/OctReimage/'
 beamcubes=glob.glob(inpath+'*.fits')
-home='/blue/adamginsburg/d.jeff/imaging_results/products/OctReimage/'
+home="/orange/adamginsburg/sgrb2/d.jeff/products/field10originalimages/"
+#home='/blue/adamginsburg/d.jeff/imaging_results/products/OctReimage/'
 cubes=glob.glob(home+'*pbcor_line.fits')
+region='fk5; box(266.8321311,-28.3976633, 0.0010833, 0.0010833)'#DSv
 #region='fk5; box(266.8324225,-28.3954419, 0.0010417, 0.0010417)'#DSiv
 #region='fk5; box(266.8316387, -28.3971867, 0.0010556, 0.0010556)'#DSi-large
-region='fk5; box(266.8353410,-28.3962005,0.0016806,0.0016806)'#SgrB2S-box2
+#region='fk5; box(266.8353410,-28.3962005,0.0016806,0.0016806)'#SgrB2S-box2
 #box(266.8333438, -28.3966103, 0.0014028, 0.0014028)' #DSii/iii
 #box(266.8315833, -28.3971867, 0.0006528, 0.0006528)' #DSi-small
-outpath=f'/blue/adamginsburg/d.jeff/SgrB2DSminicubes/{source}/OctReimage/'#imaging_results/DSii_iiibox1/'
-statfixpath=f'/blue/adamginsburg/d.jeff/SgrB2DSstatcontfix/{source}/OctReimage/'
+outpath=f'/blue/adamginsburg/d.jeff/SgrB2DSminicubes/{source}/field10originals/'#imaging_results/DSii_iiibox1/'
+statfixpath=f'/blue/adamginsburg/d.jeff/SgrB2DSstatcontfix/field10originals/'
 
 if os.path.isdir(outpath):
     print(f'Minicube directory "{outpath}" already exists. Proceeding to line loops/LTE fitting procedure.\n')
@@ -73,32 +76,41 @@ else:
         if not os.path.isdir(statfixpath):
             print(f'Creating beamfix directory {statfixpath}')
             os.makedirs(statfixpath)
+            for beamcube,statcube in zip(orderedbeamcubes,orderedcubes):
+                print(f'Extracting beams from {beamcube}')
+                beamfits=fits.open(beamcube)
+                cubefits=fits.open(statcube)
+                beams=beamfits[1]
+                cubedata=cubefits[0]
+                newhdulist=fits.HDUList([cubedata,beams])
+                print(f'Beamlist merged with Primary HDU in {statcube}')
+                cubewithbeampath=statcube.replace(home,statfixpath)
+                print(f'Saving new fits file {cubewithbeampath}\n')
+                newhdulist.writeto(cubewithbeampath)
+                cubestobox.append(cubewithbeampath)
         else:
-            print(f'{statfixpath} already exists. Proceeding...')
-        for beamcube,statcube in zip(orderedbeamcubes,orderedcubes):
-            print(f'Extracting beams from {beamcube}')
-            beamfits=fits.open(beamcube)
-            cubefits=fits.open(statcube)
-            beams=beamfits[1]
-            cubedata=cubefits[0]
-            newhdulist=fits.HDUList([cubedata,beams])
-            print(f'Beamlist merged with Primary HDU in {statcube}')
-            cubewithbeampath=statcube.replace(home,statfixpath)
-            print(f'Saving new fits file {cubewithbeampath}\n')
-            newhdulist.writeto(cubewithbeampath)
-            cubestobox.append(cubewithbeampath)
+            print(f'{statfixpath} already exists. Grabbing and reordering statfix cubes')
+            statfixcubes=glob.glob(statfixpath+'*.fits')
+            for spew in images:
+                for statcube in statfixcubes:
+                    if spew in statcube:
+                        cubestobox.append(statcube)
+                        continue
+            print('Statfix cubes reordered.\n')
+            
     else:
         cubestobox=cubes
             
+    pdb.set_trace()
             
-    for spw, cube in zip(images, cubestobox):
+    for spw, cub in zip(images, cubestobox):
         boxcubename=outpath+spw+'minimize.image.pbcor_line.fits'
         if os.path.isfile(boxcubename):
             print(f'{boxcubename} already exists. Skipping...\n')
             continue
         else:
-            print(f'Grabbing datacube from {cube}')
-            fullsizecube=sc.read(cube,use_dask=True)
+            print(f'Grabbing datacube from {cub}')
+            fullsizecube=sc.read(cub,use_dask=True)
             spwrestfreq=fullsizecube.header['RESTFRQ']*u.Hz
             print('Creating subcube and converting from Jy/beam to K')
             boxedsubcubeK=fullsizecube.subcube_from_ds9region(region).to(u.K)
@@ -128,7 +140,7 @@ R_i=1
 f=1
 Tbg=2.7355*u.K
 
-dopplershifts={'SgrB2S':0.0002306756533745274,'DSi':0.000186431}
+dopplershifts={'SgrB2S':0.0002306756533745274,'DSi':0.000186431,'DSv':0.000190713}
 
 z=dopplershifts[source]
 #z=0.00017594380066803095 #SgrB2DSII?
@@ -137,7 +149,7 @@ z=dopplershifts[source]
 print(f'Doppler shift: {z} / {(z*c).to("km s-1")}\n')
 
 print('Setting input LTE parameters')
-testT=500*u.K
+testT=200*u.K#500*u.K
 testntot=1e17*u.cm**-2
 print(f'Input Tex: {testT}\nInput Ntot: {testntot}')
 
@@ -458,7 +470,7 @@ for spew in images:
     
 assert 'spw0' in datacubes[0], 'Cube list out of order'
 
-sourcelocs={'SgrB2S':'OctReimage_z0_0002306756533745274_5-6mhzwidth_stdfixes/','DSi':'/field10originals_z0_000186431_5-6mhzwidth_stdfixes/'}
+sourcelocs={'SgrB2S':'OctReimage_z0_0002306756533745274_5-6mhzwidth_stdfixes/','DSi':'/field10originals_z0_000186431_5-6mhzwidth_stdfixes/','DSv':'/200K_field10originals_z0_000190713_5-6mhzwidth_stdfixes/'}
 
 sourcepath=f'/blue/adamginsburg/d.jeff/SgrB2DSreorg/field{fnum}/CH3OH/{source}/'+sourcelocs[source]
 nupperpath=sourcepath+'nuppers/'
@@ -540,9 +552,10 @@ for imgnum in range(len(datacubes)):
     #print(velcube.spectral_axis)
     cube_unmasked=velcube.unmasked_data
     
+    targetworldcrds={'SgrB2S':[[0,0,0],[2.66835339e+02, -2.83961660e+01, 0]], 'DSi':[[0,0,0],[266.8316149,-28.3972040,0]], 'DSv':[[0,0,0],[266.8321311,-28.3976633,0]]}
     cube_w=cube.wcs
     #targetworldcrd=[[0,0,0],[266.8324225,-28.3954419,0]]#DSiv
-    targetworldcrd=[[0,0,0],[266.8316149,-28.3972040,0]] #DSi
+    targetworldcrd=targetworldcrds[source]#[[0,0,0],[266.8316149,-28.3972040,0]] #DSi
     #targetworldcrd=[[0,0,0],[2.66835339e+02, -2.83961660e+01, 0]] #SgrB2S
     #[[0,0,0],[266.8332569, -28.3969, 0]] #DSii/iii
     targetpixcrd=cube_w.all_world2pix(targetworldcrd,1,ra_dec_order=True)
@@ -616,9 +629,16 @@ for imgnum in range(len(datacubes)):
             print('Set Primary HDU')
             hdu=fits.PrimaryHDU(stdarray.value)
             '''This transmoment0 file has intensity (K km/s) units'''
-            transmoment0=fits.open(spwdict[images[imgnum]][tempkeys[0]]['filename'])
-            transmom0header=transmoment0[0].header
-            print(f'Set header from {spwdict[images[imgnum]][tempkeys[0]]["filename"]}')
+            if len(tempkeys) == 0:
+                print(f'No transitions detected in this spw ({images[imgnum]})')
+                transmomslab=cube.spectral_slab((lines[0]-linewidth),(lines[0]+linewidth))
+                transmoment0=transmomslab.moment0()
+                transmom0header=transmoment0.header
+                print(f'Set transmoment0 to moment0 from {(lines[0]+linewidth).to("GHz")} to {(lines[0]-linewidth).to("GHz")}')
+            else:
+                transmoment0=fits.open(spwdict[images[imgnum]][tempkeys[0]]['filename'])
+                transmom0header=transmoment0[0].header
+                print(f'Set header from {spwdict[images[imgnum]][tempkeys[0]]["filename"]}')
             hdu.header=transmom0header
             if np.all(stdarray==spwstdarray):
                 hdu.header['BUNIT']='K'
@@ -688,6 +708,7 @@ testzshape=len(mastereuks)
 nugsmap=np.empty(shape=(testyshape,testxshape,testzshape))
 nugserrormap=np.empty(shape=(testyshape,testxshape,testzshape))
 orderedeuks=[]
+ordereddegens=[]
 print(f'Begin pixel loops of shape ({testyshape},{testxshape})')
 pixelzcoord_nupper=0
 pixelzcoord_nuperr=0
@@ -701,6 +722,7 @@ for key in spwdictkeys:
         nupperimage_filepath=nupperpath+'CH3OH~'+transitionkeys[transkey]+'.fits'
         nuperrorimage_filepath=nupperpath+'CH3OH~'+transitionkeys[transkey]+'error.fits'
         orderedeuks.append(transdict[transitionkeys[transkey]]['euk'])
+        ordereddegens.append(transdict[transitionkeys[transkey]]['degen'])
         
         nupperimgexists=False
         nuperrorimgexists=False
@@ -790,6 +812,7 @@ texerrormap=np.empty((testyshape,testxshape))
 texsigclipmap=np.empty((testyshape,testxshape))
 texsnrmap=np.empty((testyshape,testxshape))
 numtransmap=np.empty((testyshape,testxshape))
+degensforfit=[]
 snr=3
 
 fitdict={}
@@ -809,7 +832,8 @@ for y in range(testyshape):
                 nupperstofit.append(nugsmap[y,x,zed])
                 eukstofit.append(mastereuks[zed])
                 nuperrors.append(nugserrormap[y,x,zed])
-        
+                degensforfit.append(ordereddegens[zed])
+        #pdb.set_trace()
         numtransmap[y,x]=len(nupperstofit)        
         if len(nupperstofit)==0:
             obsTex=np.nan
@@ -835,7 +859,7 @@ for y in range(testyshape):
             #print('Compute obsTex and obsNtot')
             obsTex=-np.log10(np.e)/(fit_lin.slope)
             obsNtot=qrot_partfunc*10**(np.log10(nupperstofit[0])+fit_lin.slope*eukstofit[0])
-            dobsTex=(eukstofit[0]*u.K*np.log(10)*np.log(np.e))/(np.log(nupperstofit[0]/spwdict['spw2']['10_2--9_3-vt0']['degen'])-np.log(obsNtot/qrot_partfunc))**2
+            dobsTex=(eukstofit[0]*u.K*np.log(10)*np.log(np.e))/(np.log(nupperstofit[0]/degensforfit[0])-np.log(obsNtot/qrot_partfunc))**2
             sigTex=(obsTex*u.K/dobsTex).to('')
             
             texmap[y,x]=obsTex
@@ -847,7 +871,7 @@ for y in range(testyshape):
             else:
                 texsigclipmap[y,x]=np.nan
 
-detectnum=5
+detectnum=3
 transmaskarr=np.ma.masked_where(numtransmap<detectnum,texsigclipmap)
 transmasktexmap=transmaskarr.filled(fill_value=np.nan)#np.array(np.ma.masked_where(numtransmap<detectnum,texsigclipmap))
             
@@ -908,7 +932,7 @@ primaryhdutransmasktex.header=transmom0header
 primaryhdutransmasktex.header['BTYPE']='Excitation temperature'
 primaryhdutransmasktex.header['BUNIT']='K'
 hdultransmasktex=fits.HDUList([primaryhdutransmasktex])
-nsigmatransmaskedpath=sourcepath+"texmap_{detectnum}transmask_{snr}sigma_allspw_withnans_weighted.fits"
+nsigmatransmaskedpath=sourcepath+f"texmap_{detectnum}transmask_{snr}sigma_allspw_withnans_weighted.fits"
 print(f'Saving {detectnum} transition masked temperature map at {nsigmatransmaskedpath}\n')
 hdultransmasktex.writeto(nsigmatransmaskedpath,overwrite=True)
 
@@ -936,8 +960,8 @@ nugserrhdul=fits.HDUList([nugserrcube])
 print('Saving alltransition and E_U(K) lists\n')
 nugshdul.writeto(sourcepath+'alltransitions_nuppers.fits',overwrite=True)
 nugserrhdul.writeto(sourcepath+'alltransitions_nupper_error.fits',overwrite=True)
-eukqns=np.column_stack((mastereuks,masterqns,masterlines))
-np.savetxt(sourcepath+'mastereuksqnsfreqs.txt',eukqns,fmt='%s',header='Methanol transitions and excitation temperatures used in this folder. Temperatures in units of K, frequencies are redshifted ({z}/{(z*c).to("km s-1")}) and in Hz.')
+eukqns=np.column_stack((mastereuks,masterqns,masterlines,ordereddegens))
+np.savetxt(sourcepath+'mastereuksqnsfreqsdegens.txt',eukqns,fmt='%s',header=f'Methanol transitions, excitation temperatures, and degeneracies used in this folder. Temperatures in units of K, frequencies are redshifted ({z}/{(z*c).to("km s-1")}) and in Hz.')
 
 '''This wing of the code plots up the temperature and ntot maps'''
 
