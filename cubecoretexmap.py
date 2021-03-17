@@ -16,6 +16,7 @@ from astropy.wcs import WCS
 import matplotlib as mpl
 import copy
 from astropy import coordinates
+from spectral_cube import BooleanArrayMask
 
 Splatalogue.QUERY_URL= 'https://splatalogue.online/c_export.php'
 
@@ -23,24 +24,28 @@ Splatalogue.QUERY_URL= 'https://splatalogue.online/c_export.php'
 
 print('Begin Jy/beam-to-K and region subcube conversion\n')
 
-source='DSv'
-#source='SgrB2S'
-fnum=10
+#source='DSv'
+#source='DSi'
+source='SgrB2S'
+fnum=1
 
-inpath="/orange/adamginsburg/sgrb2/d.jeff/data/field10originalimages/"
-#inpath='/blue/adamginsburg/d.jeff/imaging_results/data/OctReimage/'
+#inpath="/orange/adamginsburg/sgrb2/d.jeff/data/field10originalimages/"
+inpath='/blue/adamginsburg/d.jeff/imaging_results/data/OctReimage/'
 beamcubes=glob.glob(inpath+'*.fits')
-home="/orange/adamginsburg/sgrb2/d.jeff/products/field10originalimages/"
-#home='/blue/adamginsburg/d.jeff/imaging_results/products/OctReimage/'
+#home="/orange/adamginsburg/sgrb2/d.jeff/products/field10originalimages/"
+home='/blue/adamginsburg/d.jeff/imaging_results/products/OctReimage/'
 cubes=glob.glob(home+'*pbcor_line.fits')
-region='fk5; box(266.8321311,-28.3976633, 0.0010833, 0.0010833)'#DSv
+#region='fk5; box(266.8321311,-28.3976633, 0.0010833, 0.0010833)'#DSv
 #region='fk5; box(266.8324225,-28.3954419, 0.0010417, 0.0010417)'#DSiv
 #region='fk5; box(266.8316387, -28.3971867, 0.0010556, 0.0010556)'#DSi-large
-#region='fk5; box(266.8353410,-28.3962005,0.0016806,0.0016806)'#SgrB2S-box2
+region='fk5; box(266.8353410,-28.3962005,0.0016806,0.0016806)'#SgrB2S-box2
+#region='fk5; box(266.8350804, -28.3963256, 0.0023889, 0.0023889'#SgrB2S-large
 #box(266.8333438, -28.3966103, 0.0014028, 0.0014028)' #DSii/iii
 #box(266.8315833, -28.3971867, 0.0006528, 0.0006528)' #DSi-small
-outpath=f'/blue/adamginsburg/d.jeff/SgrB2DSminicubes/{source}/field10originals/'#imaging_results/DSii_iiibox1/'
-statfixpath=f'/blue/adamginsburg/d.jeff/SgrB2DSstatcontfix/field10originals/'
+#outpath=f'/blue/adamginsburg/d.jeff/SgrB2DSminicubes/{source}/OctReimage/'
+outpath=f'/blue/adamginsburg/d.jeff/SgrB2DSminicubes/{source}/OctReimage/'#imaging_results/DSii_iiibox1/'
+#statfixpath=f'/blue/adamginsburg/d.jeff/SgrB2DSstatcontfix/field10originals/'
+statfixpath=f'/blue/adamginsburg/d.jeff/SgrB2DSstatcontfix/{source}/OctReimage/'
 
 if os.path.isdir(outpath):
     print(f'Minicube directory "{outpath}" already exists. Proceeding to line loops/LTE fitting procedure.\n')
@@ -103,14 +108,15 @@ else:
             
     pdb.set_trace()
             
-    for spw, cub in zip(images, cubestobox):
-        boxcubename=outpath+spw+'minimize.image.pbcor_line.fits'
+    for sppw, cub in zip(images, cubestobox):
+        boxcubename=outpath+sppw+'minimize.image.pbcor_line.fits'
         if os.path.isfile(boxcubename):
             print(f'{boxcubename} already exists. Skipping...\n')
             continue
         else:
             print(f'Grabbing datacube from {cub}')
             fullsizecube=sc.read(cub,use_dask=True)
+            fullsizecube.allow_huge_operations=True
             spwrestfreq=fullsizecube.header['RESTFRQ']*u.Hz
             print('Creating subcube and converting from Jy/beam to K')
             boxedsubcubeK=fullsizecube.subcube_from_ds9region(region).to(u.K)
@@ -140,7 +146,7 @@ R_i=1
 f=1
 Tbg=2.7355*u.K
 
-dopplershifts={'SgrB2S':0.0002306756533745274,'DSi':0.000186431,'DSv':0.000190713}
+dopplershifts={'SgrB2S':0.0002306756533745274,'DSi':0.000186431,'DSv':0.000186431}#:0.000190713}
 
 z=dopplershifts[source]
 #z=0.00017594380066803095 #SgrB2DSII?
@@ -149,7 +155,7 @@ z=dopplershifts[source]
 print(f'Doppler shift: {z} / {(z*c).to("km s-1")}\n')
 
 print('Setting input LTE parameters')
-testT=200*u.K#500*u.K
+testT=500*u.K#500*u.K
 testntot=1e17*u.cm**-2
 print(f'Input Tex: {testT}\nInput Ntot: {testntot}')
 
@@ -215,9 +221,9 @@ def linelooplte(line_list,line_width,iterations,quantum_numbers):
         print(f'Make spectral slab between {nu_lower} and {nu_upper}')
         slabstart=time.time()
         slab=cube.spectral_slab(nu_upper,nu_lower)
+        oldstyleslab=cube.spectral_slab((nu_upper-nu_offset),(nu_lower+nu_offset))
         slabend=time.time()-slabstart
         print(f'{quantum_numbers[i]} spectral slab done in {time.strftime("%H:%M:%S", time.gmtime(slabend))}')
-        
         slabbeams=(slab.beams.value)*u.sr/u.beam
         #print(f'slabbeams: {slabbeams}')
         slab_K=slab[:,pixycrd,pixxcrd]#JybeamtoK(slabbeams,)
@@ -231,14 +237,17 @@ def linelooplte(line_list,line_width,iterations,quantum_numbers):
         print('Slicing quantum numbers')
         transition=qn_replace(quantum_numbers[i])
         moment0filename=home+'CH3OH~'+transition+'.fits'
+        maskedmom0fn=home+'CH3OH~'+transition+'_masked.fits'
+        maskresidualfn=home+'CH3OH~'+transition+'_residual.fits'
         slabfilename=slabpath+'CH3OH~'+transition+'_slab.fits'
+        maskedslabfn=slabpath+'CH3OH~'+transition+'_maskedslab.fits'
         #print('Done')
         #print('Moment 0')
-        if os.path.isfile(moment0filename):
+        if os.path.isfile(maskedmom0fn):
             print(f'{moment0filename} already exists.')
-            isfilemom0=fits.getdata(moment0filename)*u.K*u.km/u.s
+            isfilemom0=fits.getdata(maskedmom0fn)*u.K*u.km/u.s
             #isfilepixflux=isfilemom0[pixycrd,pixxcrd]
-            isfilebeam=beamer(moment0filename)
+            isfilebeam=beamer(maskedmom0fn)
             isfilestdflux=fits.getdata(f'{stdpath}{images[imgnum]}fluxstd.fits')*u.K#This is confusing, notation-wise, but I'm leaving it this way for now since it's consistent between the two forks in the loop. For future reference: isfilestdflux is the error on the measured brightnesstemp in K, whereas isfilemom0 pulls from the moment0 maps and is in K km/s
             temptransdict.update([('freq',line),('flux',isfilemom0),('stddev',isfilestdflux),('beam',isfilebeam),('euk',euks[i]),('eujs',eujs[i]),('degen',degeneracies[i]),('aij',aijs[i]),('filename',moment0filename)])
             transitiondict.update({transition:temptransdict})
@@ -248,26 +257,51 @@ def linelooplte(line_list,line_width,iterations,quantum_numbers):
             masterqns.append(quantum_numbers[i])
             masterlines.append(line_list[i].value)
             print('\nDictionaries populated for this transition.')
-            if os.path.isfile(slabfilename):
+            if os.path.isfile(maskedslabfn):
                 print('Proceeding...\n')
                 pass
             else:
-                slab.write(slabfilename)
+                slab.write(maskedslabfn)
                 print(f'Slab written to {slabfilename}. Proceeding...\n')
+            for moment in [1,2]:
+                slab=slab.with_spectral_unit((u.km/u.s),velocity_convention='radio',rest_value=lines[i])
+                momentnfilename=sourcepath+f'mom{moment}/'+'CH3OH~'+transition+'.fits'
+                if os.path.isfile(momentnfilename):
+                    print(f'{transition} moment{moment} file already exists.')
+                    continue
+                elif moment == 1:
+                    print(f'Computing moment 1 and saving to {momentnfilename}\n')
+                    slabmom1=slab.moment1()
+                    slabmom1.write(momentnfilename)
+                elif moment == 2:
+                    print(f'Computing moment 2 and saving to {momentnfilename}\n')
+                    slabmom2=slab.moment2()
+                    slabmom2.write(momentnfilename)
             pass
         elif tbthick >= targetspecK_stddev and peak_amplitude >= 3* targetspecK_stddev:#*u.K:
             print('Commence moment0')
             slab=slab.with_spectral_unit((u.km/u.s),velocity_convention='radio',rest_value=lines[i])#spwrestfreq)
+            cubemask=BooleanArrayMask(mask=cubemaskarray,wcs=slab.wcs)
+            #pdb.set_trace()
+            oldstyleslab=oldstyleslab.with_spectral_unit((u.km/u.s),velocity_convention='radio',rest_value=lines[i])
+            maskedslab=slab.with_mask(cubemask)
             momstart=time.time()
-            slabmom0=slab.moment0()
+            slabmom0=oldstyleslab.moment0()
+            maskslabmom0=maskedslab.moment0()
             momend=time.time()-momstart
             print(f'{quantum_numbers[i]} elapsed time: {time.strftime("%H:%M:%S", time.gmtime(momend))}')
+            
+            print('Computing masking residuals')
+            mom0maskresiduals=maskslabmom0-slabmom0
             print('\nSaving...')
             #name='test'+str(i)
             slabmom0.write((moment0filename),overwrite=True)
+            maskslabmom0.write((maskedmom0fn))
+            mom0maskresiduals.write((maskresidualfn))
+            
             moment0beam=slabmom0.beam.value*u.sr
             targetpixflux=slabmom0[pixycrd,pixxcrd]
-            temptransdict.update([('freq',line),('flux',slabmom0),('stddev',targetspecK_stddev),('beam',moment0beam),('euk',euks[i]),('eujs',eujs[i]),('degen',degeneracies[i]),('aij',aijs[i]),('filename',moment0filename)])
+            temptransdict.update([('freq',line),('flux',maskslabmom0),('stddev',targetspecK_stddev),('beam',moment0beam),('euk',euks[i]),('eujs',eujs[i]),('degen',degeneracies[i]),('aij',aijs[i]),('filename',moment0filename)])
             transitiondict.update({transition:temptransdict})
             mastereuks.append(euks[i])
             masterstddevs.append(targetspecK_stddev)
@@ -279,7 +313,19 @@ def linelooplte(line_list,line_width,iterations,quantum_numbers):
                 pass
             else:
                 slab.write(slabfilename)
-                print(f'Slab written to {slabfilename}. Proceeding...\n')
+                print(f'Slab written to {slabfilename}.')
+                maskedslab.write(maskedslabfn)
+                print(f'Masked slab written to {maskedslabfn}. Proceeding...\n')
+            for moment in [1,2]:
+                momentnfilename=sourcepath+f'mom{moment}/CH3OH~'+transition+'.fits'
+                if moment == 1:
+                    print(f'Computing moment 1 and saving to {momentnfilename}\n')
+                    slabmom1=slab.moment1()
+                    slabmom1.write(momentnfilename)
+                elif moment == 2:
+                    print(f'Computing moment 2 and saving to {momentnfilename}\n')
+                    slabmom2=slab.moment2()
+                    slabmom2.write(momentnfilename)
             pass
         else:
             if not tbthick >= targetspecK_stddev and peak_amplitude >= 3* targetspecK_stddev:
@@ -470,7 +516,13 @@ for spew in images:
     
 assert 'spw0' in datacubes[0], 'Cube list out of order'
 
-sourcelocs={'SgrB2S':'OctReimage_z0_0002306756533745274_5-6mhzwidth_stdfixes/','DSi':'/field10originals_z0_000186431_5-6mhzwidth_stdfixes/','DSv':'/200K_field10originals_z0_000190713_5-6mhzwidth_stdfixes/'}
+maskname="/blue/adamginsburg/d.jeff/imaging_results/SgrB2DS-CH3OH/7.0mhzmasked_spw08-7slab.fits"
+maskeddatacube=sc.read(maskname)
+maskeddatacube=maskeddatacube.with_spectral_unit((u.km/u.s),velocity_convention='radio',rest_value=220027805942.10373*u.Hz)
+
+cubemaskarray=maskeddatacube.get_mask_array()
+
+sourcelocs={'SgrB2S':'7mhzmasked_OctReimage_z0_0002306756533745274_5-6mhzwidth_stdfixes/','DSi':'/field10originals_z0_000186431_5-6mhzwidth_stdfixes/','DSv':f'/{int(testT.value)}K_field10originals_z0_00186431_5-6mhzwidth_stdfixes_test/'}
 
 sourcepath=f'/blue/adamginsburg/d.jeff/SgrB2DSreorg/field{fnum}/CH3OH/{source}/'+sourcelocs[source]
 nupperpath=sourcepath+'nuppers/'
@@ -484,6 +536,14 @@ picklepath=sourcepath+'ch3ohlinesdict.obj'
 
 if os.path.isdir(slabpath):
     print(f'Source path directory tree {sourcepath} already exists.\n')
+    if os.path.isdir(sourcepath+'mom1/'):
+        print('Moment 1/2 directories already exist.')
+    else:
+        for moment in [1,2]:
+            momnpath=sourcepath+f'mom{moment}/'
+            print(f'Creating moment {moment} directory at {momnpath}')
+            os.mkdir(momnpath)
+        
     pass
 else:
     print(f'Making source path {sourcepath}')
@@ -494,8 +554,12 @@ else:
     os.makedirs(stdpath)
     print(f'Making spectral slab folder {slabpath}\n')
     os.makedirs(slabpath)
-    print(f'Making mom0 folder {mom0path}')
-    os.mkdir(mom0path)
+    for moment in [0,1,2]:
+            momnpath=sourcepath+f'mom{moment}/'
+            print(f'Creating moment {moment} directory at {momnpath}')
+            os.mkdir(momnpath)
+    #print(f'Making mom0 folder {mom0path}')
+    #os.mkdir(mom0path)
     print(f'Making rotational diagram folder')
     os.mkdir(rotdiagpath)
     print(f'Making figures folder')
@@ -605,7 +669,9 @@ for imgnum in range(len(datacubes)):
     plt.show()
     '''
     singlecmpntwidth=(0.00485/8)*u.GHz
-    linewidth=(11231152.36688232*u.Hz/2)#0.005*u.GHz####0.5*0.0097*u.GHz#from small line @ 219.9808GHz# 0.0155>>20.08km/s 
+    linewidth=(15.15*u.MHz)
+    originallinewidth=(11231152.36688232*u.Hz/2)#0.005*u.GHz####0.5*0.0097*u.GHz#from small line @ 219.9808GHz# 0.0155>>20.08km/s 
+    nu_offset=linewidth-originallinewidth
     linewidth_vel=vradio(singlecmpntwidth,spwrestfreq)#(singlecmpntwidth*c.to(u.km/u.s)/spwrestfreq).to('km s-1')#vradio(linewidth,spw1restfreq)
     #slicedqns=[]
     
@@ -655,6 +721,7 @@ for imgnum in range(len(datacubes)):
     kkmsstddict.update([(images[imgnum],kkmsstdarray)])
     print(f'Finished loop for {images[imgnum]}')
     #masterqns.append(slicedqns)
+    pdb.set_trace()
 
 
 
@@ -871,7 +938,7 @@ for y in range(testyshape):
             else:
                 texsigclipmap[y,x]=np.nan
 
-detectnum=3
+detectnum=5
 transmaskarr=np.ma.masked_where(numtransmap<detectnum,texsigclipmap)
 transmasktexmap=transmaskarr.filled(fill_value=np.nan)#np.array(np.ma.masked_where(numtransmap<detectnum,texsigclipmap))
             
@@ -1002,7 +1069,7 @@ plt.rcParams['figure.dpi'] = 150
 ra=ax.coords[0]
 dec=ax.coords[1]
 
-plottedtex=ax.imshow(plottexhdu.data,cmap=colormap,vmax=605,vmin=10)
+plottedtex=ax.imshow(plottexhdu.data,cmap=colormap,vmax=1000,vmin=10)
 
 scale=5000*u.AU
 lenn=np.arctan(scale/dGC)
