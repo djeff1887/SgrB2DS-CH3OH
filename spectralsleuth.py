@@ -8,11 +8,12 @@ from astropy.io import fits
 import glob
 import radio_beam
 import regions
+import pdb
 
 Splatalogue.QUERY_URL= 'https://splatalogue.online/c_export.php'
 
 files=glob.glob('/blue/adamginsburg/d.jeff/imaging_results/*.fits')
-z=0.0002333587
+z=0.0002306756533745274#0.0002333587
 chem= input('Molecule?: ')
 chem=(' '+chem+' ')
 linelist=input('Linelist? (Lovas, SLAIM, JPL, CDMS, ToyoMA, OSU, Recomb, Lisa, RFI): ')
@@ -38,11 +39,20 @@ for i in range(len(files)):
     header=fits.getheader(fname)
 
     freqs=cube.spectral_axis
+    freqflip=False
+    if freqs[1] < freqs[0]:
+        freqs=freqs[::-1]
+        freqflip=True
+        print('Corrected decreasing frequency axis')
+    else:
+        pass
+        
+    assert freqs[0] < freqs[1], 'Inverted frequency axis'
     
     numchans=int(round(np.abs((linewidth.to('Hz')).value/(freqs[1].value-freqs[0].value))))
 
-    freq_max=freqs[np.argmin(freqs)]*(1+z)#215*u.GHz
-    freq_min=freqs[np.argmax(freqs)]*(1+z)#235*u.GHz
+    freq_max=freqs[np.argmax(freqs)]*(1+z)#215*u.GHz
+    freq_min=freqs[np.argmin(freqs)]*(1+z)#235*u.GHz
     
     methanol_table= utils.minimize_table(Splatalogue.query_lines(freq_min, freq_max, chemical_name=' CH3OH ', energy_max=1840, energy_type='eu_k', line_lists=[linelist], show_upper_degeneracy=True))
 
@@ -51,22 +61,23 @@ for i in range(len(files)):
     
     temptable=Splatalogue.query_lines(freq_min, freq_max, chemical_name=chem,
                                 energy_max=1840, energy_type='eu_k',
-                                line_lists=[linelist],show_upper_degeneracy=True)
+                                line_lists=[linelist],show_upper_degeneracy=True,only_NRAO_recommended=True)
     if len(temptable)==0:
         print('No '+chem+' lines in frequency range '+str(freq_min)+'-'+str(freq_max)+' GHz.')
         continue
     else:
         print('Lines identified in '+imgnames[i]+'.')
-        table = utils.minimize_table(temptable)
+        table1 = utils.minimize_table(temptable)
 
         table2=Splatalogue.query_lines(freq_min, freq_max,
                                 energy_max=1840, chemical_name=chem, energy_type='eu_k',
                                 line_lists=[linelist],
                                 show_upper_degeneracy=True, only_NRAO_recommended=True)
-    lines=(table['Freq']*10**9)/(1+z)#Redshifted
-    qns=table['QNs']
-    speciesdata[imgnames[i]]={'freqs':(lines*u.Hz),'qns':qns,'EU_K':(table['EU_K']),'methanoltable':methanol_table}#'lines':lines,'qns':qns}
-    
+    #lines=H2CO([211.1621915,215.6573955,215.9257754,216.5181246,218.1712798,218.4246607,218.7090284,219.9094955,220.2137449,223.9825783,225.6451188,227.5304568,228.4182866,231.1435153,232.8067699]*u.GHz).to('Hz').value
+    lines=(table1['Freq']*10**9)/(1+z)#Redshifted
+    qns=table1['QNs']
+    speciesdata[imgnames[i]]={'freqs':(lines*u.Hz),'qns':qns,'EU_K':(table1['EU_K']),'methanoltable':methanol_table}#'lines':lines,'qns':qns}
+    euks=table1['EU_K']
     print('Plotting lines...')
     
     cube_w=cube.wcs
@@ -99,6 +110,9 @@ for i in range(len(files)):
     ax.set_title((imgnames[i]+chem+linelist+' '+'Spectral Sleuthing'))
     ax.set_ylabel('Jy/beam')
     ax.set_xlabel('Frequency (Hz)')
+    print(lines)
+    print(qns)
+    print(euks)
     plt.show()
     '''
     elif i != 2:
@@ -137,4 +151,4 @@ for i in range(len(files)):
         continue
     '''
 
-print('Red lines are'+chem+', green lines are CH3OH.')
+print(f'Red lines are {chem}, green lines are CH3OH.')

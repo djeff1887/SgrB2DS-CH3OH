@@ -43,9 +43,9 @@ region='fk5; box(266.8353410,-28.3962005,0.0016806,0.0016806)'#SgrB2S-box2
 #box(266.8333438, -28.3966103, 0.0014028, 0.0014028)' #DSii/iii
 #box(266.8315833, -28.3971867, 0.0006528, 0.0006528)' #DSi-small
 #outpath=f'/blue/adamginsburg/d.jeff/SgrB2DSminicubes/{source}/OctReimage/'
-outpath=f'/blue/adamginsburg/d.jeff/SgrB2DSminicubes/{source}/OctReimage/'#imaging_results/DSii_iiibox1/'
+outpath=f'/blue/adamginsburg/d.jeff/SgrB2DSminicubes/{source}/OctReimage_K/'#imaging_results/DSii_iiibox1/'
 #statfixpath=f'/blue/adamginsburg/d.jeff/SgrB2DSstatcontfix/field10originals/'
-statfixpath=f'/blue/adamginsburg/d.jeff/SgrB2DSstatcontfix/{source}/OctReimage/'
+statfixpath=f'/blue/adamginsburg/d.jeff/SgrB2DSstatcontfix/OctReimage_K/'
 
 if os.path.isdir(outpath):
     print(f'Minicube directory "{outpath}" already exists. Proceeding to line loops/LTE fitting procedure.\n')
@@ -104,7 +104,7 @@ else:
             print('Statfix cubes reordered.\n')
             
     else:
-        cubestobox=cubes
+        cubestobox=orderedcubes
             
     pdb.set_trace()
             
@@ -209,7 +209,7 @@ def linelooplte(line_list,line_width,iterations,quantum_numbers):
     #print('Convert from Jy/beam to K')
     #targetspec_K=targetpixjybeam.to(u.K)#JybeamtoK(cubebeams,targetpixjybeam)
     print('Compute cube brightness temperature stddev')
-    targetspecK_stddev=targetspec_K.std()#np.nanstd(targetspec_K)
+    targetspecK_stddev=stddata[stdpixycrd,stdpixxcrd]#np.nanstd(targetspec_K)
     transitionbeamlist=[]
     transitionfluxlist=[]
     for i in range(iterations):
@@ -286,12 +286,14 @@ def linelooplte(line_list,line_width,iterations,quantum_numbers):
             oldstyleslab=oldstyleslab.with_spectral_unit((u.km/u.s),velocity_convention='radio',rest_value=lines[i])
             maskedslab=slab.with_mask(cubemask)
             momstart=time.time()
+            print('Unmasked moment0 computing...')
             slabmom0=oldstyleslab.moment0()
+            print('Masked moment0 computing...')
             maskslabmom0=maskedslab.moment0()
             momend=time.time()-momstart
             print(f'{quantum_numbers[i]} elapsed time: {time.strftime("%H:%M:%S", time.gmtime(momend))}')
             
-            print('Computing masking residuals')
+            print('\nComputing masking residuals')
             mom0maskresiduals=maskslabmom0-slabmom0
             print('\nSaving...')
             #name='test'+str(i)
@@ -502,7 +504,7 @@ sanitytable2 = utils.minimize_table(Splatalogue.query_lines(200*u.GHz, 300*u.GHz
                                     line_lists=['JPL'],
                                     show_upper_degeneracy=True))
 
-incubes=glob.glob(outpath+"*.fits")#'/blue/adamginsburg/d.jeff/imaging_results/field1core1box2/*.fits')
+incubes=glob.glob(outpath+"*pbcor_line.fits")#'/blue/adamginsburg/d.jeff/imaging_results/field1core1box2/*.fits')
 
 images=['spw0','spw1','spw2','spw3']
 
@@ -519,10 +521,11 @@ assert 'spw0' in datacubes[0], 'Cube list out of order'
 maskname="/blue/adamginsburg/d.jeff/imaging_results/SgrB2DS-CH3OH/7.0mhzmasked_spw08-7slab.fits"
 maskeddatacube=sc.read(maskname)
 maskeddatacube=maskeddatacube.with_spectral_unit((u.km/u.s),velocity_convention='radio',rest_value=220027805942.10373*u.Hz)
+stdhome='/orange/adamginsburg/sgrb2/d.jeff/products/OctReimage_K/'
 
 cubemaskarray=maskeddatacube.get_mask_array()
 
-sourcelocs={'SgrB2S':'7mhzmasked_OctReimage_z0_0002306756533745274_5-6mhzwidth_stdfixes/','DSi':'/field10originals_z0_000186431_5-6mhzwidth_stdfixes/','DSv':f'/{int(testT.value)}K_field10originals_z0_00186431_5-6mhzwidth_stdfixes_test/'}
+sourcelocs={'SgrB2S':'K_7mhzmasked_OctReimage_z0_0002306756533745274_5-6mhzwidth_stdfixes/','DSi':'/field10originals_z0_000186431_5-6mhzwidth_stdfixes/','DSv':f'/{int(testT.value)}K_field10originals_z0_00186431_5-6mhzwidth_stdfixes_test/'}
 
 sourcepath=f'/blue/adamginsburg/d.jeff/SgrB2DSreorg/field{fnum}/CH3OH/{source}/'+sourcelocs[source]
 nupperpath=sourcepath+'nuppers/'
@@ -599,6 +602,10 @@ for imgnum in range(len(datacubes)):
     #cube=cube.rechunk(save_to_tmp_dir=True)
     header=fits.getheader(datacubes[imgnum])
     
+    stdimage=fits.open(stdhome+images[imgnum]+'minimize.image.pbcor_noise.fits')
+    stddata=stdimage[0].data*u.K
+    stdwcs=WCS(stdimage[0].header)
+    
     print('Acquiring cube rest frequency and computing target pixel coordinates')
     spwrestfreq=header['RESTFRQ']*u.Hz
     masterrestfreqs.append(spwrestfreq)
@@ -623,9 +630,15 @@ for imgnum in range(len(datacubes)):
     #targetworldcrd=[[0,0,0],[2.66835339e+02, -2.83961660e+01, 0]] #SgrB2S
     #[[0,0,0],[266.8332569, -28.3969, 0]] #DSii/iii
     targetpixcrd=cube_w.all_world2pix(targetworldcrd,1,ra_dec_order=True)
+    fullsize_targetpixcrd=stdwcs.wcs_world2pix(targetworldcrd,1,ra_dec_order=True)
+    stdpixxcrd,stdpixycrd=int(round(fullsize_targetpixcrd[1][0])),int(round(fullsize_targetpixcrd[1][1]))
+    print(f'Stddev position - x: {stdpixxcrd}/y: {stdpixycrd}')
+    
+    assert stdpixxcrd >= 0 and stdpixycrd >= 0, 'Negative std pixel coords'
+    
     
     pixxcrd,pixycrd=int(round(targetpixcrd[1][0])),int(round(targetpixcrd[1][1]))
-    print(f'x: {pixxcrd}/y: {pixycrd}')
+    print(f'Flux position - x: {pixxcrd}/y: {pixycrd}')
     
     assert pixxcrd >= 0 and pixycrd >= 0, 'Negative pixel coords'
     
