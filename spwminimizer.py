@@ -5,19 +5,31 @@ import time
 import glob
 import os
 
-home='/blue/adamginsburg/d.jeff/1e6-16_results/'
+home='/orange/adamginsburg/sgrb2/d.jeff/field10pbcors/'
 print('Get cubes')
-cubes=glob.glob(home+'*pbcor*')
-#spw1=sc.read("/blue/adamginsburg/d.jeff/imaging_results/noncontsubcubes/SgrB2DS_field1_spw1_cube.image.fits",use_dask=True)
-#spw2=sc.read("/blue/adamginsburg/d.jeff/imaging_results/noncontsubcubes/SgrB2DS_field1_spw2_cube.image.fits",use_dask=True)
+cubes=glob.glob(home+'*pbcor.fits')
+fieldnum=10
+out='/orange/adamginsburg/sgrb2/d.jeff/data/field10originalimages/'
 
-for cube in cubes:
+images=['spw0','spw1','spw2','spw3']
+
+datacubes=[]
+
+for spew in images:
+    for f1 in cubes:
+        if spew in f1:
+            datacubes.append(f1)
+            continue
+    
+assert 'spw0' in datacubes[0], 'Cube list out of order'
+
+for cube in datacubes:
     for i in range(4):
         if f'spw{i}' not in cube:
             print(f'spw{i} not in {cube}')
             continue
         else:
-            outfile=home+f'SgrB2DS_field1_spw{i}_cube_robust0_niter1e6_chunks16_minimize.image.pbcor.fits'
+            outfile=out+f'SgrB2DS_field{fieldnum}_spw{i}_cube_minimize.image.pbcor.fits'
             if os.path.isfile(outfile):
                 print(f'Outfile {outfile} already exists.')
                 continue

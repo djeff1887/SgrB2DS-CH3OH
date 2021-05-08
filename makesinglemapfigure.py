@@ -11,6 +11,7 @@ from astropy import wcs
 import astropy.units as u
 from astropy import coordinates
 from matplotlib.patches import Rectangle
+import matplotlib as mpl
 #from astropy.visualization.wcsaxes import Quadrangle
 
 plt.close()
@@ -40,7 +41,7 @@ def make_scalebar(ax, left_side, length, color='black', linestyle='-', label='',
 cm= copy.copy(mpl.cm.get_cmap("inferno"))#mom0 bone, temp inferno, nupper Blues_r, detections CMRmap
 cm.set_bad('black')
 dGC=8.34*u.kpc#per Meng et al. 2019 https://www.aanda.org/articles/aa/pdf/2019/10/aa35920-19.pdf
-source='DSv'
+source='DSi'
 fnum=10
 
 home=f'/blue/adamginsburg/d.jeff/SgrB2DSreorg/field{fnum}/CH3OH/'
@@ -49,16 +50,20 @@ saveimgpath=sourcepath+'texmap_ntotcontours-3-6-8to48.png'
 
 cntrfile="/blue/adamginsburg/d.jeff/imaging_results/adamcleancontinuum/Sgr_B2_DS_B6_uid___A001_X1290_X46_continuum_merged_12M_robust0_selfcal4_finaliter.image.tt0.pbcor.fits"
 #cntrfile="/blue/adamginsburg/d.jeff/imaging_results/products/OctReimage/SgrB2DS_field1_spw2_cube_robust0_niter1e6_chunks16_minimize.image.pbcor_continuum.fits"#"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/SgrB2S/OctReimage_z0_0002306756533745274_5-6mhzwidth/ntotmap_allspw_withnans_weighted.fits"#"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/SgrB2S/z0_0002306756533745274_testbox2_5-6mhzwidth/ntotmap_allspw_withnans_weighted.fits"#"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/DSi/z0_000186407_box1_5-6mhzwidth/ntotmap_allspw_withnans_weighted.fits"#input('Map fits file: ')
-infile="/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSv/200K_field10originals_z0_000190713_5-6mhzwidth_stdfixes/texmap_5transmask_3sigma_allspw_withnans_weighted.fits"
+#infile="/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSv/200K_field10originals_z0_000190713_5-6mhzwidth_stdfixes/texmap_5transmask_3sigma_allspw_withnans_weighted.fits"
 #infile="/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSv/200K_field10originals_z0_000190713_5-6mhzwidth_stdfixes/mom0/CH3OH~25_3-24_4E1vt0.fits"
 #infile="/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSv/200K_field10originals_z0_000190713_5-6mhzwidth_stdfixes/ch3ohdetections3_3sigma_allspw_withnans_weighted.fits"
 #infile='/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSv/200K_field10originals_z0_000190713_5-6mhzwidth_stdfixes/texmap_5transmask_3sigma_allspw_withnans_weighted.fits'
+
+infile=cntrfile
+
+#infile="/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/SgrB2S/OctReimage_large_z0_0002306756533745274_5-6mhzwidth_stdfixes/ch3ohdetections5_3sigma_allspw_withnans_weighted.fits"
 
 #infile="/blue/adamginsburg/d.jeff/imaging_results/adamcleancontinuum/SgrB2_selfcal_full_TCTE7m_try2_selfcal6_ampphase_robust0.image.tt0.pbcor.fits"
 #infile="/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/SgrB2S/OctReimage_z0_0002306756533745274_5-6mhzwidth_stdfixes/ch3ohdetections3_3sigma_allspw_withnans_weighted.fits"
 #infile="/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/SgrB2S/OctReimage_z0_0002306756533745274_5-6mhzwidth_stdfixes/texmap_3transmask_3sigma_allspw_withnans_weighted.fits"
 #infile="/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSi/field10originals_z0_000186431_5-6mhzwidth_stdfixes/ch3ohdetections3_3sigma_allspw_withnans_weighted.fits"
-#infile="/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSi/field10originals_z0_000186431_5-6mhzwidth_stdfixes/texmap_5transmask_3sigma_allspw_withnans_weighted.fits"
+infile="/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSi/field10originals_z0_000186431_5-6mhzwidth_stdfixes/texmap_5transmask_3sigma_allspw_withnans_weighted.fits"
 #infile="/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/SgrB2S/OctReimage_z0_0002306756533745274_5-6mhzwidth/texmap_3sigma_allspw_withnans_weighted.fits"#"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/SgrB2S/z0_0002306756533745274_testbox2_5-6mhzwidth/texmap_3sigma_allspw_withnans_weighted.fits"#"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/DSi/z0_000186407_box1_5-6mhzwidth/texmap_3sigma_allspw_withnans_weighted.fits"
 '''
 if '"' in infile:
@@ -93,7 +98,7 @@ cntrwcs=WCS(cntrhdu).celestial
 texmaxpix=hduwcs.array_shape
 hdubeam=radio_beam.Beam.from_fits_header(hdu.header)
 
-sliced=['x','y']#Must be in same order as axes are given in fits header, at least. 
+sliced=['x','y']#,0,0]#Must be in same order as axes are given in fits header, at least. 
 ax=plt.subplot(projection=hduwcs,slices=sliced)
 #ax.set_figheight(15)
 #ax.set_figwidth(15)
@@ -102,12 +107,12 @@ plt.rcParams['figure.dpi'] = 150
 ra=ax.coords[0]
 dec=ax.coords[1]
 
-img=ax.imshow(hdu.data,interpolation=None, cmap=cm)#vmaxcntm=0.005, vmaxdsi=300 (no min value),vmaxsgrb2s=605 tmin=10 (try no min value), ntotmax=6.26e17, dsintotmax=2.21e17
+img=ax.imshow(np.squeeze(hdu.data),interpolation=None,vmax=300, cmap=cm)#, norm=mpl.colors.LogNorm())#vmaxcntm=0.005, vmaxdsi=300 (no min value),vmaxsgrb2s=605 tmin=10 (try no min value), ntotmax=6.26e17, dsintotmax=2.21e17
 lims=ax.axis()
-ax.contour(cntrdata, levels=cntrlist, colors='white',transform=ax.get_transform(cntrwcs),linewidths=1)#, alpha=0.5)#ax.contour(data=hdu.data)#, colors='black')#binary/Greys are other good cmaps
+#ax.contour(cntrdata, levels=cntrlist, colors='white',transform=ax.get_transform(cntrwcs),linewidths=1)#, alpha=0.5)#ax.contour(data=hdu.data)#, colors='black')#binary/Greys are other good cmaps
 #ax.contour(cntrhdu.data,levels=(-1*cntrlist),colors='white',linestyles='dashed')#YlGn is alt for both
 
-scale=5000*u.AU
+scale=5000*u.AU#0.5*u.pc
 lenn=np.arctan(scale/dGC)
 #SgrB2S
 if source=='SgrB2S':
@@ -125,6 +130,12 @@ elif source=='DSi':
                   length=lenn, label=f'{int(scale.value)} AU', fontsize=12, 
                   text_offset=0.02*u.arcsec)
     crd=coordinates.SkyCoord('17:47:19.4976 -28:23:51.384', unit=(u.hour,u.deg), frame='icrs')
+    
+elif source=='DSall':
+    make_scalebar(ax, coordinates.SkyCoord('17:47:24.0 -28:26:25', unit=(u.hour, u.deg), 
+                                           frame='icrs'),
+                  length=lenn, label=f'{scale.value} pc', fontsize=12, 
+                  text_offset=0.02*u.arcsec)
 else:
     print('No scalebar available for this object')
 
@@ -138,7 +149,7 @@ ra.set_axislabel('RA (J2000)',fontsize=14,minpad=0.9)
 ra.set_ticklabel(exclude_overlapping=True)
 dec.set_axislabel('Dec (J2000)',fontsize=14,minpad=-0.7)
 ax.tick_params(fontsize=14)
-cbar1=plt.colorbar(img,pad=0,label='K')#plt.colorbar()
+cbar1=plt.colorbar(img,pad=0,label='K')#r'S$_\nu$ (Jy)')#'$n_{transition}$')#plt.colorbar()
 #plt.savefig(saveimgpath)
 
 '''Plotting shapes

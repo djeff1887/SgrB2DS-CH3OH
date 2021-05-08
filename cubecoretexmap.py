@@ -17,6 +17,7 @@ import matplotlib as mpl
 import copy
 from astropy import coordinates
 from spectral_cube import BooleanArrayMask
+from astropy.nddata import Cutout2D
 
 Splatalogue.QUERY_URL= 'https://splatalogue.online/c_export.php'
 
@@ -216,6 +217,7 @@ def linelooplte(line_list,line_width,iterations,quantum_numbers):
         print(f'Start {quantum_numbers[i]} moment0 procedure')
         temptransdict={}
         line=line_list[i]#*u.Hz
+        restline=line*(1+z)
         nu_upper=line+line_width
         nu_lower=line-line_width
         print(f'Make spectral slab between {nu_lower} and {nu_upper}')
@@ -230,10 +232,18 @@ def linelooplte(line_list,line_width,iterations,quantum_numbers):
         #print(f'slab_K: {slab_K}')
         mulu2=(mulu(aijs[i],line)).to('cm5 g s-2')
         linewidth_vel=vradio(singlecmpntwidth,line)
-        tbthick=Tbthick(testntot,line,linewidth_vel,mulu2,degeneracies[i],qrot_partfunc,eujs[i],testT).to('K')
+        tbthick=Tbthick(testntot,restline,linewidth_vel,mulu2,degeneracies[i],qrot_partfunc,eujs[i],testT).to('K')
         peak_amplitude=slab_K.max(axis=0)
+        
+        est_nupper=nupper_estimated(testntot,degeneracies[i],qrot_partfunc,eujs[i],testT).to('cm-2')
+        est_tau=opticaldepth(aijs[i],restline,testT,est_nupper,originallinewidth).to('')
+        trad=t_rad(f,est_tau,restline,testT).to('K')
+        
         print('LTE params calculated')
         print(f'tbthick: {tbthick}\n targetspecK_stddev: {targetspecK_stddev}\n peak_amplitude: {peak_amplitude}')
+        print(f'est_nupper: {est_nupper}\n est_tau: {est_tau}\n trad: {trad}')
+        #if tbthick >= targetspecK_stddev:
+        #    print(f'\n est tau from data at {testT}: {(peak_amplitude/trad).to("")}')
         print('Slicing quantum numbers')
         transition=qn_replace(quantum_numbers[i])
         moment0filename=home+'CH3OH~'+transition+'.fits'
@@ -248,8 +258,8 @@ def linelooplte(line_list,line_width,iterations,quantum_numbers):
             isfilemom0=fits.getdata(maskedmom0fn)*u.K*u.km/u.s
             #isfilepixflux=isfilemom0[pixycrd,pixxcrd]
             isfilebeam=beamer(maskedmom0fn)
-            isfilestdflux=fits.getdata(f'{stdpath}{images[imgnum]}fluxstd.fits')*u.K#This is confusing, notation-wise, but I'm leaving it this way for now since it's consistent between the two forks in the loop. For future reference: isfilestdflux is the error on the measured brightnesstemp in K, whereas isfilemom0 pulls from the moment0 maps and is in K km/s
-            temptransdict.update([('freq',line),('flux',isfilemom0),('stddev',isfilestdflux),('beam',isfilebeam),('euk',euks[i]),('eujs',eujs[i]),('degen',degeneracies[i]),('aij',aijs[i]),('filename',moment0filename)])
+            isfilestdflux=stddata#fits.getdata(f'{stdpath}{images[imgnum]}fluxstd.fits')*u.K#This is confusing, notation-wise, but I'm leaving it this way for now since it's consistent between the two forks in the loop. For future reference: isfilestdflux is the error on the measured brightnesstemp in K, whereas isfilemom0 pulls from the moment0 maps and is in K km/s
+            temptransdict.update([('freq',restline),('flux',isfilemom0),('stddev',isfilestdflux),('beam',isfilebeam),('euk',euks[i]),('eujs',eujs[i]),('degen',degeneracies[i]),('aij',aijs[i]),('filename',moment0filename),('shift_freq',line)])
             transitiondict.update({transition:temptransdict})
             masterslicedqns.append(transition)
             mastereuks.append(euks[i].value)
@@ -267,7 +277,7 @@ def linelooplte(line_list,line_width,iterations,quantum_numbers):
                 slab=slab.with_spectral_unit((u.km/u.s),velocity_convention='radio',rest_value=lines[i])
                 momentnfilename=sourcepath+f'mom{moment}/'+'CH3OH~'+transition+'.fits'
                 if os.path.isfile(momentnfilename):
-                    print(f'{transition} moment{moment} file already exists.')
+                    print(f'{transition} moment{moment} file already exists.\n')
                     continue
                 elif moment == 1:
                     print(f'Computing moment 1 and saving to {momentnfilename}\n')
@@ -278,7 +288,7 @@ def linelooplte(line_list,line_width,iterations,quantum_numbers):
                     slabmom2=slab.moment2()
                     slabmom2.write(momentnfilename)
             pass
-        elif tbthick >= targetspecK_stddev and peak_amplitude >= 3* targetspecK_stddev:#*u.K:
+        elif trad >= 3*targetspecK_stddev and peak_amplitude >= 3* targetspecK_stddev:#*u.K:
             print('Commence moment0')
             slab=slab.with_spectral_unit((u.km/u.s),velocity_convention='radio',rest_value=lines[i])#spwrestfreq)
             cubemask=BooleanArrayMask(mask=cubemaskarray,wcs=slab.wcs)
@@ -303,7 +313,7 @@ def linelooplte(line_list,line_width,iterations,quantum_numbers):
             
             moment0beam=slabmom0.beam.value*u.sr
             targetpixflux=slabmom0[pixycrd,pixxcrd]
-            temptransdict.update([('freq',line),('flux',maskslabmom0),('stddev',targetspecK_stddev),('beam',moment0beam),('euk',euks[i]),('eujs',eujs[i]),('degen',degeneracies[i]),('aij',aijs[i]),('filename',moment0filename)])
+            temptransdict.update([('freq',restline),('flux',maskslabmom0),('stddev',targetspecK_stddev),('beam',moment0beam),('euk',euks[i]),('eujs',eujs[i]),('degen',degeneracies[i]),('aij',aijs[i]),('filename',moment0filename),('shift_freq',line)])
             transitiondict.update({transition:temptransdict})
             mastereuks.append(euks[i])
             masterstddevs.append(targetspecK_stddev)
@@ -330,14 +340,14 @@ def linelooplte(line_list,line_width,iterations,quantum_numbers):
                     slabmom2.write(momentnfilename)
             pass
         else:
-            if not tbthick >= targetspecK_stddev and peak_amplitude >= 3* targetspecK_stddev:
+            if not trad >= 3*targetspecK_stddev and peak_amplitude >= 3* targetspecK_stddev:
                 print('LTE Model max brightnessTemp below 1sigma threshold')
                 print(f'{quantum_numbers[i]} skipped, possible contamination\n')
                 pass
-            elif tbthick >= targetspecK_stddev and not peak_amplitude >= 3* targetspecK_stddev:
+            elif trad >= 3*targetspecK_stddev and not peak_amplitude >= 3* targetspecK_stddev:
                 print(f'Line amplitude ({peak_amplitude}) less than 3 sigma criterion ({3*targetspecK_stddev})')
                 print(f'{quantum_numbers[i]} skipped\n')
-            elif not tbthick >= targetspecK_stddev and not peak_amplitude >= 3* targetspecK_stddev:
+            elif not trd >= 3*targetspecK_stddev and not peak_amplitude >= 3* targetspecK_stddev:
                 print('1 sigma LTE model and 3 sigma amplitude criteria not met')
                 print(f'{quantum_numbers[i]} skipped\n')
                 pass
@@ -480,7 +490,7 @@ def jupperfinder(quan_nums):
     
     return j_upper,k_upper
     
-def N_u(nu,Aij,velocityintegrated_intensity_K,velint_intK_err):#(ntot,qrot,gu,eu_J,T_ex):
+def N_u(nu,Aij,velocityintegrated_intensity_K,velint_intK_err):#(ntot,qrot,gu,eu_J,T_ex):#taken from pyspeckit documentation https://pyspeckit.readthedocs.io/en/latest/lte_molecule_model.html?highlight=Aij#lte-molecule-model
     nuppercalc=((8*np.pi*k*nu**2)/(h*c**3*Aij))*velocityintegrated_intensity_K
     nuppererr=((8*np.pi*k*nu**2)/(h*c**3*Aij))*velint_intK_err#(velint_intK_err.to('K km s-1')/velocityintegrated_intensity_K.to('K km s-1'))*nuppercalc
     return nuppercalc,nuppererr#ntot/(qrot*np.exp(eu_J/(k*T_ex)))
@@ -496,6 +506,15 @@ def Ntot_rj_thin_nobg(nu,s,g,q,eu_J,T_ex,vint_intensity):
     #T_ex=T_ex
     #T_r=T_r
     return ((3*k)/(8*np.pi**3*nu*mu_a**2*s*R_i))*(q/g)*np.exp((eu_J/(k*T_ex)))*((vint_intensity))#((nu+templatewidth)-(nu-templatewidth)))
+    
+def t_rad(tau_nu, ff, nu, T_ex):
+    return ff*(1-np.exp(-tau_nu))*(rjequivtemp(nu, T_ex)-rjequivtemp(nu,Tbg))
+    
+def nupper_estimated(n_tot,g,q,euj,tex):
+    return n_tot*(g/q)*np.exp(-euj/(k*tex))
+    
+def opticaldepth(aij,nu,T_ex,nupper,lw):
+    return (c**2/(8*np.pi*nu**2*lw))*aij*nupper*np.exp((h*nu)/(k*T_ex))
      
 qrot_partfunc=Q_rot_asym(testT).to('')
 
@@ -525,7 +544,7 @@ stdhome='/orange/adamginsburg/sgrb2/d.jeff/products/OctReimage_K/'
 
 cubemaskarray=maskeddatacube.get_mask_array()
 
-sourcelocs={'SgrB2S':'K_7mhzmasked_OctReimage_z0_0002306756533745274_5-6mhzwidth_stdfixes/','DSi':'/field10originals_z0_000186431_5-6mhzwidth_stdfixes/','DSv':f'/{int(testT.value)}K_field10originals_z0_00186431_5-6mhzwidth_stdfixes_test/'}
+sourcelocs={'SgrB2S':'K_7mhzmasked_OctReimage_z0_0002306756533745274_5-6mhzwidth_stdfixes_restfreqfix/','DSi':'/field10originals_z0_000186431_5-6mhzwidth_stdfixes/','DSv':f'/{int(testT.value)}K_field10originals_z0_00186431_5-6mhzwidth_stdfixes_test/'}
 
 sourcepath=f'/blue/adamginsburg/d.jeff/SgrB2DSreorg/field{fnum}/CH3OH/{source}/'+sourcelocs[source]
 nupperpath=sourcepath+'nuppers/'
@@ -603,8 +622,9 @@ for imgnum in range(len(datacubes)):
     header=fits.getheader(datacubes[imgnum])
     
     stdimage=fits.open(stdhome+images[imgnum]+'minimize.image.pbcor_noise.fits')
+    stdcellsize=(np.abs(stdimage[0].header['CDELT1']*u.deg)).to('arcsec')
+    stdcutoutsize=round(((float(region[43:52])*u.deg)/stdcellsize).to('').value)
     stddata=stdimage[0].data*u.K
-    stdwcs=WCS(stdimage[0].header)
     
     print('Acquiring cube rest frequency and computing target pixel coordinates')
     spwrestfreq=header['RESTFRQ']*u.Hz
@@ -625,6 +645,8 @@ for imgnum in range(len(datacubes)):
     
     targetworldcrds={'SgrB2S':[[0,0,0],[2.66835339e+02, -2.83961660e+01, 0]], 'DSi':[[0,0,0],[266.8316149,-28.3972040,0]], 'DSv':[[0,0,0],[266.8321311,-28.3976633,0]]}
     cube_w=cube.wcs
+    stdwcs=WCS(stdimage[0].header)#WCS(stdimage[0].header)
+    
     #targetworldcrd=[[0,0,0],[266.8324225,-28.3954419,0]]#DSiv
     targetworldcrd=targetworldcrds[source]#[[0,0,0],[266.8316149,-28.3972040,0]] #DSi
     #targetworldcrd=[[0,0,0],[2.66835339e+02, -2.83961660e+01, 0]] #SgrB2S
@@ -636,11 +658,15 @@ for imgnum in range(len(datacubes)):
     
     assert stdpixxcrd >= 0 and stdpixycrd >= 0, 'Negative std pixel coords'
     
-    
     pixxcrd,pixycrd=int(round(targetpixcrd[1][0])),int(round(targetpixcrd[1][1]))
     print(f'Flux position - x: {pixxcrd}/y: {pixycrd}')
     
     assert pixxcrd >= 0 and pixycrd >= 0, 'Negative pixel coords'
+    
+    stdcutout=Cutout2D(stddata,(stdpixxcrd,stdpixycrd),(stdcutoutsize))
+    assert np.shape(stdcutout)[0]==cube.shape[1], 'Standard deviation cutout size mismatch'
+    
+    #pdb.set_trace()
     
     freq_min=freqs[0]*(1+z)#215*u.GHz
     #print(freq_max)
@@ -694,39 +720,40 @@ for imgnum in range(len(datacubes)):
     spwdict.update([(images[imgnum],transitiondict)])
     tempkeys=list(spwdict[images[imgnum]].keys())
     
-    kstdimgpath=stdpath+f'{images[imgnum]}fluxstd.fits'
+    #kstdimgpath=stdpath+f'{images[imgnum]}fluxstd.fits'
     kkmsstdimgpath=stdpath+f'{images[imgnum]}intensitystd.fits'
     if os.path.isfile(kkmsstdimgpath):
         print(f'{images[imgnum]} brightness std image already exists')
-        spwstdarray=fits.getdata(kstdimgpath)*u.K
+        spwstdarray=stdcutout.data#fits.getdata(kstdimgpath)*u.K
         kkmsstdarray=fits.getdata(kkmsstdimgpath)*u.K*u.km/u.s
-        print(f'Retrieved brightness std data from {kstdimgpath} and {kkmsstdimgpath}\n')
+        print(f'Retrieved integrated intensity std data from {kkmsstdimgpath}\n')
     else:
         print(f'Start {images[imgnum]} std calculations')
-        spwstdarray,kkmsstdarray=pixelwisestd(cube)
-        for stdarray, imgpath in zip([spwstdarray,kkmsstdarray],[kstdimgpath,kkmsstdimgpath]):
-            print('Set Primary HDU')
-            hdu=fits.PrimaryHDU(stdarray.value)
-            '''This transmoment0 file has intensity (K km/s) units'''
-            if len(tempkeys) == 0:
-                print(f'No transitions detected in this spw ({images[imgnum]})')
-                transmomslab=cube.spectral_slab((lines[0]-linewidth),(lines[0]+linewidth))
-                transmoment0=transmomslab.moment0()
-                transmom0header=transmoment0.header
-                print(f'Set transmoment0 to moment0 from {(lines[0]+linewidth).to("GHz")} to {(lines[0]-linewidth).to("GHz")}')
-            else:
-                transmoment0=fits.open(spwdict[images[imgnum]][tempkeys[0]]['filename'])
-                transmom0header=transmoment0[0].header
-                print(f'Set header from {spwdict[images[imgnum]][tempkeys[0]]["filename"]}')
-            hdu.header=transmom0header
-            if np.all(stdarray==spwstdarray):
-                hdu.header['BUNIT']='K'
-            else:
-                hdu.header['BUNIT']='K km s-1'
-            print('Wrapping Primary HDU in HDUList')
-            hdul=fits.HDUList([hdu])
-            print(f'Writing to {imgpath}')
-            hdul.writeto(imgpath)
+        spwstdarray=stdcutout.data
+        kkmsstdarray=stdcutout.data*linewidth_vel#Stopgap until figure out how to do this on per-transition basis around cores only#pixelwisestd(cube)#spwstdarray,
+        #for stdarray, imgpath in zip([spwstdarray,kkmsstdarray],[kstdimgpath,kkmsstdimgpath]):
+        print('Set Primary HDU')
+        hdu=fits.PrimaryHDU(spwstdarray.value)
+        '''This transmoment0 file has intensity (K km/s) units'''
+        if len(tempkeys) == 0:
+            print(f'No transitions detected in this spw ({images[imgnum]})')
+            transmomslab=cube.spectral_slab((lines[0]-linewidth),(lines[0]+linewidth))
+            transmoment0=transmomslab.moment0()
+            transmom0header=transmoment0.header
+            print(f'Set transmoment0 to moment0 from {(lines[0]+linewidth).to("GHz")} to {(lines[0]-linewidth).to("GHz")}')
+        else:
+            transmoment0=fits.open(spwdict[images[imgnum]][tempkeys[0]]['filename'])
+            transmom0header=transmoment0[0].header
+            print(f'Set header from {spwdict[images[imgnum]][tempkeys[0]]["filename"]}')
+        hdu.header=transmom0header
+        #if np.all(stdarray==spwstdarray):
+        #    hdu.header['BUNIT']='K'
+        #else:
+        hdu.header['BUNIT']='K km s-1'
+        print('Wrapping Primary HDU in HDUList')
+        hdul=fits.HDUList([hdu])
+        print(f'Writing to {kkmsstdimgpath}')
+        hdul.writeto(kkmsstdimgpath,overwrite=True)
         print(f'{images[imgnum]} std calculations complete.\n')
     #transitiondict.update({'restfreq':spwrestfreq})
     #,('pixel_0',(pixycrd,pixxcrd))])

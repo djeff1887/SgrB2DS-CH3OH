@@ -12,6 +12,8 @@ import radio_beam
 
 from astropy.modeling import models, fitting#Fittable1DModel, Parameter, fitting
 
+Splatalogue.QUERY_URL= 'https://splatalogue.online/c_export.php'
+
 plt.close('all')
 linelist='JPL'
 
@@ -31,11 +33,13 @@ R_i=1
 kappa=((2*b_0)-a_0-c_0)/(a_0-c_0)
 f=1
 
-files=glob.glob('/blue/adamginsburg/d.jeff/SgrB2DSstatcontfix/field10originals/*.fits')
+#files=glob.glob('/blue/adamginsburg/d.jeff/SgrB2DSstatcontfix/field10originals/*.fits')
+files=glob.glob('/blue/adamginsburg/d.jeff/SgrB2DSminicubes/SgrB2S/OctReimage_K/*.fits')
+#files=glob.glob("/blue/adamginsburg/d.jeff/SgrB2DSminicubes/DSi/field10originals/*.fits")
 
-z=0.0001854542074721255#0.000190713#DSv#Average of 0.00019597214240510706 (2nd) and 0.0001854542074721255 (main) from goodfit
+#z=0.0001854542074721255#0.000190713#DSv#Average of 0.00019597214240510706 (2nd) and 0.0001854542074721255 (main) from goodfit
 #z=0.000186431#DSi
-#z=0.000234806#<<<avg of the two to the left#0.000236254#0.0002333587
+z=0.000234806#<<<avg of the two to the left#0.000236254#0.0002333587
 imgnames=['spw0','spw1','spw2','spw3']
 
 datacubes=[]
@@ -161,8 +165,8 @@ def kkms(beams,data):
         #intensitylist.append(velflux_T)
     return t_bright
     
-imgnum=1
-testline=0
+imgnum=1#0
+testline=0#4
 print('Getting ready - '+imgnames[imgnum])
 cube=sc.read(datacubes[imgnum])
 
@@ -174,8 +178,8 @@ else:
     contsub=False
 
 #targetworldcrd=[[0,0,0],[266.8316149,-28.3972040,0]]#DSi
-targetworldcrd=[[0,0,0],[266.8321311,-28.3976633,0]]#DSv
-#targetworldcrd=[[0,0,0],[2.66835339e+02, -2.83961660e+01, 0]]#SgrB2S
+#targetworldcrd=[[0,0,0],[266.8321311,-28.3976633,0]]#DSv
+targetworldcrd=[[0,0,0],[2.66835339e+02, -2.83961660e+01, 0]]#SgrB2S
 targetpixcrd=cube_w.all_world2pix(targetworldcrd,1,ra_dec_order=True)
 
 #header=fits.getheader(files[0])
@@ -224,10 +228,13 @@ cmpnt2frq=component_restfrequency(cmpnt2veloffset,mlines[testline])
 print(f'2nd component: {cmpnt2frq}')
 cmpnt2frqoffset=np.abs(mlines[testline]-cmpnt2frq)
 
+cube.allow_huge_operations=True
 spwwindow=cube.spectral_slab((mlines[testline]-plotwidth),(mlines[testline]+plotwidth))[:,int(round(targetpixcrd[1][1])),int(round(targetpixcrd[1][0]))]
+#print('Compute mean')
+#spwwindow=spwwindow.mean(axis=(1,2))
 beamlist=spwwindow.beams
 beamlist=(beamlist.value)*u.sr/u.beam
-t_brights=kkms(beamlist,spwwindow)
+t_brights=spwwindow.value#kkms(beamlist,spwwindow)
         
 #print(t_brights)
 peakK=spwwindow[np.argmax(spwwindow)]
@@ -301,14 +308,14 @@ class Gaussian1D(Fittable1DModel):
 '''
         
 fit_g=fitting.LevMarLSQFitter()
-linemin=14
+linemin=16#14
 linemax=30
 linemin2=0
 linemax2=15
 linemin3=0
 linemax3=31
-testmod1=models.Gaussian1D(mean=mlines[testline], stddev=1 * u.MHz, amplitude=(t_brights[np.argmax(t_brights)]) * u.K)#testtbthick,mlines[testline],lw2)
-testmod2=models.Gaussian1D(mean=(mlines[testline]+cmpnt2frqoffset), stddev=1 * u.MHz, amplitude=(t_brights[np.argmax(t_brights)]/1.2) * u.K)
+testmod1=models.Gaussian1D(mean=mlines[testline], stddev=3 * u.MHz, amplitude=(t_brights[np.argmax(t_brights)]))# * u.K)#testtbthick,mlines[testline],lw2)
+testmod2=models.Gaussian1D(mean=(mlines[testline]+cmpnt2frqoffset), stddev=1 * u.MHz, amplitude=(t_brights[np.argmax(t_brights)]/1.2))# * u.K)
 testmod3=testmod1+testmod2
 #testfit1=fit_g(testmod1,spwwindow.spectral_axis[linemin:linemax],t_brights[linemin:linemax]*u.K)
 #testfit2=fit_g(testmod2,spwwindow.spectral_axis[linemin2:linemax2],t_brights[linemin2:linemax2]*u.K)
@@ -332,9 +339,10 @@ print(f'Model fit info: {fit_g.fit_info}')
 print(f'Main z: {z_maincmpnt}\nCmpnt2 z: {z_cmpnt2}')
 plt.plot(spwwindow.spectral_axis,t_brights,drawstyle='steps')
 
+'''
 plt.plot(plot,plotprofilethin,label=(r'$\tau << 1$'))
 plt.plot(plot,plotprofilethick,label=(r'$\tau \geq 1$'))
-'''
+
 plt.plot(spwwindow.spectral_axis[linemin:linemax],t_brights[linemin:linemax],drawstyle='steps',color='orange')
 plt.plot(spwwindow.spectral_axis[linemin2:linemax2],t_brights[linemin2:linemax2],drawstyle='steps',color='green')
 

@@ -19,13 +19,17 @@ def circle(data,ycenter,xcenter,rad):
                 edgey.append(i)
     return np.vstack((edgex,edgey))
     
+'''
 source='DSi'
 fnum=10
 base=f'/blue/adamginsburg/d.jeff/SgrB2DSreorg/field{fnum}/CH3OH/{source}/'
 home=base+'field10originals_z0_000186431_5-6mhzwidth_stdfixes/'
+'''
+source='SgrB2S'
+fnum=1
 #home='/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSi/OctReimage_z0_000186431_5-6mhzwidth_stdfixes/'
-#"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/SgrB2S/OctReimage_z0_0002306756533745274_5-6mhzwidth_stdfixes/"
-texmap=home+"texmap_3transmask_3sigma_allspw_withnans_weighted.fits"
+home="/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/SgrB2S/OctReimage_z0_0002306756533745274_5-6mhzwidth_stdfixes/"
+texmap=home+"texmap_5transmask_3sigma_allspw_withnans_weighted.fits"
 
 texmap=fits.open(texmap)
 texmapdata=texmap[0].data*u.K
@@ -38,8 +42,8 @@ pixtophysicalsize=(np.tan(cellsize)*dGC).to('AU')
 
 print(pixtophysicalsize)
 
-texpeakpix=(36,41)
-#(73,56)SgrB2S hotspot
+#texpeakpix=(36,43)#DSi hotspot
+texpeakpix=(73,56)#SgrB2S hotspot
 #x-1, y-1 from DS9
 
 print(f'max: {texmapdata[texpeakpix[0],texpeakpix[1]]}')
