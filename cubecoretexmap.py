@@ -18,6 +18,7 @@ import copy
 from astropy import coordinates
 from spectral_cube import BooleanArrayMask
 from astropy.nddata import Cutout2D
+from spectral_cube.io.casa_masks import make_casa_mask
 
 Splatalogue.QUERY_URL= 'https://splatalogue.online/c_export.php'
 
@@ -147,7 +148,7 @@ R_i=1
 f=1
 Tbg=2.7355*u.K
 
-dopplershifts={'SgrB2S':0.0002306756533745274,'DSi':0.000186431,'DSv':0.000186431}#:0.000190713}
+dopplershifts={'SgrB2S':0.000234806,'DSi':0.000186431,'DSv':0.000186431}#:0.000190713}/old doppler S: 0.0002306756533745274
 
 z=dopplershifts[source]
 #z=0.00017594380066803095 #SgrB2DSII?
@@ -156,7 +157,7 @@ z=dopplershifts[source]
 print(f'Doppler shift: {z} / {(z*c).to("km s-1")}\n')
 
 print('Setting input LTE parameters')
-testT=500*u.K#500*u.K
+testT=300*u.K#500*u.K
 testntot=1e17*u.cm**-2
 print(f'Input Tex: {testT}\nInput Ntot: {testntot}')
 
@@ -214,7 +215,7 @@ def linelooplte(line_list,line_width,iterations,quantum_numbers):
     transitionbeamlist=[]
     transitionfluxlist=[]
     for i in range(iterations):
-        print(f'Start {quantum_numbers[i]} moment0 procedure')
+        print(f'\nStart {quantum_numbers[i]} moment0 procedure')
         temptransdict={}
         line=line_list[i]#*u.Hz
         restline=line*(1+z)
@@ -226,6 +227,9 @@ def linelooplte(line_list,line_width,iterations,quantum_numbers):
         oldstyleslab=cube.spectral_slab((nu_upper-nu_offset),(nu_lower+nu_offset))
         slabend=time.time()-slabstart
         print(f'{quantum_numbers[i]} spectral slab done in {time.strftime("%H:%M:%S", time.gmtime(slabend))}')
+        #pdb.set_trace()
+        peakchannel=slab.closest_spectral_channel(line)
+        print(f'Peak channel: {peakchannel}')
         slabbeams=(slab.beams.value)*u.sr/u.beam
         #print(f'slabbeams: {slabbeams}')
         slab_K=slab[:,pixycrd,pixxcrd]#JybeamtoK(slabbeams,)
@@ -233,7 +237,12 @@ def linelooplte(line_list,line_width,iterations,quantum_numbers):
         mulu2=(mulu(aijs[i],line)).to('cm5 g s-2')
         linewidth_vel=vradio(singlecmpntwidth,line)
         tbthick=Tbthick(testntot,restline,linewidth_vel,mulu2,degeneracies[i],qrot_partfunc,eujs[i],testT).to('K')
-        peak_amplitude=slab_K.max(axis=0)
+        peak_amplitude=slab_K[peakchannel]#slab_K.max(axis=0)
+        if peak_amplitude == slab_K.max(axis=0):
+            print('Peak amplitude == Max amplitude in slab')
+        else:
+            print('Other bright line in slab')
+            print(f'Max brightness in slab: {slab_K.max(axis=0)}\n')
         
         est_nupper=nupper_estimated(testntot,degeneracies[i],qrot_partfunc,eujs[i],testT).to('cm-2')
         est_tau=opticaldepth(aijs[i],restline,testT,est_nupper,originallinewidth).to('')
@@ -246,11 +255,12 @@ def linelooplte(line_list,line_width,iterations,quantum_numbers):
         #    print(f'\n est tau from data at {testT}: {(peak_amplitude/trad).to("")}')
         print('Slicing quantum numbers')
         transition=qn_replace(quantum_numbers[i])
-        moment0filename=home+'CH3OH~'+transition+'.fits'
+        moment0filename=home+'CH3OH~'+transition+'_raw.fits'
         maskedmom0fn=home+'CH3OH~'+transition+'_masked.fits'
         maskresidualfn=home+'CH3OH~'+transition+'_residual.fits'
         slabfilename=slabpath+'CH3OH~'+transition+'_slab.fits'
         maskedslabfn=slabpath+'CH3OH~'+transition+'_maskedslab.fits'
+        maskfn=slabpath+'CH3OH~'+transition+'_mask.fits'
         #print('Done')
         #print('Moment 0')
         if os.path.isfile(maskedmom0fn):
@@ -289,19 +299,26 @@ def linelooplte(line_list,line_width,iterations,quantum_numbers):
                     slabmom2.write(momentnfilename)
             pass
         elif trad >= 3*targetspecK_stddev and peak_amplitude >= 3* targetspecK_stddev:#*u.K:
-            print('Commence moment0')
+            print('Commence moment0 procedure\n')
             slab=slab.with_spectral_unit((u.km/u.s),velocity_convention='radio',rest_value=lines[i])#spwrestfreq)
-            cubemask=BooleanArrayMask(mask=cubemaskarray,wcs=slab.wcs)
-            #pdb.set_trace()
+            #cubemask=BooleanArrayMask(mask=cubemaskarray,wcs=slab.wcs)
+            print(f'Create {quantum_numbers[i]} spatial-velocity mask')
+            slabspecax=slab.spectral_axis
+            slabmom1=slab.moment1()
+            slabfwhm=(7*u.MHz/line)*c.to('km s-1')#slab.linewidth_fwhm()
+            cubemask=(slabspecax[:,None,None] < (slabmom1 + slabfwhm)[None,:,:]) & (slabspecax[:,None,None] > (slabmom1 - slabfwhm)[None,:,:])
             oldstyleslab=oldstyleslab.with_spectral_unit((u.km/u.s),velocity_convention='radio',rest_value=lines[i])
+            #if imgnum > 0:
+            #    pdb.set_trace()
+            print('Masking spectral slab')
             maskedslab=slab.with_mask(cubemask)
             momstart=time.time()
-            print('Unmasked moment0 computing...')
+            print('Unmasked moment0 computing...\n')
             slabmom0=oldstyleslab.moment0()
-            print('Masked moment0 computing...')
+            print('Masked moment0 computing...\n')
             maskslabmom0=maskedslab.moment0()
             momend=time.time()-momstart
-            print(f'{quantum_numbers[i]} elapsed time: {time.strftime("%H:%M:%S", time.gmtime(momend))}')
+            #print(f'{quantum_numbers[i]} elapsed time: {time.strftime("%H:%M:%S", time.gmtime(momend))}')
             
             print('\nComputing masking residuals')
             mom0maskresiduals=maskslabmom0-slabmom0
@@ -310,7 +327,8 @@ def linelooplte(line_list,line_width,iterations,quantum_numbers):
             slabmom0.write((moment0filename),overwrite=True)
             maskslabmom0.write((maskedmom0fn))
             mom0maskresiduals.write((maskresidualfn))
-            
+            #maskboolarr=BooleanArrayMask(mask=cubemask,wcs=slab.wcs)
+            #make_casa_mask(maskedslab,maskfn,append_to_image=False,add_stokes=False)
             moment0beam=slabmom0.beam.value*u.sr
             targetpixflux=slabmom0[pixycrd,pixxcrd]
             temptransdict.update([('freq',restline),('flux',maskslabmom0),('stddev',targetspecK_stddev),('beam',moment0beam),('euk',euks[i]),('eujs',eujs[i]),('degen',degeneracies[i]),('aij',aijs[i]),('filename',moment0filename),('shift_freq',line)])
@@ -332,7 +350,7 @@ def linelooplte(line_list,line_width,iterations,quantum_numbers):
                 momentnfilename=sourcepath+f'mom{moment}/CH3OH~'+transition+'.fits'
                 if moment == 1:
                     print(f'Computing moment 1 and saving to {momentnfilename}\n')
-                    slabmom1=slab.moment1()
+                    #slabmom1=slab.moment1()
                     slabmom1.write(momentnfilename)
                 elif moment == 2:
                     print(f'Computing moment 2 and saving to {momentnfilename}\n')
@@ -341,14 +359,14 @@ def linelooplte(line_list,line_width,iterations,quantum_numbers):
             pass
         else:
             if not trad >= 3*targetspecK_stddev and peak_amplitude >= 3* targetspecK_stddev:
-                print('LTE Model max brightnessTemp below 1sigma threshold')
+                print('LTE Model max brightnessTemp below 3sigma threshold')
                 print(f'{quantum_numbers[i]} skipped, possible contamination\n')
                 pass
             elif trad >= 3*targetspecK_stddev and not peak_amplitude >= 3* targetspecK_stddev:
                 print(f'Line amplitude ({peak_amplitude}) less than 3 sigma criterion ({3*targetspecK_stddev})')
                 print(f'{quantum_numbers[i]} skipped\n')
-            elif not trd >= 3*targetspecK_stddev and not peak_amplitude >= 3* targetspecK_stddev:
-                print('1 sigma LTE model and 3 sigma amplitude criteria not met')
+            elif not trad >= 3*targetspecK_stddev and not peak_amplitude >= 3* targetspecK_stddev:
+                print('3 sigma LTE model and 3 sigma amplitude criteria not met')
                 print(f'{quantum_numbers[i]} skipped\n')
                 pass
     spectraKdict.update({images[imgnum]:targetspec_K})
@@ -544,7 +562,7 @@ stdhome='/orange/adamginsburg/sgrb2/d.jeff/products/OctReimage_K/'
 
 cubemaskarray=maskeddatacube.get_mask_array()
 
-sourcelocs={'SgrB2S':'K_7mhzmasked_OctReimage_z0_0002306756533745274_5-6mhzwidth_stdfixes_restfreqfix/','DSi':'/field10originals_z0_000186431_5-6mhzwidth_stdfixes/','DSv':f'/{int(testT.value)}K_field10originals_z0_00186431_5-6mhzwidth_stdfixes_test/'}
+sourcelocs={'SgrB2S':'K_OctReimage_restfreqfix_newvelmask_newpeakamp/','DSi':'/field10originals_z0_000186431_5-6mhzwidth_stdfixes/','DSv':f'/{int(testT.value)}K_field10originals_z0_00186431_5-6mhzwidth_stdfixes_test/'}
 
 sourcepath=f'/blue/adamginsburg/d.jeff/SgrB2DSreorg/field{fnum}/CH3OH/{source}/'+sourcelocs[source]
 nupperpath=sourcepath+'nuppers/'
@@ -761,9 +779,9 @@ for imgnum in range(len(datacubes)):
     kkmsstddict.update([(images[imgnum],kkmsstdarray)])
     print(f'Finished loop for {images[imgnum]}')
     #masterqns.append(slicedqns)
-    pdb.set_trace()
+    #pdb.set_trace()
 
-
+pdb.set_trace()
 
 if os.path.isfile(picklepath):
     print(f'pickle {picklepath} already exists.')
