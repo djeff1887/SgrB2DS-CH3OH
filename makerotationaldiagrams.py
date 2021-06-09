@@ -37,6 +37,7 @@ sourceid='SgrB2S'
 fnum=1
 #sourceid='DSi'
 #fnum=10
+#sourcpath='/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/SgrB2S/K_OctReimage_restfreqfix_newvelmask_newpeakamp'
 sourcepath="/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/SgrB2S/checkthatutilitiesworks_K_OctReimage_restfreqfix_newvelmask_newpeakamp/"
 #sourcepath="/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSi/field10originals_z0_000186431_5-6mhzwidth_stdfixes/"
 #sourceid='DSv'
@@ -77,10 +78,12 @@ nugserrmap=fits.getdata(home+'alltransitions_nupper_error.fits')
 allmaster=np.loadtxt(home+'mastereuksqnsfreqsdegens.txt',dtype=str)
 mastereuks=[]
 masterdegens=[]
+masterqns=[]
 eukshape=np.shape(mastereuks)
 for master in range(len(allmaster[:,0])):
     mastereuks.append(float(allmaster[master,0]))
     masterdegens.append(float(allmaster[master,3]))
+    masterqns.append(allmaster[master,1])
 #masterdegens=np.loadtxt(home+'masterdegens.txt')
     
 testzshape=len(mastereuks)
@@ -106,7 +109,7 @@ for px in pixellist:
         eukstofit=[]
         nuperrors=[]
         for z in range(testzshape):
-            if nugsmap[z,y,x] <= 0:# or np.isnan(nugsmap[y,x,z]):
+            if nugsmap[z,y,x] <= 0 or np.isnan(nugsmap[z,y,x]):
                 continue
             else:
                 nupperstofit.append(nugsmap[z,y,x])
@@ -124,6 +127,8 @@ for px in pixellist:
             for num in range(len(nupperstofit)):
                 templog10=(1/nupperstofit[num])*nuperrors[num]
                 temperrfit=1/templog10
+                #if np.isnan(templog10) or np.isnan(temperrfit):
+                #    pdb.set_trace()
                 log10nuerr.append(templog10)
                 errstofit.append(temperrfit)
                 

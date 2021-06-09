@@ -298,6 +298,7 @@ def brightnessTandintensities(fluxdict):
                 t_bright.update({temptransdictkeys[i]:temp})
                 d_velfluxT=(temptransdict[temptransdictkeys[i]]['stddev'])#/temp)*velflux_T
                 intensityerror.append(d_velfluxT)
+                #pdb.set_trace()
                 
     return intensitydict,t_bright
                 
@@ -391,12 +392,6 @@ def linelooplte(line_list,line_width,iterations,quantum_numbers):
         #    print(f'\n est tau from data at {testT}: {(peak_amplitude/trad).to("")}')
         print('Slicing quantum numbers')
         transition=qn_replace(quantum_numbers[i])
-        if transition in excludedlines:
-            print(f'Excluded line detected: {quantum_numbers[i]}, E_U: {eujs[i]}, Freq: {line}\n')
-            pdb.set_trace()
-            continue
-        else:
-            pass
         moment0filename=home+'CH3OH~'+transition+'_raw.fits'
         maskedmom0fn=home+'CH3OH~'+transition+'_masked.fits'
         maskresidualfn=home+'CH3OH~'+transition+'_residual.fits'
@@ -441,63 +436,80 @@ def linelooplte(line_list,line_width,iterations,quantum_numbers):
                     slabmom2.write(momentnfilename)
             pass
         elif trad >= 3*targetspecK_stddev and peak_amplitude >= 3* targetspecK_stddev:#*u.K:
-            print('Commence moment0 procedure\n')
             slab=slab.with_spectral_unit((u.km/u.s),velocity_convention='radio',rest_value=lines[i])#spwrestfreq)
-            #cubemask=BooleanArrayMask(mask=cubemaskarray,wcs=slab.wcs)
-            print(f'Create {quantum_numbers[i]} spatial-velocity mask')
-            slabspecax=slab.spectral_axis
-            slabmom1=slab.moment1()
-            slabfwhm=(7*u.MHz/line)*c.to('km s-1')#slab.linewidth_fwhm()
-            cubemask=(slabspecax[:,None,None] < (slabmom1 + slabfwhm)[None,:,:]) & (slabspecax[:,None,None] > (slabmom1 - slabfwhm)[None,:,:])
-            oldstyleslab=oldstyleslab.with_spectral_unit((u.km/u.s),velocity_convention='radio',rest_value=lines[i])
-            #if imgnum > 0:
-            #    pdb.set_trace()
-            print('Masking spectral slab')
-            maskedslab=slab.with_mask(cubemask)
-            #momstart=time.time()
-            print('Unmasked moment0 computing...\n')
-            slabmom0=oldstyleslab.moment0()
-            print('Masked moment0 computing...\n')
-            maskslabmom0=maskedslab.moment0()
-            #momend=time.time()-momstart
-            #print(f'{quantum_numbers[i]} elapsed time: {time.strftime("%H:%M:%S", time.gmtime(momend))}')
-            
-            print('\nComputing masking residuals')
-            mom0maskresiduals=maskslabmom0-slabmom0
-            print('\nSaving...')
-            #name='test'+str(i)
-            slabmom0.write((moment0filename),overwrite=True)
-            maskslabmom0.write((maskedmom0fn))
-            mom0maskresiduals.write((maskresidualfn))
-            #maskboolarr=BooleanArrayMask(mask=cubemask,wcs=slab.wcs)
-            #make_casa_mask(maskedslab,maskfn,append_to_image=False,add_stokes=False)
-            moment0beam=slabmom0.beam.value*u.sr
-            targetpixflux=slabmom0[pixycrd,pixxcrd]
+            if transition in excludedlines:
+                print(f'\nExcluded line detected: {quantum_numbers[i]}, E_U: {euks[i]}, Freq: {line.to("GHz")}')
+                #sigma1mom0=np.empty((cube.shape[1],cube.shape[2]))
+                sigma1mom0=stdcutout.data*linewidth_vel
+                sigma1hdu=fits.PrimaryHDU(sigma1mom0.value)
+                sigma1hdu.header=fits.open(mom0path+'CH3OH~5_1-4_2E1vt0_raw.fits')[0].header
+                sigma1hdu.header['RESTFRQ']=line.value
+                sigma1hdul=fits.HDUList([sigma1hdu])
+                print(f'1sigma moment0 of shape ({cube.shape[1]},{cube.shape[2]}) populated\nTarget pix flux value: {stddata[pixycrd,pixxcrd]*linewidth_vel}')
+                moment0beam=slab.beams
+                maskslabmom0=sigma1mom0
+                #maskslabmom0.write((maskedmom0fn))
+                #pdb.set_trace()
+                sigma1hdul.writeto(moment0filename,overwrite=True)
+                print(f'Saved to {moment0filename}')
+                pass
+            else:
+                print('Commence moment0 procedure\n')
+                #cubemask=BooleanArrayMask(mask=cubemaskarray,wcs=slab.wcs)
+                print(f'Create {quantum_numbers[i]} spatial-velocity mask')
+                slabspecax=slab.spectral_axis
+                slabmom1=slab.moment1()
+                slabfwhm=slab.linewidth_fwhm()#(7*u.MHz/line)*c.to('km s-1')#
+                cubemask=(slabspecax[:,None,None] < (slabmom1 + slabfwhm)[None,:,:]) & (slabspecax[:,None,None] > (slabmom1 - slabfwhm)[None,:,:])
+                oldstyleslab=oldstyleslab.with_spectral_unit((u.km/u.s),velocity_convention='radio',rest_value=lines[i])
+                #if imgnum > 0:
+                #    pdb.set_trace()
+                print('Masking spectral slab')
+                maskedslab=slab.with_mask(cubemask)
+                #momstart=time.time()
+                print('Unmasked moment0 computing...\n')
+                slabmom0=oldstyleslab.moment0()
+                print('Masked moment0 computing...\n')
+                maskslabmom0=maskedslab.moment0()
+                #momend=time.time()-momstart
+                #print(f'{quantum_numbers[i]} elapsed time: {time.strftime("%H:%M:%S", time.gmtime(momend))}')
+                print('\nComputing masking residuals')
+                mom0maskresiduals=maskslabmom0-slabmom0
+                print('\nSaving...')
+                #name='test'+str(i)
+                slabmom0.write((moment0filename),overwrite=True)
+                maskslabmom0.write((maskedmom0fn))
+                mom0maskresiduals.write((maskresidualfn))
+                #maskboolarr=BooleanArrayMask(mask=cubemask,wcs=slab.wcs)
+                #make_casa_mask(maskedslab,maskfn,append_to_image=False,add_stokes=False)
+                moment0beam=slabmom0.beam.value*u.sr
+                #targetpixflux=slabmom0[pixycrd,pixxcrd]
+                if os.path.isfile(slabfilename):
+                    print(f'Spectral slab {slabfilename} already exists.\nProceeding...\n')
+                    pass
+                else:
+                    slab.write(slabfilename)
+                    print(f'Slab written to {slabfilename}.')
+                    maskedslab.write(maskedslabfn)
+                    print(f'Masked slab written to {maskedslabfn}. Proceeding...\n')
+                for moment in [1,2]:
+                    momentnfilename=sourcepath+f'mom{moment}/CH3OH~'+transition+'.fits'
+                    if moment == 1:
+                        print(f'Computing moment 1 and saving to {momentnfilename}\n')
+                        #slabmom1=slab.moment1()
+                        slabmom1.write(momentnfilename)
+                    elif moment == 2:
+                        print(f'Computing moment 2 and saving to {momentnfilename}\n')
+                        slabmom2=slab.moment2()
+                        slabmom2.write(momentnfilename)
+                pass
             temptransdict.update([('freq',restline),('flux',maskslabmom0),('stddev',targetspecK_stddev),('beam',moment0beam),('euk',euks[i]),('eujs',eujs[i]),('degen',degeneracies[i]),('aij',aijs[i]),('filename',moment0filename),('shift_freq',line)])
             transitiondict.update({transition:temptransdict})
-            mastereuks.append(euks[i])
+            mastereuks.append(euks[i].value)
             masterstddevs.append(targetspecK_stddev)
             masterqns.append(quantum_numbers[i])
             masterlines.append(line_list[i].value)
             print(f'{quantum_numbers[i]} calculations complete.\n')
-            if os.path.isfile(slabfilename):
-                print(f'Spectral slab {slabfilename} already exists.\nProceeding...\n')
-                pass
-            else:
-                slab.write(slabfilename)
-                print(f'Slab written to {slabfilename}.')
-                maskedslab.write(maskedslabfn)
-                print(f'Masked slab written to {maskedslabfn}. Proceeding...\n')
-            for moment in [1,2]:
-                momentnfilename=sourcepath+f'mom{moment}/CH3OH~'+transition+'.fits'
-                if moment == 1:
-                    print(f'Computing moment 1 and saving to {momentnfilename}\n')
-                    #slabmom1=slab.moment1()
-                    slabmom1.write(momentnfilename)
-                elif moment == 2:
-                    print(f'Computing moment 2 and saving to {momentnfilename}\n')
-                    slabmom2=slab.moment2()
-                    slabmom2.write(momentnfilename)
             pass
         else:
             if not trad >= 3*targetspecK_stddev and peak_amplitude >= 3* targetspecK_stddev:
@@ -542,7 +554,7 @@ stdhome='/orange/adamginsburg/sgrb2/d.jeff/products/OctReimage_K/'
 
 cubemaskarray=maskeddatacube.get_mask_array()
 
-sourcelocs={'SgrB2S':'checkthatutilitiesworks_K_OctReimage_restfreqfix_newvelmask_newpeakamp/','DSi':'/field10originals_z0_000186431_5-6mhzwidth_stdfixes/','DSv':f'/{int(testT.value)}K_field10originals_z0_00186431_5-6mhzwidth_stdfixes_test/'}
+sourcelocs={'SgrB2S':'reapplylinewidthfwhmand8mhzslabs_K_OctReimage_restfreqfix_newvelmask_newpeakamp/','DSi':'/field10originals_z0_000186431_5-6mhzwidth_stdfixes/','DSv':f'/{int(testT.value)}K_field10originals_z0_00186431_5-6mhzwidth_stdfixes_test/'}
 
 sourcepath=f'/blue/adamginsburg/d.jeff/SgrB2DSreorg/field{fnum}/CH3OH/{source}/'+sourcelocs[source]
 nupperpath=sourcepath+'nuppers/'
@@ -708,9 +720,10 @@ for imgnum in range(len(datacubes)):
     plt.show()
     '''
     singlecmpntwidth=(0.00485/8)*u.GHz
-    linewidth=(15.15*u.MHz)
+    linewidth=8*u.MHz
+    oldwideslabwidth=(15.15*u.MHz)
     originallinewidth=(11231152.36688232*u.Hz/2)#0.005*u.GHz####0.5*0.0097*u.GHz#from small line @ 219.9808GHz# 0.0155>>20.08km/s 
-    nu_offset=linewidth-originallinewidth
+    nu_offset=oldwideslabwidth-originallinewidth
     linewidth_vel=vradio(singlecmpntwidth,spwrestfreq)#(singlecmpntwidth*c.to(u.km/u.s)/spwrestfreq).to('km s-1')#vradio(linewidth,spw1restfreq)
     #slicedqns=[]
     
