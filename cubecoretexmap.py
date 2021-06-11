@@ -422,18 +422,21 @@ def linelooplte(line_list,line_width,iterations,quantum_numbers):
                 print(f'Slab written to {slabfilename}. Proceeding...\n')
             for moment in [1,2]:
                 slab=slab.with_spectral_unit((u.km/u.s),velocity_convention='radio',rest_value=lines[i])
-                momentnfilename=sourcepath+f'mom{moment}/'+'CH3OH~'+transition+'.fits'
-                if os.path.isfile(momentnfilename):
+                momentnfilenames=[(sourcepath+'mom1/CH3OH~'+transition+'.fits'),(sourcepath+'mom2/CH3OH~'+transition+'_var.fits')]
+                fwhmfilename=sourcepath+'mom2/CH3OH~'+transition+'_fwhm.fits'
+                if os.path.isfile(momentnfilenames[moment-1]):
                     print(f'{transition} moment{moment} file already exists.\n')
                     continue
                 elif moment == 1:
-                    print(f'Computing moment 1 and saving to {momentnfilename}\n')
+                    print(f'Computing moment 1 and saving to {momentnfilenames[moment-1]}\n')
                     slabmom1=slab.moment1()
-                    slabmom1.write(momentnfilename)
+                    slabmom1.write(momentnfilenames[moment-1])
                 elif moment == 2:
-                    print(f'Computing moment 2 and saving to {momentnfilename}\n')
+                    print(f'Computing moment 2 and saving to {momentnfilenames[moment-1]}\n')
                     slabmom2=slab.moment2()
-                    slabmom2.write(momentnfilename)
+                    slabfwhm=slab.linewidth_fwhm()
+                    slabmom2.write(momentnfilenames[moment-1])
+                    slabfwhm.write(fwhmfilename)
             pass
         elif trad >= 3*targetspecK_stddev and peak_amplitude >= 3* targetspecK_stddev:#*u.K:
             slab=slab.with_spectral_unit((u.km/u.s),velocity_convention='radio',rest_value=lines[i])#spwrestfreq)
@@ -457,10 +460,12 @@ def linelooplte(line_list,line_width,iterations,quantum_numbers):
                 print('Commence moment0 procedure\n')
                 #cubemask=BooleanArrayMask(mask=cubemaskarray,wcs=slab.wcs)
                 print(f'Create {quantum_numbers[i]} spatial-velocity mask')
+                slab3sigmamask=slab > (3*stdcutout.data)
+                slab=slab.with_mask(slab3sigmamask)
                 slabspecax=slab.spectral_axis
                 slabmom1=slab.moment1()
                 slabfwhm=slab.linewidth_fwhm()#(7*u.MHz/line)*c.to('km s-1')#
-                cubemask=(slabspecax[:,None,None] < (slabmom1 + slabfwhm)[None,:,:]) & (slabspecax[:,None,None] > (slabmom1 - slabfwhm)[None,:,:])
+                cubemask=(slabspecax[:,None,None] < (velocityfield_representative + fwhm_representative)[None,:,:]) & (slabspecax[:,None,None] > (velocityfield_representative - fwhm_representative)[None,:,:])
                 oldstyleslab=oldstyleslab.with_spectral_unit((u.km/u.s),velocity_convention='radio',rest_value=lines[i])
                 #if imgnum > 0:
                 #    pdb.set_trace()
@@ -493,15 +498,19 @@ def linelooplte(line_list,line_width,iterations,quantum_numbers):
                     maskedslab.write(maskedslabfn)
                     print(f'Masked slab written to {maskedslabfn}. Proceeding...\n')
                 for moment in [1,2]:
-                    momentnfilename=sourcepath+f'mom{moment}/CH3OH~'+transition+'.fits'
+                    moment1filename=sourcepath+'mom1/CH3OH~'+transition+'.fits'
+                    moment2filename=sourcepath+'mom2/CH3OH~'+transition+'_var.fits'
+                    fwhmfilename=sourcepath+'mom2/CH3OH~'+transition+'_fwhm.fits'
                     if moment == 1:
-                        print(f'Computing moment 1 and saving to {momentnfilename}\n')
+                        print(f'Computing moment 1 and saving to {moment1filename}\n')
                         #slabmom1=slab.moment1()
-                        slabmom1.write(momentnfilename)
+                        slabmom1.write(moment1filename)
                     elif moment == 2:
-                        print(f'Computing moment 2 and saving to {momentnfilename}\n')
+                        print(f'Computing moment 2s and saving to {moment2filename} and {fwhmfilename}\n')
                         slabmom2=slab.moment2()
-                        slabmom2.write(momentnfilename)
+                        slabfwhm=slab.linewidth_fwhm()
+                        slabmom2.write(moment2filename)
+                        slabfwhm.write(fwhmfilename)
                 pass
             temptransdict.update([('freq',restline),('flux',maskslabmom0),('stddev',targetspecK_stddev),('beam',moment0beam),('euk',euks[i]),('eujs',eujs[i]),('degen',degeneracies[i]),('aij',aijs[i]),('filename',moment0filename),('shift_freq',line)])
             transitiondict.update({transition:temptransdict})
@@ -554,7 +563,11 @@ stdhome='/orange/adamginsburg/sgrb2/d.jeff/products/OctReimage_K/'
 
 cubemaskarray=maskeddatacube.get_mask_array()
 
-sourcelocs={'SgrB2S':'reapplylinewidthfwhmand8mhzslabs_K_OctReimage_restfreqfix_newvelmask_newpeakamp/','DSi':'/field10originals_z0_000186431_5-6mhzwidth_stdfixes/','DSv':f'/{int(testT.value)}K_field10originals_z0_00186431_5-6mhzwidth_stdfixes_test/'}
+sourcelocs={'SgrB2S':'secondtesting4-3transitionasrepresentative_K_OctReimage_restfreqfix_newvelmask_newpeakamp/','DSi':'/field10originals_z0_000186431_5-6mhzwidth_stdfixes/','DSv':f'/{int(testT.value)}K_field10originals_z0_00186431_5-6mhzwidth_stdfixes_test/'}
+
+representativelines={'SgrB2S':'4_2-3_1vt=0'}
+representativelws={'SgrB2S':8*u.MHz}
+representativecubes={'SgrB2S':1}
 
 sourcepath=f'/blue/adamginsburg/d.jeff/SgrB2DSreorg/field{fnum}/CH3OH/{source}/'+sourcelocs[source]
 nupperpath=sourcepath+'nuppers/'
@@ -620,13 +633,53 @@ masterbeams=[]
 masterstddevs=[]
 
 excludedlines=['7_6-7_7E1vt1','14_6-14_7E1vt1','11_6-11_7E1vt1']
+restfreq_representativeline=218.44006300*u.GHz#232.41852100*u.GHz 10(2+)-9(3-)vt0
+representative_filename_base=sourcepath+representativelines[source]+'repline_'
+rep_mom1=representative_filename_base+'mom1.fits'
+rep_fwhm=representative_filename_base+'fwhm.fits'
+rep_slab=representative_filename_base+'slab.fits'
+rep_maskedslab=representative_filename_base+'maskedslab.fits'
+
+if not os.path.isfile(rep_mom1):
+        print(f'Creating {representativelines[source]} representative line data objects for {source}')
+        print(f'Opening file {datacubes[representativecubes[source]]}')
+        reffreq_repline=restfreq_representativeline/(1+z)
+        repcube=sc.read(datacubes[representativecubes[source]])
+        repstd=fits.getdata("/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/SgrB2S/employingrepresentativelineprocedure_K_OctReimage_restfreqfix_newvelmask_newpeakamp/errorimgs/std/spw1intensitystd.fits")*u.K
+        upperfreq=reffreq_repline+representativelws[source]
+        lowerfreq=reffreq_repline-representativelws[source]
+        print(f'Creating spectral slab between {lowerfreq} and {upperfreq}')
+        spectralslab_representative=repcube.spectral_slab(lowerfreq,upperfreq)
+        spectralslab_representative=spectralslab_representative.with_spectral_unit((u.km/u.s),velocity_convention='radio',rest_value=reffreq_repline)
+        rep_3sigmamask=spectralslab_representative > (3*repstd)
+        spectralslab_rep_3sigma=spectralslab_representative.with_mask(rep_3sigmamask)
+        print('\nComputing moment1')
+        velocityfield_representative=spectralslab_rep_3sigma.moment1()
+        print('\nComputing fwhm')
+        fwhm_representative=spectralslab_rep_3sigma.linewidth_fwhm()
+        print('Writing objects to file')
+        spectralslab_representative.write(rep_slab)
+        spectralslab_rep_3sigma.write(rep_maskedslab)
+        velocityfield_representative.write(rep_mom1)
+        fwhm_representative.write(rep_fwhm)
+        print('Continuing to line loops\n')
+else:
+    print(f'{source} representative line objects already exist.\n')
+    print(f'Grabbing spectralslab from {rep_slab}')
+    spectralslab_rep_3sigma=fits.getdata(rep_maskedslab)*u.K
+    print(f'Grabbing mom1 from {rep_mom1}')
+    velocityfield_representative=fits.getdata(rep_mom1)*u.km/u.s
+    print(f'Grabbing fwhm from {rep_fwhm}')
+    fwhm_representative=fits.getdata(rep_fwhm)*u.km/u.s
+
+#pdb.set_trace()
 
 for imgnum in range(len(datacubes)):
     print(f'Accessing data cube {datacubes[imgnum]}')
     assert images[imgnum] in datacubes[imgnum], f'{images[imgnum]} not in filename {datacubes[imgnum]}'
     home=sourcepath+'mom0/'#f'{images[imgnum]}/'#Make sure to include slash after path
     readstart=time.time()
-    cube=sc.read(datacubes[imgnum])
+    cube=sc.read(datacubes[imgnum])    
     readelapsed=time.time()-readstart
     print(f'Cube read in {time.strftime("%H:%M:%S", time.gmtime(readelapsed))}')
     
