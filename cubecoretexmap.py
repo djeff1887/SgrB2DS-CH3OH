@@ -28,9 +28,9 @@ Splatalogue.QUERY_URL= 'https://splatalogue.online/c_export.php'
 print('Begin Jy/beam-to-K and region subcube conversion\n')
 
 #source='DSv'
-#source='DSi'
-source='SgrB2S'
-fnum=1
+source='DSi'
+#source='SgrB2S'
+fnum=10
 
 #inpath="/orange/adamginsburg/sgrb2/d.jeff/data/field10originalimages/"
 inpath='/blue/adamginsburg/d.jeff/imaging_results/data/OctReimage/'
@@ -40,15 +40,18 @@ home='/blue/adamginsburg/d.jeff/imaging_results/products/OctReimage/'
 cubes=glob.glob(home+'*pbcor_line.fits')
 #region='fk5; box(266.8321311,-28.3976633, 0.0010833, 0.0010833)'#DSv
 #region='fk5; box(266.8324225,-28.3954419, 0.0010417, 0.0010417)'#DSiv
-#region='fk5; box(266.8316387, -28.3971867, 0.0010556, 0.0010556)'#DSi-large
-region='fk5; box(266.8353410,-28.3962005,0.0016806,0.0016806)'#SgrB2S-box2
-#region='fk5; box(266.8350804, -28.3963256, 0.0023889, 0.0023889'#SgrB2S-large
+region='fk5; box(266.8316387, -28.3971867, 0.0010556, 0.0010556)'#DSi-large
+#region='fk5; box(266.8353410, -28.3962005, 0.0016806, 0.0016806)'#SgrB2S-box2
+#region='fk5; box(266.8350804, -28.3963256, 0.0023889, 0.0023889)'#SgrB2S-large
 #box(266.8333438, -28.3966103, 0.0014028, 0.0014028)' #DSii/iii
 #box(266.8315833, -28.3971867, 0.0006528, 0.0006528)' #DSi-small
 #outpath=f'/blue/adamginsburg/d.jeff/SgrB2DSminicubes/{source}/OctReimage/'
-outpath=f'/blue/adamginsburg/d.jeff/SgrB2DSminicubes/{source}/OctReimage_K/'#imaging_results/DSii_iiibox1/'
+outpath=f'/blue/adamginsburg/d.jeff/SgrB2DSminicubes/{source}/field10originals/'
+#outpath=f'/blue/adamginsburg/d.jeff/SgrB2DSminicubes/{source}/OctReimage_K/'#imaging_results/DSii_iiibox1/'
 #statfixpath=f'/blue/adamginsburg/d.jeff/SgrB2DSstatcontfix/field10originals/'
 statfixpath=f'/blue/adamginsburg/d.jeff/SgrB2DSstatcontfix/OctReimage_K/'
+
+regionparams=[float(val) for val in region[9:(len(region)-1)].split(', ')]
 
 if os.path.isdir(outpath):
     print(f'Minicube directory "{outpath}" already exists. Proceeding to line loops/LTE fitting procedure.\n')
@@ -395,6 +398,7 @@ def linelooplte(line_list,line_width,iterations,quantum_numbers):
         moment0filename=home+'CH3OH~'+transition+'_raw.fits'
         maskedmom0fn=home+'CH3OH~'+transition+'_masked.fits'
         maskresidualfn=home+'CH3OH~'+transition+'_residual.fits'
+        maskedmom0errfn=home+'CH3OH~'+transition+'_error.fits'
         slabfilename=slabpath+'CH3OH~'+transition+'_slab.fits'
         maskedslabfn=slabpath+'CH3OH~'+transition+'_maskedslab.fits'
         maskfn=slabpath+'CH3OH~'+transition+'_mask.fits'
@@ -406,7 +410,8 @@ def linelooplte(line_list,line_width,iterations,quantum_numbers):
             #isfilepixflux=isfilemom0[pixycrd,pixxcrd]
             isfilebeam=beamer(maskedmom0fn)
             isfilestdflux=stddata#fits.getdata(f'{stdpath}{images[imgnum]}fluxstd.fits')*u.K#This is confusing, notation-wise, but I'm leaving it this way for now since it's consistent between the two forks in the loop. For future reference: isfilestdflux is the error on the measured brightnesstemp in K, whereas isfilemom0 pulls from the moment0 maps and is in K km/s
-            temptransdict.update([('freq',restline),('flux',isfilemom0),('stddev',isfilestdflux),('beam',isfilebeam),('euk',euks[i]),('eujs',eujs[i]),('degen',degeneracies[i]),('aij',aijs[i]),('filename',moment0filename),('shift_freq',line)])
+            isfilemom0err=fits.getdata(maskedmom0errfn)*u.K*u.km/u.s
+            temptransdict.update([('freq',restline),('flux',isfilemom0),('stddev',isfilestdflux),('beam',isfilebeam),('euk',euks[i]),('eujs',eujs[i]),('degen',degeneracies[i]),('aij',aijs[i]),('filename',moment0filename),('shift_freq',line),('mom0err',isfilemom0err)])
             transitiondict.update({transition:temptransdict})
             masterslicedqns.append(transition)
             mastereuks.append(euks[i].value)
@@ -455,6 +460,7 @@ def linelooplte(line_list,line_width,iterations,quantum_numbers):
                 #pdb.set_trace()
                 sigma1hdul.writeto(moment0filename,overwrite=True)
                 print(f'Saved to {moment0filename}')
+                kkmsstdarray=maskslabmom0
                 pass
             else:
                 print('Commence moment0 procedure\n')
@@ -488,7 +494,7 @@ def linelooplte(line_list,line_width,iterations,quantum_numbers):
                 #maskboolarr=BooleanArrayMask(mask=cubemask,wcs=slab.wcs)
                 #make_casa_mask(maskedslab,maskfn,append_to_image=False,add_stokes=False)
                 moment0beam=slabmom0.beam.value*u.sr
-                #targetpixflux=slabmom0[pixycrd,pixxcrd]
+                kkmsstdarray=stdcutout.data*fwhm_representative
                 if os.path.isfile(slabfilename):
                     print(f'Spectral slab {slabfilename} already exists.\nProceeding...\n')
                     pass
@@ -496,7 +502,15 @@ def linelooplte(line_list,line_width,iterations,quantum_numbers):
                     slab.write(slabfilename)
                     print(f'Slab written to {slabfilename}.')
                     maskedslab.write(maskedslabfn)
-                    print(f'Masked slab written to {maskedslabfn}. Proceeding...\n')
+                    print(f'Masked slab written to {maskedslabfn}.\n')
+                    print('Creating moment0 error Primary HDU')
+                    kkmshdu=fits.PrimaryHDU(kkmsstdarray.value)
+                    kkmshdu.header=maskedslab.header
+                    kkmshdu.header['BUNIT']='K km s-1'
+                    print('Wrapping moment0 error Primary HDU in HDUList')
+                    kkmshdul=fits.HDUList([kkmshdu])
+                    print(f'Writing moment0 error to {maskedmom0errfn}')
+                    kkmshdul.writeto(maskedmom0errfn,overwrite=True)
                 for moment in [1,2]:
                     moment1filename=sourcepath+'mom1/CH3OH~'+transition+'.fits'
                     moment2filename=sourcepath+'mom2/CH3OH~'+transition+'_var.fits'
@@ -512,7 +526,7 @@ def linelooplte(line_list,line_width,iterations,quantum_numbers):
                         slabmom2.write(moment2filename)
                         slabfwhm.write(fwhmfilename)
                 pass
-            temptransdict.update([('freq',restline),('flux',maskslabmom0),('stddev',targetspecK_stddev),('beam',moment0beam),('euk',euks[i]),('eujs',eujs[i]),('degen',degeneracies[i]),('aij',aijs[i]),('filename',moment0filename),('shift_freq',line)])
+            temptransdict.update([('freq',restline),('flux',maskslabmom0),('stddev',targetspecK_stddev),('beam',moment0beam),('euk',euks[i]),('eujs',eujs[i]),('degen',degeneracies[i]),('aij',aijs[i]),('filename',moment0filename),('shift_freq',line),('mom0err',kkmsstdarray)])
             transitiondict.update({transition:temptransdict})
             mastereuks.append(euks[i].value)
             masterstddevs.append(targetspecK_stddev)
@@ -563,11 +577,11 @@ stdhome='/orange/adamginsburg/sgrb2/d.jeff/products/OctReimage_K/'
 
 cubemaskarray=maskeddatacube.get_mask_array()
 
-sourcelocs={'SgrB2S':'secondtesting4-3transitionasrepresentative_K_OctReimage_restfreqfix_newvelmask_newpeakamp/','DSi':'/field10originals_z0_000186431_5-6mhzwidth_stdfixes/','DSv':f'/{int(testT.value)}K_field10originals_z0_00186431_5-6mhzwidth_stdfixes_test/'}
+sourcelocs={'SgrB2S':'new_testingstdfixandontheflyrepstuff_K_OctReimage_restfreqfix_newvelmask_newpeakamp/','DSi':'/field10originals_spatialandvelocitymaskingtrial1/','DSv':f'/{int(testT.value)}K_field10originals_z0_00186431_5-6mhzwidth_stdfixes_test/'}
 
-representativelines={'SgrB2S':'4_2-3_1vt=0'}
-representativelws={'SgrB2S':8*u.MHz}
-representativecubes={'SgrB2S':1}
+representativelines={'SgrB2S':'4_2-3_1vt=0','DSi':'8_1-7_0vt=0'}
+representativelws={'SgrB2S':8*u.MHz,'DSi':11*u.MHz}
+representativecubes={'SgrB2S':1,'DSi':1}
 
 sourcepath=f'/blue/adamginsburg/d.jeff/SgrB2DSreorg/field{fnum}/CH3OH/{source}/'+sourcelocs[source]
 nupperpath=sourcepath+'nuppers/'
@@ -633,44 +647,26 @@ masterbeams=[]
 masterstddevs=[]
 
 excludedlines=['7_6-7_7E1vt1','14_6-14_7E1vt1','11_6-11_7E1vt1']
-restfreq_representativeline=218.44006300*u.GHz#232.41852100*u.GHz 10(2+)-9(3-)vt0
+restfreq_representativeline={'SgrB2S':218.44006300*u.GHz,'DSi':220.07856100*u.GHz}#232.41852100*u.GHz 10(2+)-9(3-)vt0
 representative_filename_base=sourcepath+representativelines[source]+'repline_'
 rep_mom1=representative_filename_base+'mom1.fits'
 rep_fwhm=representative_filename_base+'fwhm.fits'
 rep_slab=representative_filename_base+'slab.fits'
 rep_maskedslab=representative_filename_base+'maskedslab.fits'
 
-if not os.path.isfile(rep_mom1):
-        print(f'Creating {representativelines[source]} representative line data objects for {source}')
-        print(f'Opening file {datacubes[representativecubes[source]]}')
-        reffreq_repline=restfreq_representativeline/(1+z)
-        repcube=sc.read(datacubes[representativecubes[source]])
-        repstd=fits.getdata("/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/SgrB2S/employingrepresentativelineprocedure_K_OctReimage_restfreqfix_newvelmask_newpeakamp/errorimgs/std/spw1intensitystd.fits")*u.K
-        upperfreq=reffreq_repline+representativelws[source]
-        lowerfreq=reffreq_repline-representativelws[source]
-        print(f'Creating spectral slab between {lowerfreq} and {upperfreq}')
-        spectralslab_representative=repcube.spectral_slab(lowerfreq,upperfreq)
-        spectralslab_representative=spectralslab_representative.with_spectral_unit((u.km/u.s),velocity_convention='radio',rest_value=reffreq_repline)
-        rep_3sigmamask=spectralslab_representative > (3*repstd)
-        spectralslab_rep_3sigma=spectralslab_representative.with_mask(rep_3sigmamask)
-        print('\nComputing moment1')
-        velocityfield_representative=spectralslab_rep_3sigma.moment1()
-        print('\nComputing fwhm')
-        fwhm_representative=spectralslab_rep_3sigma.linewidth_fwhm()
-        print('Writing objects to file')
-        spectralslab_representative.write(rep_slab)
-        spectralslab_rep_3sigma.write(rep_maskedslab)
-        velocityfield_representative.write(rep_mom1)
-        fwhm_representative.write(rep_fwhm)
-        print('Continuing to line loops\n')
-else:
-    print(f'{source} representative line objects already exist.\n')
+regiondims=regionparams[3]
+
+if os.path.isfile(rep_mom1):
+    print(f'{source} representative line objects already exist.')
     print(f'Grabbing spectralslab from {rep_slab}')
     spectralslab_rep_3sigma=fits.getdata(rep_maskedslab)*u.K
     print(f'Grabbing mom1 from {rep_mom1}')
     velocityfield_representative=fits.getdata(rep_mom1)*u.km/u.s
-    print(f'Grabbing fwhm from {rep_fwhm}')
+    print(f'Grabbing fwhm from {rep_fwhm}\n')
     fwhm_representative=fits.getdata(rep_fwhm)*u.km/u.s
+else:
+    print('{representativelines[source]} representative line objects will be computed for {source}.\n')
+    pass
 
 #pdb.set_trace()
 
@@ -688,7 +684,7 @@ for imgnum in range(len(datacubes)):
     
     stdimage=fits.open(stdhome+images[imgnum]+'minimize.image.pbcor_noise.fits')
     stdcellsize=(np.abs(stdimage[0].header['CDELT1']*u.deg)).to('arcsec')
-    stdcutoutsize=round(((float(region[43:52])*u.deg)/stdcellsize).to('').value)
+    stdcutoutsize=round(((float(regiondims)*u.deg)/stdcellsize).to('').value)#43:52 selects the region size set by the region variables in the cube>core section of the code
     stddata=stdimage[0].data*u.K
     
     print('Acquiring cube rest frequency and computing target pixel coordinates')
@@ -731,6 +727,46 @@ for imgnum in range(len(datacubes)):
     stdcutout=Cutout2D(stddata,(stdpixxcrd,stdpixycrd),(stdcutoutsize))
     assert np.shape(stdcutout)[0]==cube.shape[1], 'Standard deviation cutout size mismatch'
     
+    '''Create representative line to use as masking template'''
+    if not os.path.isfile(rep_mom1):
+        print(f'Creating {representativelines[source]} representative line data objects for {source}')
+        print(f'Opening file {datacubes[representativecubes[source]]}')
+        reffreq_repline=restfreq_representativeline[source]/(1+z)
+        repcube=sc.read(datacubes[representativecubes[source]])
+        
+        repstdmain=fits.open(stdhome+f'spw{representativecubes[source]}minimize.image.pbcor_noise.fits')
+        repstdmain_data=repstdmain[0].data*u.K
+        repstdmain_wcs=WCS(repstdmain[0].header)
+        repstdmain_cellsize=(np.abs(repstdmain[0].header['CDELT1']*u.deg)).to('arcsec')
+        repstdmain_pixcrd=repstdmain_wcs.wcs_world2pix(targetworldcrd,1,ra_dec_order=True)
+        repstdmain_xcrd,repstdmain_ycrd=int(round(repstdmain_pixcrd[1][0])),int(round(repstdmain_pixcrd[1][1]))
+        
+        assert repstdmain_xcrd and repstdmain_ycrd > 0, 'Negative representative std pixel coords'
+        
+        repstdcutoutsize=round(((float(regiondims)*u.deg)/stdcellsize).to('').value)
+        repstdcutout=Cutout2D(repstdmain_data,(repstdmain_xcrd,repstdmain_ycrd), repstdcutoutsize)
+        upperfreq=reffreq_repline+representativelws[source]
+        lowerfreq=reffreq_repline-representativelws[source]
+        print(f'Creating spectral slab between {lowerfreq} and {upperfreq}')
+        spectralslab_representative=repcube.spectral_slab(lowerfreq,upperfreq)
+        spectralslab_representative=spectralslab_representative.with_spectral_unit((u.km/u.s),velocity_convention='radio',rest_value=reffreq_repline)
+        rep_3sigmamask=spectralslab_representative > (3*repstdcutout.data)
+        spectralslab_rep_3sigma=spectralslab_representative.with_mask(rep_3sigmamask)
+        
+        print('\nComputing moment1')
+        velocityfield_representative=spectralslab_rep_3sigma.moment1()
+        print('\nComputing fwhm')
+        fwhm_representative=spectralslab_rep_3sigma.linewidth_fwhm()
+        
+        print('Writing objects to file')
+        spectralslab_representative.write(rep_slab)
+        spectralslab_rep_3sigma.write(rep_maskedslab)
+        velocityfield_representative.write(rep_mom1)
+        fwhm_representative.write(rep_fwhm)
+        print('Continuing to line loops\n')
+    else:
+        pass
+
     #pdb.set_trace()
     
     freq_min=freqs[0]*(1+z)#215*u.GHz
@@ -786,20 +822,17 @@ for imgnum in range(len(datacubes)):
     spwdict.update([(images[imgnum],transitiondict)])
     tempkeys=list(spwdict[images[imgnum]].keys())
     
-    #kstdimgpath=stdpath+f'{images[imgnum]}fluxstd.fits'
-    kkmsstdimgpath=stdpath+f'{images[imgnum]}intensitystd.fits'
-    if os.path.isfile(kkmsstdimgpath):
+    kstdimgpath=stdpath+f'{images[imgnum]}fluxstd.fits'
+    if os.path.isfile(kstdimgpath):
         print(f'{images[imgnum]} brightness std image already exists')
-        spwstdarray=stdcutout.data#fits.getdata(kstdimgpath)*u.K
-        kkmsstdarray=fits.getdata(kkmsstdimgpath)*u.K*u.km/u.s
-        print(f'Retrieved integrated intensity std data from {kkmsstdimgpath}\n')
+        spwstdarray=fits.getdata(kstdimgpath)*u.K#stdcutout.data
+        #kkmsstdarray=fits.getdata(kkmsstdimgpath)*u.K*u.km/u.s
+        #print(f'Retrieved integrated intensity std data from {kkmsstdimgpath}\n')
     else:
         print(f'Start {images[imgnum]} std calculations')
         spwstdarray=stdcutout.data
-        kkmsstdarray=stdcutout.data*linewidth_vel#Stopgap until figure out how to do this on per-transition basis around cores only#pixelwisestd(cube)#spwstdarray,
-        #for stdarray, imgpath in zip([spwstdarray,kkmsstdarray],[kstdimgpath,kkmsstdimgpath]):
         print('Set Primary HDU')
-        hdu=fits.PrimaryHDU(spwstdarray.value)
+        khdu=fits.PrimaryHDU(spwstdarray.value)
         '''This transmoment0 file has intensity (K km/s) units'''
         if len(tempkeys) == 0:
             print(f'No transitions detected in this spw ({images[imgnum]})')
@@ -811,21 +844,18 @@ for imgnum in range(len(datacubes)):
             transmoment0=fits.open(spwdict[images[imgnum]][tempkeys[0]]['filename'])
             transmom0header=transmoment0[0].header
             print(f'Set header from {spwdict[images[imgnum]][tempkeys[0]]["filename"]}')
-        hdu.header=transmom0header
-        #if np.all(stdarray==spwstdarray):
-        #    hdu.header['BUNIT']='K'
-        #else:
-        hdu.header['BUNIT']='K km s-1'
+        khdu.header=transmom0header
+        khdu.header['BUNIT']='K'
         print('Wrapping Primary HDU in HDUList')
-        hdul=fits.HDUList([hdu])
-        print(f'Writing to {kkmsstdimgpath}')
-        hdul.writeto(kkmsstdimgpath,overwrite=True)
+        khdul=fits.HDUList([khdu])
+        print(f'Writing to {kstdimgpath}')
+        khdul.writeto(kstdimgpath,overwrite=True)
         print(f'{images[imgnum]} std calculations complete.\n')
     #transitiondict.update({'restfreq':spwrestfreq})
     #,('pixel_0',(pixycrd,pixxcrd))])
     kstddict.update([(images[imgnum],spwstdarray)])
-    kkmsstddict.update([(images[imgnum],kkmsstdarray)])
-    print(f'Finished loop for {images[imgnum]}')
+    #kkmsstddict.update([(images[imgnum],kkmsstdarray)])
+    print(f'Finished loop for {images[imgnum]}\n')
     #masterqns.append(slicedqns)
     #pdb.set_trace()
 
@@ -894,7 +924,7 @@ for key in spwdictkeys:
                     if nuperrorimgexists:
                         n_uerr.append((tempnuerr[y,x])/transdict[transitionkeys[transkey]]['degen'])
                     else:
-                        tempnupper,tempnuerr=N_u(transdict[transitionkeys[transkey]]['freq'],transdict[transitionkeys[transkey]]['aij'],intensities[transitionkeys[transkey]][y,x],kkmsstddict[key][y,x])
+                        tempnupper,tempnuerr=N_u(transdict[transitionkeys[transkey]]['freq'],transdict[transitionkeys[transkey]]['aij'],intensities[transitionkeys[transkey]][y,x],transdict[transitionkeys[transkey]]['mom0err'][y,x])#kkmsstddict[key][y,x])
                         n_us.append((tempnupper.to('cm-2')*u.cm**2)/transdict[transitionkeys[transkey]]['degen'])
                         n_uerr.append((tempnuerr.to('cm-2')*u.cm**2)/transdict[transitionkeys[transkey]]['degen'])  
                 nugsmap[y,:,pixelzcoord_nupper]=n_us
