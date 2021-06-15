@@ -577,10 +577,10 @@ stdhome='/orange/adamginsburg/sgrb2/d.jeff/products/OctReimage_K/'
 
 cubemaskarray=maskeddatacube.get_mask_array()
 
-sourcelocs={'SgrB2S':'new_testingstdfixandontheflyrepstuff_K_OctReimage_restfreqfix_newvelmask_newpeakamp/','DSi':'/field10originals_spatialandvelocitymaskingtrial1/','DSv':f'/{int(testT.value)}K_field10originals_z0_00186431_5-6mhzwidth_stdfixes_test/'}
+sourcelocs={'SgrB2S':'new_testingstdfixandontheflyrepstuff_K_OctReimage_restfreqfix_newvelmask_newpeakamp/','DSi':'/field10originals_spatialandvelocitymaskingtrial2_5kmsslab/','DSv':f'/{int(testT.value)}K_field10originals_z0_00186431_5-6mhzwidth_stdfixes_test/'}
 
 representativelines={'SgrB2S':'4_2-3_1vt=0','DSi':'8_1-7_0vt=0'}
-representativelws={'SgrB2S':8*u.MHz,'DSi':11*u.MHz}
+representativelws={'SgrB2S':8*u.MHz,'DSi':3.6*u.MHz}#11MHz for ~10 km/s
 representativecubes={'SgrB2S':1,'DSi':1}
 
 sourcepath=f'/blue/adamginsburg/d.jeff/SgrB2DSreorg/field{fnum}/CH3OH/{source}/'+sourcelocs[source]
@@ -750,7 +750,7 @@ for imgnum in range(len(datacubes)):
         print(f'Creating spectral slab between {lowerfreq} and {upperfreq}')
         spectralslab_representative=repcube.spectral_slab(lowerfreq,upperfreq)
         spectralslab_representative=spectralslab_representative.with_spectral_unit((u.km/u.s),velocity_convention='radio',rest_value=reffreq_repline)
-        rep_3sigmamask=spectralslab_representative > (3*repstdcutout.data)
+        rep_3sigmamask=spectralslab_representative >= (3*repstdcutout.data)
         spectralslab_rep_3sigma=spectralslab_representative.with_mask(rep_3sigmamask)
         
         print('\nComputing moment1')
