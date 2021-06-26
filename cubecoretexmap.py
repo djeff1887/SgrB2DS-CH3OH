@@ -24,32 +24,37 @@ from utilities import *
 Splatalogue.QUERY_URL= 'https://splatalogue.online/c_export.php'
 
 '''This wing of the script takes in continuum-subtracted cubes, cuts out a subcube around a region of interest based on a DS9 region, and converts the subcubes into brightness temperature (K) units'''
-
+print('Cube-->Core-->Tex start\n')
 print('Begin Jy/beam-to-K and region subcube conversion\n')
 
 #source='DSv'
-source='DSi'
-#source='SgrB2S'
-fnum=10
+source='SgrB2S'
+print(f'Source: {source}\n')
+fields={'SgrB2S':1,'DSi':10,'DSii':10,'DSiii':10,'DSiv':10}
+fnum=fields[source]
 
 #inpath="/orange/adamginsburg/sgrb2/d.jeff/data/field10originalimages/"
-inpath='/blue/adamginsburg/d.jeff/imaging_results/data/OctReimage/'
+inpaths={1:'/orange/adamginsburg/sgrb2/d.jeff/data/OctReimage_K/',10:"/orange/adamginsburg/sgrb2/d.jeff/data/field10originalimages/"}
+inpath=inpaths[fnum]#'/blue/adamginsburg/d.jeff/imaging_results/data/OctReimage/'
 beamcubes=glob.glob(inpath+'*.fits')
-#home="/orange/adamginsburg/sgrb2/d.jeff/products/field10originalimages/"
-home='/blue/adamginsburg/d.jeff/imaging_results/products/OctReimage/'
+homes={1:'/orange/adamginsburg/sgrb2/d.jeff/products/OctReimage_K/',10:"/orange/adamginsburg/sgrb2/d.jeff/products/field10originalimages/"}
+home=homes[fnum]#'/blue/adamginsburg/d.jeff/imaging_results/products/OctReimage/'
 cubes=glob.glob(home+'*pbcor_line.fits')
+sourceregs={'SgrB2S':'fk5; box(266.8353410, -28.3962005, 0.0016806, 0.0016806)','DSi':'fk5; box(266.8316387, -28.3971867, 0.0010556, 0.0010556)','DSii':'fk5; box(266.8335363, -28.3963159, 0.0006389, 0.0006389)','DSiii':'fk5; box(266.8332758, -28.3969270, 0.0006500, 0.0006500)','DSiv':'fk5; box(266.8323834,-28.39544244, 0.0009000, 0.0009000)'}
 #region='fk5; box(266.8321311,-28.3976633, 0.0010833, 0.0010833)'#DSv
-#region='fk5; box(266.8324225,-28.3954419, 0.0010417, 0.0010417)'#DSiv
-region='fk5; box(266.8316387, -28.3971867, 0.0010556, 0.0010556)'#DSi-large
+#region='fk5; box(266.8323834,-28.39544244, 0.0009000, 0.0009000)'#DSiv
+region=sourceregs[source]#'fk5; box(266.8316387, -28.3971867, 0.0010556, 0.0010556)'#DSi-large
 #region='fk5; box(266.8353410, -28.3962005, 0.0016806, 0.0016806)'#SgrB2S-box2
 #region='fk5; box(266.8350804, -28.3963256, 0.0023889, 0.0023889)'#SgrB2S-large
-#box(266.8333438, -28.3966103, 0.0014028, 0.0014028)' #DSii/iii
+#box(266.8335363, -28.3963159, 0.0006389, 0.0006389)' #DSii
+#/iii
 #box(266.8315833, -28.3971867, 0.0006528, 0.0006528)' #DSi-small
-#outpath=f'/blue/adamginsburg/d.jeff/SgrB2DSminicubes/{source}/OctReimage/'
-outpath=f'/blue/adamginsburg/d.jeff/SgrB2DSminicubes/{source}/field10originals/'
+outpath_base=f'/blue/adamginsburg/d.jeff/SgrB2DSminicubes/{source}/'
+outstatpath_end={1:'OctReimage_K/',10:'field10originals/'}
+outpath=outpath_base+outstatpath_end[fnum]#f'/blue/adamginsburg/d.jeff/SgrB2DSminicubes/{source}/field10originals/'
 #outpath=f'/blue/adamginsburg/d.jeff/SgrB2DSminicubes/{source}/OctReimage_K/'#imaging_results/DSii_iiibox1/'
-#statfixpath=f'/blue/adamginsburg/d.jeff/SgrB2DSstatcontfix/field10originals/'
-statfixpath=f'/blue/adamginsburg/d.jeff/SgrB2DSstatcontfix/OctReimage_K/'
+statfixpath_base='/blue/adamginsburg/d.jeff/SgrB2DSstatcontfix/'
+statfixpath=statfixpath_base+outstatpath_end[fnum]#f'/blue/adamginsburg/d.jeff/SgrB2DSstatcontfix/OctReimage_K/'
 
 regionparams=[float(val) for val in region[9:(len(region)-1)].split(', ')]
 
@@ -132,7 +137,7 @@ else:
             boxedsubcubeK.write(boxcubename,format='fits',overwrite=True)
             print('Finished\n')
         
-       
+#pdb.set_trace()       
 '''This wing of the code runs the linelooper LTE modeling and kinetic temperature determination on the newly created region-specific subcubes'''
 
 print('Begin core cube to Tex map process\n') 
@@ -152,7 +157,7 @@ R_i=1
 f=1
 Tbg=2.7355*u.K
 
-dopplershifts={'SgrB2S':0.000234806,'DSi':0.000186431,'DSv':0.000186431}#:0.000190713}/old doppler S: 0.0002306756533745274
+dopplershifts={'SgrB2S':0.000234806,'DSi':0.0001842772437139578,'DSii':0.00016236367659115043,'DSv':0.000186431}#:0.000190713}/old doppler S: 0.0002306756533745274/old doppler I: 0.000186431
 
 z=dopplershifts[source]
 #z=0.00017594380066803095 #SgrB2DSII?
@@ -161,7 +166,8 @@ z=dopplershifts[source]
 print(f'Doppler shift: {z} / {(z*c).to("km s-1")}\n')
 
 print('Setting input LTE parameters')
-testT=300*u.K#500*u.K
+trotdict={'SgrB2S':300*u.K,'DSi':300*u.K,'DSii':150*u.K}
+testT=trotdict[source]#500*u.K
 testntot=1e17*u.cm**-2
 print(f'Input Tex: {testT}\nInput Ntot: {testntot}')
 
@@ -359,8 +365,10 @@ def linelooplte(line_list,line_width,iterations,quantum_numbers):
         temptransdict={}
         line=line_list[i]#*u.Hz
         restline=line*(1+z)
-        nu_upper=line+line_width
-        nu_lower=line-line_width
+        line_width_freq=velocitytofreq(line_width,line)
+        #pdb.set_trace()
+        nu_upper=line+line_width_freq
+        nu_lower=line-line_width_freq
         print(f'Make spectral slab between {nu_lower} and {nu_upper}')
         #slabstart=time.time()
         slab=cube.spectral_slab(nu_upper,nu_lower)
@@ -402,6 +410,7 @@ def linelooplte(line_list,line_width,iterations,quantum_numbers):
         slabfilename=slabpath+'CH3OH~'+transition+'_slab.fits'
         maskedslabfn=slabpath+'CH3OH~'+transition+'_maskedslab.fits'
         maskfn=slabpath+'CH3OH~'+transition+'_mask.fits'
+        peakintfn=home+'CH3OH~'+transition+'_peakint.fits'
         #print('Done')
         #print('Moment 0')
         if os.path.isfile(maskedmom0fn):
@@ -420,11 +429,30 @@ def linelooplte(line_list,line_width,iterations,quantum_numbers):
             masterlines.append(line_list[i].value)
             print('\nDictionaries populated for this transition.')
             if os.path.isfile(maskedslabfn):
-                print('Proceeding...\n')
+                print('Masked slab already exists...\n')
                 pass
             else:
                 slab.write(maskedslabfn)
                 print(f'Slab written to {slabfilename}. Proceeding...\n')
+            if os.path.isfile(peakintfn):
+                print('Peak intensity file already exists.')
+                pass
+            else:
+                print('Peak intensity procedure starting')
+                print('Creating masked slab')
+                slab=slab.with_spectral_unit((u.km/u.s),velocity_convention='radio',rest_value=lines[i])
+                slab3sigmamask=slab > (3*stdcutout.data)
+                slab=slab.with_mask(slab3sigmamask)
+                slabspecax=slab.spectral_axis
+                slabmom1=slab.moment1()
+                slabfwhm=slab.linewidth_fwhm()#(7*u.MHz/line)*c.to('km s-1')#
+                cubemask=(slabspecax[:,None,None] < (velocityfield_representative + fwhm_representative)[None,:,:]) & (slabspecax[:,None,None] > (velocityfield_representative - fwhm_representative)[None,:,:])
+                maskedslab=slab.with_mask(cubemask)
+                print('Computing peak intensity image')
+                maskedpeakint=maskedslab.max(axis=0)
+                print(f'Saving to {peakintfn}')
+                maskedpeakint.write(peakintfn)
+                print('Peak intensity image saved.\n')
             for moment in [1,2]:
                 slab=slab.with_spectral_unit((u.km/u.s),velocity_convention='radio',rest_value=lines[i])
                 momentnfilenames=[(sourcepath+'mom1/CH3OH~'+transition+'.fits'),(sourcepath+'mom2/CH3OH~'+transition+'_var.fits')]
@@ -445,7 +473,7 @@ def linelooplte(line_list,line_width,iterations,quantum_numbers):
             pass
         elif trad >= 3*targetspecK_stddev and peak_amplitude >= 3* targetspecK_stddev:#*u.K:
             slab=slab.with_spectral_unit((u.km/u.s),velocity_convention='radio',rest_value=lines[i])#spwrestfreq)
-            if transition in excludedlines:
+            if transition in excludedlines[source]:
                 print(f'\nExcluded line detected: {quantum_numbers[i]}, E_U: {euks[i]}, Freq: {line.to("GHz")}')
                 #sigma1mom0=np.empty((cube.shape[1],cube.shape[2]))
                 sigma1mom0=stdcutout.data*linewidth_vel
@@ -511,6 +539,16 @@ def linelooplte(line_list,line_width,iterations,quantum_numbers):
                     kkmshdul=fits.HDUList([kkmshdu])
                     print(f'Writing moment0 error to {maskedmom0errfn}')
                     kkmshdul.writeto(maskedmom0errfn,overwrite=True)
+                if os.path.isfile(peakintfn):
+                    print('Peak intensity file already exists.')
+                    pass
+                else:
+                    print('Peak intensity procedure starting')
+                    print('Computing peak intensity image')
+                    maskedpeakint=maskedslab.max(axis=0)
+                    print(f'Saving to {peakintfn}')
+                    maskedpeakint.write(peakintfn)
+                    print('Peak intensity image saved.\n')
                 for moment in [1,2]:
                     moment1filename=sourcepath+'mom1/CH3OH~'+transition+'.fits'
                     moment2filename=sourcepath+'mom2/CH3OH~'+transition+'_var.fits'
@@ -577,11 +615,11 @@ stdhome='/orange/adamginsburg/sgrb2/d.jeff/products/OctReimage_K/'
 
 cubemaskarray=maskeddatacube.get_mask_array()
 
-sourcelocs={'SgrB2S':'new_testingstdfixandontheflyrepstuff_K_OctReimage_restfreqfix_newvelmask_newpeakamp/','DSi':'/field10originals_spatialandvelocitymaskingtrial2_5kmsslab/','DSv':f'/{int(testT.value)}K_field10originals_z0_00186431_5-6mhzwidth_stdfixes_test/'}
+sourcelocs={'SgrB2S':'new_testingstdfixandontheflyrepstuff_K_OctReimage_restfreqfix_newvelmask_newpeakamp/','DSi':'/field10originals_spatialandvelocitymaskingtrial5_newexclusions3andexclusionsnotinfit/','DSii':'/field10originals_noexclusions/','DSv':f'/{int(testT.value)}K_field10originals_z0_00186431_5-6mhzwidth_stdfixes_test/'}
 
-representativelines={'SgrB2S':'4_2-3_1vt=0','DSi':'8_1-7_0vt=0'}
-representativelws={'SgrB2S':8*u.MHz,'DSi':3.6*u.MHz}#11MHz for ~10 km/s
-representativecubes={'SgrB2S':1,'DSi':1}
+representativelines={'SgrB2S':'4_2-3_1vt=0','DSi':'8_1-7_0vt=0','DSii':'8_1-7_0vt=0'}
+representativelws={'SgrB2S':(10*u.km/u.s),'DSi':(3*u.km/u.s),'DSii':(3*u.km/u.s)}#{'SgrB2S':8*u.MHz,'DSi':3.6*u.MHz}#11MHz for ~10 km/s
+representativecubes={'SgrB2S':1,'DSi':1,'DSii':1}
 
 sourcepath=f'/blue/adamginsburg/d.jeff/SgrB2DSreorg/field{fnum}/CH3OH/{source}/'+sourcelocs[source]
 nupperpath=sourcepath+'nuppers/'
@@ -646,8 +684,8 @@ masterfluxes=[]
 masterbeams=[]
 masterstddevs=[]
 
-excludedlines=['7_6-7_7E1vt1','14_6-14_7E1vt1','11_6-11_7E1vt1']
-restfreq_representativeline={'SgrB2S':218.44006300*u.GHz,'DSi':220.07856100*u.GHz}#232.41852100*u.GHz 10(2+)-9(3-)vt0
+excludedlines={'SgrB2S':['7_6-7_7E1vt1','14_6-14_7E1vt1','11_6-11_7E1vt1'],'DSi':['11_6-11_7E1vt1','25_3-24_4E1vt0','14_6-14_7E1vt1','7_6-7_7E1vt1','13_3--14_4-vt2','13_3+-14_4+vt2'],'DSii':''}
+restfreq_representativeline={'SgrB2S':218.44006300*u.GHz,'DSi':220.07856100*u.GHz,'DSii':220.07856100*u.GHz}#232.41852100*u.GHz 10(2+)-9(3-)vt0
 representative_filename_base=sourcepath+representativelines[source]+'repline_'
 rep_mom1=representative_filename_base+'mom1.fits'
 rep_fwhm=representative_filename_base+'fwhm.fits'
@@ -704,7 +742,7 @@ for imgnum in range(len(datacubes)):
     #print(velcube.spectral_axis)
     cube_unmasked=velcube.unmasked_data
     
-    targetworldcrds={'SgrB2S':[[0,0,0],[2.66835339e+02, -2.83961660e+01, 0]], 'DSi':[[0,0,0],[266.8316149,-28.3972040,0]], 'DSv':[[0,0,0],[266.8321311,-28.3976633,0]]}
+    targetworldcrds={'SgrB2S':[[0,0,0],[2.66835339e+02, -2.83961660e+01, 0]], 'DSi':[[0,0,0],[266.8316149,-28.3972040,0]], 'DSii':[[0,0,0],[266.8335363,-28.3963158,0]], 'DSv':[[0,0,0],[266.8321311,-28.3976633,0]]}
     cube_w=cube.wcs
     stdwcs=WCS(stdimage[0].header)#WCS(stdimage[0].header)
     
@@ -745,8 +783,8 @@ for imgnum in range(len(datacubes)):
         
         repstdcutoutsize=round(((float(regiondims)*u.deg)/stdcellsize).to('').value)
         repstdcutout=Cutout2D(repstdmain_data,(repstdmain_xcrd,repstdmain_ycrd), repstdcutoutsize)
-        upperfreq=reffreq_repline+representativelws[source]
-        lowerfreq=reffreq_repline-representativelws[source]
+        upperfreq=reffreq_repline+velocitytofreq(representativelws[source],reffreq_repline)
+        lowerfreq=reffreq_repline-velocitytofreq(representativelws[source],reffreq_repline)
         print(f'Creating spectral slab between {lowerfreq} and {upperfreq}')
         spectralslab_representative=repcube.spectral_slab(lowerfreq,upperfreq)
         spectralslab_representative=spectralslab_representative.with_spectral_unit((u.km/u.s),velocity_convention='radio',rest_value=reffreq_repline)
@@ -809,7 +847,7 @@ for imgnum in range(len(datacubes)):
     plt.show()
     '''
     singlecmpntwidth=(0.00485/8)*u.GHz
-    linewidth=8*u.MHz
+    linewidth=10*u.km/u.s#8*u.MHz
     oldwideslabwidth=(15.15*u.MHz)
     originallinewidth=(11231152.36688232*u.Hz/2)#0.005*u.GHz####0.5*0.0097*u.GHz#from small line @ 219.9808GHz# 0.0155>>20.08km/s 
     nu_offset=oldwideslabwidth-originallinewidth
@@ -1000,15 +1038,26 @@ for y in range(testyshape):
         nupperstofit=[]
         eukstofit=[]
         nuperrors=[]
+        qnsfitted=[]
+        excludedqns=[]
+        excludednuppers=[]
+        excludedeuks=[]
         for zed in range(testzshape):
             if nugsmap[y,x,zed] <= 0 or np.isnan(nugsmap[y,x,zed]):
                 continue
+            elif nugsmap[y,x,zed]/nugserrormap[y,x,zed] == 1:
+                #print(f'Excluded line detected: {masterqns[z]}')
+                #print('Appending to exclusion lists')
+                #excludedqns.append(masterqns[zed])
+                #excludednuppers.append(nugsmap[y,x,zed])
+                #excludedeuks.append(mastereuks[zed])
+                pass
             else:
                 nupperstofit.append(nugsmap[y,x,zed])
                 eukstofit.append(mastereuks[zed])
                 nuperrors.append(nugserrormap[y,x,zed])
+                qnsfitted.append(masterqns[zed])
                 degensforfit.append(ordereddegens[zed])
-        #pdb.set_trace()
         numtransmap[y,x]=len(nupperstofit)        
         if len(nupperstofit)==0:
             obsTex=np.nan
@@ -1021,34 +1070,49 @@ for y in range(testyshape):
         else:
             #log10nuerr=[]
             errstofit=[]
+            log10variances=[]
             
             for num in range(len(nupperstofit)):
                 templog10=(1/nupperstofit[num])*nuperrors[num]
                 temperrfit=1/templog10
                 #log10nuerr.append(templog10)
                 errstofit.append(temperrfit)
+                log10variances.append(templog10**2)
             
             #pdb.set_trace()
             fit_lin=fit(linemod,eukstofit,np.log10(nupperstofit),weights=errstofit)
             linemod_euks=np.linspace(min(eukstofit),max(mastereuks),100)
             #print('Model fit complete')
             #print('Compute obsTex and obsNtot')
-            obsTex=-np.log10(np.e)/(fit_lin.slope)
+            obsTrot=-np.log10(np.e)/(fit_lin.slope)
             obsNtot=qrot_partfunc*10**(np.log10(nupperstofit[0])+fit_lin.slope*eukstofit[0])
-            dobsTex=(eukstofit[0]*u.K*np.log(10)*np.log(np.e))/(np.log(nupperstofit[0]/degensforfit[0])-np.log(obsNtot/qrot_partfunc))**2
-            sigTex=(obsTex*u.K/dobsTex).to('')
             
-            texmap[y,x]=obsTex
+            A=np.stack((eukstofit,np.ones_like(eukstofit)),axis=1)
+            C=np.diagflat(log10variances)
+            atc_1a=np.dot(np.dot(A.T, np.linalg.inv(C)), A)
+            if np.linalg.det(atc_1a) == 0:
+                print(f'Singular C matrix detected in pixel {y,x}')
+                m_unc=np.nan
+            else:
+                covmat = np.linalg.inv(atc_1a)
+                m_unc = covmat[0,0]**0.5
+                b_unc = covmat[1,1]**0.5
+            
+            dobsTrot=np.abs(m_unc/fit_lin.slope)*np.abs(obsTrot)*u.K
+            
+            sigTrot=(obsTrot*u.K/dobsTrot).to('')
+            
+            texmap[y,x]=obsTrot
             ntotmap[y,x]=obsNtot
-            texerrormap[y,x]=dobsTex.to('K').value
-            texsnrmap[y,x]=sigTex
-            if sigTex >= snr:
-                texsigclipmap[y,x]=obsTex
+            texerrormap[y,x]=dobsTrot.to('K').value
+            texsnrmap[y,x]=sigTrot
+            if sigTrot >= snr:
+                texsigclipmap[y,x]=obsTrot
             else:
                 texsigclipmap[y,x]=np.nan
 
 detectnum=5
-transmaskarr=np.ma.masked_where(numtransmap<detectnum,texsigclipmap)
+transmaskarr=np.ma.masked_where(numtransmap<=detectnum,texsigclipmap)
 transmasktexmap=transmaskarr.filled(fill_value=np.nan)#np.array(np.ma.masked_where(numtransmap<detectnum,texsigclipmap))
             
 transmoment0=fits.open(transdict[transitionkeys[transkey]]['filename'])
@@ -1137,7 +1201,7 @@ print('Saving alltransition and E_U(K) lists\n')
 nugshdul.writeto(sourcepath+'alltransitions_nuppers.fits',overwrite=True)
 nugserrhdul.writeto(sourcepath+'alltransitions_nupper_error.fits',overwrite=True)
 eukqns=np.column_stack((mastereuks,masterqns,masterlines,ordereddegens))
-np.savetxt(sourcepath+'mastereuksqnsfreqsdegens.txt',eukqns,fmt='%s',header=f'Methanol transitions, excitation temperatures, and degeneracies used in this folder. Temperatures in units of K, frequencies are redshifted ({z}/{(z*c).to("km s-1")}) and in Hz.')
+np.savetxt(sourcepath+'mastereuksqnsfreqsdegens.txt',eukqns,fmt='%s',header=f'Methanol transitions, excitation temperatures, and degeneracies used in this folder. Temperatures in units of K, frequencies are redshifted ({z}/{(z*c).to("km s-1")}) and in Hz.\nExcluded lines: {excludedlines[source]}')
 
 '''This wing of the code plots up the temperature and ntot maps'''
 
@@ -1178,9 +1242,10 @@ plt.rcParams['figure.dpi'] = 150
 ra=ax.coords[0]
 dec=ax.coords[1]
 
-plottedtex=ax.imshow(plottexhdu.data,cmap=colormap,vmax=1000,vmin=10)
+plottedtex=ax.imshow(plottexhdu.data,cmap=colormap)#,vmax=1000,vmin=10)
 
-scale=5000*u.AU
+scaledict={'SgrB2S':5000*u.AU,'DSi':5000*u.AU,'DSii':2000*u.AU}
+scale=scaledict[source]
 lenn=np.arctan(scale/dGC)
 
 if source == 'DSi':
@@ -1198,6 +1263,17 @@ elif source == 'SgrB2S':
               length=lenn, label=f'{int(scale.value)} AU', fontsize=12, 
               text_offset=0.02*u.arcsec)
     crd=coordinates.SkyCoord('17:47:20.6590 -28:23:48.772', unit=(u.hour,u.deg), frame='icrs')
+elif source == 'DSii':
+    print(f'Scalebar source: DSii')
+    make_scalebar(ax, coordinates.SkyCoord('17:47:20.1115 -28:23:47.596', unit=(u.hour, u.deg), 
+                                       frame='icrs'),
+              length=lenn, label=f'{int(scale.value)} AU', fontsize=12, 
+              text_offset=0.02*u.arcsec)
+    crd=coordinates.SkyCoord('17:47:20.1087 -28:23:48.634', unit=(u.hour,u.deg), frame='icrs')
+    pass
+else:
+    print(f'Need to make {source} scalebar!!!')
+    pass
 
 ra.set_axislabel('RA (J2000)',fontsize=14,minpad=0.9)
 ra.set_ticklabel(exclude_overlapping=True)
