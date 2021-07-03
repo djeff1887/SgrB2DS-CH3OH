@@ -15,7 +15,8 @@ import matplotlib as mpl
 import pdb
 from utilities import *
 import copy
-
+from astropy.wcs import WCS
+import matplotlib.gridspec as gridspec
 
 source='SgrB2S'
 print(f'Source: {source}\n')
@@ -34,6 +35,9 @@ mom0path=sourcepath+'mom0/*_masked.fits'
 
 mom0images=glob.glob(mom0path)
 
+samplefits=fits.open(mom0images[0])
+samplewcs=WCS(samplefits[0])
+
 mastereuks=[]
 masterqns=[]
 excludedlines={'SgrB2S':['7_6-7_7E1vt1','14_6-14_7E1vt1','11_6-11_7E1vt1'],'DSi':['11_6-11_7E1vt1','25_3-24_4E1vt0','14_6-14_7E1vt1','7_6-7_7E1vt1','13_3--14_4-vt2','13_3+-14_4+vt2'],'DSii':''}
@@ -51,7 +55,7 @@ for euk in mastereuks:
             sortedqns.append(masterqns[master])
         else:
             continue
-print(sortedqns)
+#print(sortedqns)
 
 for qn in sortedqns:
     for mom0 in mom0images:
@@ -62,13 +66,30 @@ for qn in sortedqns:
         
 numcols=5
 numrows=math.ceil(len(mastereuks)/numcols)
-fig,ax=plt.subplots(numrows,numcols,sharey=True)
+fig,ax=plt.subplots(numrows,numcols,sharey=True)#,use_gridspec=True)
 print('Number of rows: ', numrows)
+firstpanel=True
+
+gs1 = gridspec.GridSpec(numrows, numcols)
+gs1.update(wspace=0.025, hspace=0.05)
 
 for row in np.arange(numrows):
     for col in np.arange(numcols):
         transition=fits.getdata(sortedmom0[col+(row*numcols)])
-        ax[row,col].imshow(transition,origin='lower',cmap=cm)
+        if firstpanel:
+            im=ax[row,col].imshow(transition,origin='lower',cmap=cm)
+            fmax=np.nanmax(transition)
+            fmin=np.nanmin(transition)
+            ax[row,col].set_xticklabels([])
+            ax[row,col].set_yticklabels([])
+            ax[row,col].tick_params(direction='in')
+            firstpanel=False
+        else:
+            ax[row,col].imshow(transition,vmax=fmax,vmin=fmin,origin='lower',cmap=cm)
+            ax[row,col].set_xticklabels([])
+            ax[row,col].set_yticklabels([])
+            ax[row,col].tick_params(direction='in')
 
-#ax[0,0].colorbar(pad=0)
+plt.colorbar(mappable=im,pad=0.05,shrink=5)
+fig.subplots_adjust(wspace=0,hspace=0)
 plt.show()
