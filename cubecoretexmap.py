@@ -27,20 +27,19 @@ Splatalogue.QUERY_URL= 'https://splatalogue.online/c_export.php'
 print('Cube-->Core-->Tex start\n')
 print('Begin Jy/beam-to-K and region subcube conversion\n')
 
-#source='DSv'
-source='SgrB2S'
+source='DSiv'
 print(f'Source: {source}\n')
 fields={'SgrB2S':1,'DSi':10,'DSii':10,'DSiii':10,'DSiv':10}
 fnum=fields[source]
 
 #inpath="/orange/adamginsburg/sgrb2/d.jeff/data/field10originalimages/"
-inpaths={1:'/orange/adamginsburg/sgrb2/d.jeff/data/OctReimage_K/',10:"/orange/adamginsburg/sgrb2/d.jeff/data/field10originalimages/"}
+inpaths={1:'/orange/adamginsburg/sgrb2/d.jeff/data/OctReimage_K/',10:"/orange/adamginsburg/sgrb2/d.jeff/data/field10originals_K/"}
 inpath=inpaths[fnum]#'/blue/adamginsburg/d.jeff/imaging_results/data/OctReimage/'
 beamcubes=glob.glob(inpath+'*.fits')
-homes={1:'/orange/adamginsburg/sgrb2/d.jeff/products/OctReimage_K/',10:"/orange/adamginsburg/sgrb2/d.jeff/products/field10originalimages/"}
+homes={1:'/orange/adamginsburg/sgrb2/d.jeff/products/OctReimage_K/',10:"/orange/adamginsburg/sgrb2/d.jeff/products/field10originals_K/"}
 home=homes[fnum]#'/blue/adamginsburg/d.jeff/imaging_results/products/OctReimage/'
 cubes=glob.glob(home+'*pbcor_line.fits')
-sourceregs={'SgrB2S':'fk5; box(266.8353410, -28.3962005, 0.0016806, 0.0016806)','DSi':'fk5; box(266.8316387, -28.3971867, 0.0010556, 0.0010556)','DSii':'fk5; box(266.8335363, -28.3963159, 0.0006389, 0.0006389)','DSiii':'fk5; box(266.8332758, -28.3969270, 0.0006500, 0.0006500)','DSiv':'fk5; box(266.8323834,-28.39544244, 0.0009000, 0.0009000)'}
+sourceregs={'SgrB2S':'fk5; box(266.8353410, -28.3962005, 0.0016806, 0.0016806)','DSi':'fk5; box(266.8316387, -28.3971867, 0.0010556, 0.0010556)','DSii':'fk5; box(266.8335363, -28.3963159, 0.0006389, 0.0006389)','DSiii':'fk5; box(266.8332758, -28.3969270, 0.0006944, 0.0006944)','DSiv':'fk5; box(266.8323834, -28.3954424, 0.0009000, 0.0009000)'}
 #region='fk5; box(266.8321311,-28.3976633, 0.0010833, 0.0010833)'#DSv
 #region='fk5; box(266.8323834,-28.39544244, 0.0009000, 0.0009000)'#DSiv
 region=sourceregs[source]#'fk5; box(266.8316387, -28.3971867, 0.0010556, 0.0010556)'#DSi-large
@@ -50,7 +49,7 @@ region=sourceregs[source]#'fk5; box(266.8316387, -28.3971867, 0.0010556, 0.00105
 #/iii
 #box(266.8315833, -28.3971867, 0.0006528, 0.0006528)' #DSi-small
 outpath_base=f'/blue/adamginsburg/d.jeff/SgrB2DSminicubes/{source}/'
-outstatpath_end={1:'OctReimage_K/',10:'field10originals/'}
+outstatpath_end={1:'OctReimage_K/',10:'field10originals_K/'}
 outpath=outpath_base+outstatpath_end[fnum]#f'/blue/adamginsburg/d.jeff/SgrB2DSminicubes/{source}/field10originals/'
 #outpath=f'/blue/adamginsburg/d.jeff/SgrB2DSminicubes/{source}/OctReimage_K/'#imaging_results/DSii_iiibox1/'
 statfixpath_base='/blue/adamginsburg/d.jeff/SgrB2DSstatcontfix/'
@@ -60,8 +59,11 @@ regionparams=[float(val) for val in region[9:(len(region)-1)].split(', ')]
 
 if os.path.isdir(outpath):
     print(f'Minicube directory "{outpath}" already exists. Proceeding to line loops/LTE fitting procedure.\n')
+    sourceisnew=False
     pass
 else:
+    sourceisnew=True#***REMEMBER TO CHANGE BACK TO TRUE ONCE ERROR FIXES ARE DONE****
+  
     cubestobox=[]
     
     images=['spw0','spw1','spw2','spw3']
@@ -117,16 +119,27 @@ else:
     else:
         cubestobox=orderedcubes
             
-    pdb.set_trace()
+    #pdb.set_trace()
             
     for sppw, cub in zip(images, cubestobox):
         boxcubename=outpath+sppw+'minimize.image.pbcor_line.fits'
+        fullsizecube=sc.read(cub,use_dask=True)
         if os.path.isfile(boxcubename):
             print(f'{boxcubename} already exists. Skipping...\n')
             continue
+        elif fullsizecube.unit=='K':
+            print(f'Grabbing datacube from {cub}')
+            fullsizecube.allow_huge_operations=True
+            spwrestfreq=fullsizecube.header['RESTFRQ']*u.Hz
+            print('Boxed cube already has brightness (K) units.')
+            print(f'Creating subcube containing region around core {source}')
+            boxedsubcubeK=fullsizecube.subcube_from_ds9region(region)
+            print(f'Saving to {boxcubename}')
+            boxedsubcubeK.write(boxcubename,format='fits',overwrite=True)
+            print(f'Done. Continuing to next spw')
+            continue
         else:
             print(f'Grabbing datacube from {cub}')
-            fullsizecube=sc.read(cub,use_dask=True)
             fullsizecube.allow_huge_operations=True
             spwrestfreq=fullsizecube.header['RESTFRQ']*u.Hz
             print('Creating subcube and converting from Jy/beam to K')
@@ -137,7 +150,12 @@ else:
             boxedsubcubeK.write(boxcubename,format='fits',overwrite=True)
             print('Finished\n')
         
-#pdb.set_trace()       
+if sourceisnew:
+    print(f'Since source {source} is new, pausing script for staging.')
+    print('Enter "exit" to stage the core.\n')
+    pdb.set_trace() 
+else:
+    pass      
 '''This wing of the code runs the linelooper LTE modeling and kinetic temperature determination on the newly created region-specific subcubes'''
 
 print('Begin core cube to Tex map process\n') 
@@ -157,7 +175,7 @@ R_i=1
 f=1
 Tbg=2.7355*u.K
 
-dopplershifts={'SgrB2S':0.000234806,'DSi':0.0001842772437139578,'DSii':0.00016236367659115043,'DSv':0.000186431}#:0.000190713}/old doppler S: 0.0002306756533745274/old doppler I: 0.000186431
+dopplershifts={'SgrB2S':0.000234806,'DSi':0.0001842772437139578,'DSii':0.00016236367659115043,'DSiii':0.00017500261911843952,'DSiv':0.00018225233186845314,'DSv':0.00018225233186845314}#:0.000190713}/old doppler S: 0.0002306756533745274/old doppler I: 0.000186431
 
 z=dopplershifts[source]
 #z=0.00017594380066803095 #SgrB2DSII?
@@ -166,7 +184,7 @@ z=dopplershifts[source]
 print(f'Doppler shift: {z} / {(z*c).to("km s-1")}\n')
 
 print('Setting input LTE parameters')
-trotdict={'SgrB2S':300*u.K,'DSi':300*u.K,'DSii':150*u.K}
+trotdict={'SgrB2S':300*u.K,'DSi':300*u.K,'DSii':150*u.K,'DSiii':150*u.K,'DSiv':150*u.K}
 testT=trotdict[source]#500*u.K
 testntot=1e17*u.cm**-2
 print(f'Input Tex: {testT}\nInput Ntot: {testntot}')
@@ -206,13 +224,6 @@ def pixelwisestd(datacube):
     print('Compute intensity std')
     intensitystds=(stdarray*u.K)*linewidth_vel
     return stdarray*u.K,intensitystds
-    
-'''Replaces unwanted characters from the QN table for use in file names'''
-def qn_replace(string):
-    string=string.replace('=','')
-    string=string.replace('(','_')
-    string=string.replace(')','')
-    return string
     
 '''Gathers beam data from moment map headers'''    
 def beamer(momentmap):
@@ -303,7 +314,7 @@ def brightnessTandintensities(fluxdict):
             else:
                 velflux_T=temptransdict[temptransdictkeys[i]]['flux']
                 intensitydict.update({temptransdictkeys[i]:velflux_T})
-                temp=velflux_T/linewidth_vel
+                temp=velflux_T/linewidth_vel#***What's going on here? Should this be fixed because it uses one uniform linewidth
                 t_bright.update({temptransdictkeys[i]:temp})
                 d_velfluxT=(temptransdict[temptransdictkeys[i]]['stddev'])#/temp)*velflux_T
                 intensityerror.append(d_velfluxT)
@@ -608,18 +619,20 @@ for spew in images:
     
 assert 'spw0' in datacubes[0], 'Cube list out of order'
 
-maskname="/blue/adamginsburg/d.jeff/imaging_results/SgrB2DS-CH3OH/7.0mhzmasked_spw08-7slab.fits"
-maskeddatacube=sc.read(maskname)
-maskeddatacube=maskeddatacube.with_spectral_unit((u.km/u.s),velocity_convention='radio',rest_value=220027805942.10373*u.Hz)
-stdhome='/orange/adamginsburg/sgrb2/d.jeff/products/OctReimage_K/'
+#maskname="/blue/adamginsburg/d.jeff/imaging_results/SgrB2DS-CH3OH/7.0mhzmasked_spw08-7slab.fits"
+#maskeddatacube=sc.read(maskname)
+#maskeddatacube=maskeddatacube.with_spectral_unit((u.km/u.s),velocity_convention='radio',rest_value=220027805942.10373*u.Hz)
 
-cubemaskarray=maskeddatacube.get_mask_array()
+stdhomedict={1:'/orange/adamginsburg/sgrb2/d.jeff/products/OctReimage_K/',10:'/orange/adamginsburg/sgrb2/d.jeff/products/field10originals_K/'}
+stdhome=stdhomedict[fnum]
 
-sourcelocs={'SgrB2S':'new_testingstdfixandontheflyrepstuff_K_OctReimage_restfreqfix_newvelmask_newpeakamp/','DSi':'/field10originals_spatialandvelocitymaskingtrial5_newexclusions3andexclusionsnotinfit/','DSii':'/field10originals_noexclusions/','DSv':f'/{int(testT.value)}K_field10originals_z0_00186431_5-6mhzwidth_stdfixes_test/'}
+#cubemaskarray=maskeddatacube.get_mask_array()
 
-representativelines={'SgrB2S':'4_2-3_1vt=0','DSi':'8_1-7_0vt=0','DSii':'8_1-7_0vt=0'}
-representativelws={'SgrB2S':(10*u.km/u.s),'DSi':(3*u.km/u.s),'DSii':(3*u.km/u.s)}#{'SgrB2S':8*u.MHz,'DSi':3.6*u.MHz}#11MHz for ~10 km/s
-representativecubes={'SgrB2S':1,'DSi':1,'DSii':1}
+sourcelocs={'SgrB2S':'new_testingstdfixandontheflyrepstuff_K_OctReimage_restfreqfix_newvelmask_newpeakamp/','DSi':'/Kfield10originals_trial7_field10errors_newexclusion_matchslabwidthtorep/','DSii':'/Kfield10originals_noexclusions/','DSiii':'/Kfield10originals_noexclusions/','DSiv':'/Kfield10originals_noexclusions/','DSv':f'/{int(testT.value)}K_field10originals_z0_00186431_5-6mhzwidth_stdfixes_test/'}
+
+representativelines={'SgrB2S':'4_2-3_1vt=0','DSi':'8_1-7_0vt=0','DSii':'8_1-7_0vt=0','DSiii':'10_2--9_3-vt=0','DSiv':'20_1-20_0vt=0'}
+representativelws={'SgrB2S':(10*u.km/u.s),'DSi':(3*u.km/u.s),'DSii':(3*u.km/u.s),'DSiii':(3*u.km/u.s),'DSiv':(4*u.km/u.s)}#{'SgrB2S':8*u.MHz,'DSi':3.6*u.MHz}#11MHz for ~10 km/s
+representativecubes={'SgrB2S':1,'DSi':1,'DSii':1,'DSiii':2,'DSiv':0}
 
 sourcepath=f'/blue/adamginsburg/d.jeff/SgrB2DSreorg/field{fnum}/CH3OH/{source}/'+sourcelocs[source]
 nupperpath=sourcepath+'nuppers/'
@@ -684,8 +697,8 @@ masterfluxes=[]
 masterbeams=[]
 masterstddevs=[]
 
-excludedlines={'SgrB2S':['7_6-7_7E1vt1','14_6-14_7E1vt1','11_6-11_7E1vt1'],'DSi':['11_6-11_7E1vt1','25_3-24_4E1vt0','14_6-14_7E1vt1','7_6-7_7E1vt1','13_3--14_4-vt2','13_3+-14_4+vt2'],'DSii':''}
-restfreq_representativeline={'SgrB2S':218.44006300*u.GHz,'DSi':220.07856100*u.GHz,'DSii':220.07856100*u.GHz}#232.41852100*u.GHz 10(2+)-9(3-)vt0
+excludedlines={'SgrB2S':['7_6-7_7E1vt1','14_6-14_7E1vt1','11_6-11_7E1vt1'],'DSi':['11_6-11_7E1vt1','25_3-24_4E1vt0','14_6-14_7E1vt1','7_6-7_7E1vt1','13_3--14_4-vt2','13_3+-14_4+vt2','15_6-15_7E1vt1'],'DSii':'','DSiii':'','DSiv':''}
+restfreq_representativeline={'SgrB2S':218.44006300*u.GHz,'DSi':220.07856100*u.GHz,'DSii':220.07856100*u.GHz,'DSiii':231.28111000*u.GHz,'DSiv':217.88650400*u.GHz}#All taken from Splatalogue
 representative_filename_base=sourcepath+representativelines[source]+'repline_'
 rep_mom1=representative_filename_base+'mom1.fits'
 rep_fwhm=representative_filename_base+'fwhm.fits'
@@ -703,7 +716,7 @@ if os.path.isfile(rep_mom1):
     print(f'Grabbing fwhm from {rep_fwhm}\n')
     fwhm_representative=fits.getdata(rep_fwhm)*u.km/u.s
 else:
-    print('{representativelines[source]} representative line objects will be computed for {source}.\n')
+    print(f'{representativelines[source]} representative line objects will be computed for {source}.\n')
     pass
 
 #pdb.set_trace()
@@ -742,7 +755,7 @@ for imgnum in range(len(datacubes)):
     #print(velcube.spectral_axis)
     cube_unmasked=velcube.unmasked_data
     
-    targetworldcrds={'SgrB2S':[[0,0,0],[2.66835339e+02, -2.83961660e+01, 0]], 'DSi':[[0,0,0],[266.8316149,-28.3972040,0]], 'DSii':[[0,0,0],[266.8335363,-28.3963158,0]], 'DSv':[[0,0,0],[266.8321311,-28.3976633,0]]}
+    targetworldcrds={'SgrB2S':[[0,0,0],[2.66835339e+02, -2.83961660e+01, 0]], 'DSi':[[0,0,0],[266.8316149,-28.3972040,0]], 'DSii':[[0,0,0],[266.8335363,-28.3963158,0]],'DSiii':[[0,0,0],[266.8332758,-28.3969269,0]],'DSiv':[[0,0,0],[266.8323834, -28.3954424,0]],'DSv':[[0,0,0],[266.8321311,-28.3976633,0]]}
     cube_w=cube.wcs
     stdwcs=WCS(stdimage[0].header)#WCS(stdimage[0].header)
     
@@ -772,6 +785,8 @@ for imgnum in range(len(datacubes)):
         reffreq_repline=restfreq_representativeline[source]/(1+z)
         repcube=sc.read(datacubes[representativecubes[source]])
         
+        assert reffreq_repline > min(repcube.spectral_axis) and reffreq_repline < max(repcube.spectral_axis), f'Incorrect representative cube chosen.\nCube limits: {min(repcube.spectral_axis)},{max(repcube.spectral_axis)}\nRepresentative line reference frequency: {reffreq_repline}'
+        
         repstdmain=fits.open(stdhome+f'spw{representativecubes[source]}minimize.image.pbcor_noise.fits')
         repstdmain_data=repstdmain[0].data*u.K
         repstdmain_wcs=WCS(repstdmain[0].header)
@@ -795,7 +810,7 @@ for imgnum in range(len(datacubes)):
         velocityfield_representative=spectralslab_rep_3sigma.moment1()
         print('\nComputing fwhm')
         fwhm_representative=spectralslab_rep_3sigma.linewidth_fwhm()
-        
+        #pdb.set_trace()
         print('Writing objects to file')
         spectralslab_representative.write(rep_slab)
         spectralslab_rep_3sigma.write(rep_maskedslab)
@@ -847,7 +862,7 @@ for imgnum in range(len(datacubes)):
     plt.show()
     '''
     singlecmpntwidth=(0.00485/8)*u.GHz
-    linewidth=10*u.km/u.s#8*u.MHz
+    linewidth=representativelws[source]#10*u.km/u.s#8*u.MHz
     oldwideslabwidth=(15.15*u.MHz)
     originallinewidth=(11231152.36688232*u.Hz/2)#0.005*u.GHz####0.5*0.0097*u.GHz#from small line @ 219.9808GHz# 0.0155>>20.08km/s 
     nu_offset=oldwideslabwidth-originallinewidth
@@ -1098,7 +1113,7 @@ for y in range(testyshape):
                 m_unc = covmat[0,0]**0.5
                 b_unc = covmat[1,1]**0.5
             
-            dobsTrot=np.abs(m_unc/fit_lin.slope)*np.abs(obsTrot)*u.K
+            dobsTrot=np.abs(np.abs(m_unc/fit_lin.slope)*obsTrot*u.K)
             
             sigTrot=(obsTrot*u.K/dobsTrot).to('')
             
@@ -1232,6 +1247,7 @@ colormap.set_bad('black')
 dGC=8.34*u.kpc#per Meng et al. 2019 https://www.aanda.org/articles/aa/pdf/2019/10/aa35920-19.pdf
 
 plottexhdu=fits.open(nsigmatransmaskedpath)[0]
+saveimgpath=figpath+f'texmap_{detectnum}transmask_{snr}sigma_allspw_withnans_weighted.png'
 
 plottexwcs=WCS(plottexhdu)
 
@@ -1244,7 +1260,7 @@ dec=ax.coords[1]
 
 plottedtex=ax.imshow(plottexhdu.data,cmap=colormap)#,vmax=1000,vmin=10)
 
-scaledict={'SgrB2S':5000*u.AU,'DSi':5000*u.AU,'DSii':2000*u.AU}
+scaledict={'SgrB2S':5000*u.AU,'DSi':5000*u.AU,'DSii':2000*u.AU,'DSiii':2000*u.AU,'DSiv':2000*u.AU}
 scale=scaledict[source]
 lenn=np.arctan(scale/dGC)
 
@@ -1271,6 +1287,14 @@ elif source == 'DSii':
               text_offset=0.02*u.arcsec)
     crd=coordinates.SkyCoord('17:47:20.1087 -28:23:48.634', unit=(u.hour,u.deg), frame='icrs')
     pass
+elif source == 'DSiii':
+    print(f'Scalebar source: DSiii')
+    make_scalebar(ax, coordinates.SkyCoord('17:47:20.0577 -28:23:49.912', unit=(u.hour, u.deg), 
+                                       frame='icrs'),
+              length=lenn, label=f'{int(scale.value)} AU', fontsize=12, 
+              text_offset=0.02*u.arcsec)
+    crd=coordinates.SkyCoord('17:47:20.0549 -28:23:49.950', unit=(u.hour,u.deg), frame='icrs')
+    
 else:
     print(f'Need to make {source} scalebar!!!')
     pass
@@ -1280,7 +1304,7 @@ ra.set_ticklabel(exclude_overlapping=True)
 dec.set_axislabel('Dec (J2000)',fontsize=14,minpad=-0.7)
 ax.tick_params(fontsize=14)
 cbar1=plt.colorbar(plottedtex,pad=0,label='K')#plt.colorbar()
-#plt.savefig(saveimgpath)
+plt.savefig(saveimgpath,overwrite=True)
 plt.show()
 
 print('Cube-->core-->Texmap complete.')
