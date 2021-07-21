@@ -1,0 +1,174 @@
+import numpy as np
+from astropy.io import fits
+import astropy.units as u
+import scipy.constants as cnst
+from astropy.wcs import WCS
+import math
+import pdb
+import matplotlib.pyplot as plt
+
+def kappa(nu, nu0=271.1*u.GHz, kappa0=0.0114*u.cm**2*u.g**-1, beta=1.75):
+    """
+    Compute the opacity $\kappa$ given a reference frequency (or wavelength)
+    and a power law governing the opacity as a fuction of frequency:
+
+    $$ \kappa = \kappa_0 \left(\\frac{\\nu}{\\nu_0}\\right)^{\\beta} $$
+
+    The default kappa=0.0114 at 271.1 GHz comes from extrapolating the
+    Ossenkopf & Henning 1994 opacities for the thin-ice-mantle, 10^6 year model
+    anchored at 1.0 mm with an assumed beta of 1.75.
+
+    Parameters
+    ----------
+    nu: astropy.Quantity [u.spectral() equivalent]
+        The frequency at which to evaluate kappa
+    nu0: astropy.Quantity [u.spectral() equivalent]
+        The reference frequency at which $\kappa$ is defined
+    kappa0: astropy.Quantity [cm^2/g]
+        The dust opacity per gram of H2 along the line of sight.  Because of
+        the H2 conversion, this factor implicitly includes a dust to gas ratio
+        (usually assumed 100)
+    beta: float
+        The power-law index governing kappa as a function of nu
+    """
+    return (kappa0*(nu.to(u.GHz,u.spectral())/nu0.to(u.GHz,u.spectral()))**(beta)).to(u.cm**2/u.g)
+
+def gasmass(snu,omega,nu,kappa,tex):
+    return (snu*beamarea_sr*d**2*c**2)/(2*k*tex*nu**2*kappa)
+    
+def gassmasserr(snu,omega,nu,kappa,tex,texerr):
+    return np.sqrt((((snu*beamarea_sr*d*c**2)/(k*tex*nu**2*kappa))*d_unc)**2+(((snu*beamarea_sr*d**2*c**2)/(2*k*tex**2*nu**2*kappa))*texerr)**2).to('solMass')
+
+def luminosity(r,T):#Boltzmann luminosity
+    return (4*np.pi*r**2)*sigmasb*T**4
+
+def soundspeed(m,T):
+    return np.sqrt((k*T)/m)
+
+def jeansmass(cs,rho):
+    return (np.pi/6)*cs**3*G**(-3/2)*rho**(-1/2)
+
+def jeanslength(cs,rho):
+    return cs*G**(-1/2)*rho**(-1/2)
+
+def tff(rho):#Free=fall time of gas
+    return np.sqrt((3*np.pi)/(32*G*rho))
+    
+c=cnst.c*u.m/u.s
+k=cnst.k*u.J/u.K
+d=8.34*u.kpc#Meng et al. 2019 https://www.aanda.org/articles/aa/pdf/2019/10/aa35920-19.pdf
+d_unc=0.16*u.kpc#Meng et al. 2019 https://www.aanda.org/articles/aa/pdf/2019/10/aa35920-19.pdf
+sigmasb=cnst.sigma*u.W/(u.m**2*u.K**4)
+mu=2.8*u.Dalton
+G=cnst.G*u.m**3/(u.kg*u.s**2)
+molweight_ch3oh=(32.042*u.u).to('g')#https://pubchem.ncbi.nlm.nih.gov/compound/methanol
+
+cntminfile='/blue/adamginsburg/d.jeff/imaging_results/adamcleancontinuum/Sgr_B2_DS_B6_uid___A001_X1290_X46_continuum_merged_12M_robust2_selfcal4_finaliter.image.tt0.pbcor.fits'
+cntmimage=fits.open(cntminfile)
+print(f'Continuum image: {cntminfile}')
+source='SgrB2S'
+
+texmapdict={'SgrB2S':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/SgrB2S/new_testingstdfixandontheflyrepstuff_K_OctReimage_restfreqfix_newvelmask_newpeakamp/texmap_5transmask_3sigma_allspw_withnans_weighted.fits",'DSi':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSi/field10originals_spatialandvelocitymaskingtrial5_newexclusions3andexclusionsnotinfit/texmap_5transmask_3sigma_allspw_withnans_weighted.fits",'DSii':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSii/field10originals_noexclusions/texmap_5transmask_3sigma_allspw_withnans_weighted.fits"}
+texmap=fits.open(texmapdict[source])
+
+ntotmapdict={'SgrB2S':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/SgrB2S/new_testingstdfixandontheflyrepstuff_K_OctReimage_restfreqfix_newvelmask_newpeakamp/ntotmap_allspw_withnans_weighted.fits",'DSi':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSi/Kfield10originals_trial7_field10errors_newexclusion_matchslabwidthtorep/ntotmap_allspw_withnans_weighted.fits",'DSii':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSii/Kfield10originals_noexclusions/ntotmap_allspw_withnans_weighted.fits",'DSiii':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSiii/Kfield10originals_noexclusions/ntotmap_allspw_withnans_weighted.fits",'DSiv':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSiv/Kfield10originals_noexclusions/ntotmap_allspw_withnans_weighted.fits",'DSv':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSv/Kfield10originals_noexclusions_include4-3_150K_trial2/ntotmap_allspw_withnans_weighted.fits"}
+ntotmap=fits.getdata(ntotmapdict[source])*u.cm**-2
+ch3ohSigmam_map=ntotmap*molweight_ch3oh
+
+snrmapdict={'SgrB2S':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/SgrB2S/new_testingstdfixandontheflyrepstuff_K_OctReimage_restfreqfix_newvelmask_newpeakamp/texmap_snr_allspw_weighted.fits"}
+snrmap=fits.getdata(snrmapdict[source])
+
+texerrmapdict={'SgrB2S':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/SgrB2S/new_testingstdfixandontheflyrepstuff_K_OctReimage_restfreqfix_newvelmask_newpeakamp/texmap_error_allspw_withnans_weighted.fits"}
+texerrmap=fits.getdata(texerrmapdict[source])*u.K
+
+texmapdata=texmap[0].data*u.K
+
+cntmdata=cntmimage[0].data*u.Jy
+cntmdatasqee=np.squeeze(cntmdata)
+restfreq=cntmimage[0].header['RESTFRQ']*u.Hz
+cntmkappa=kappa(restfreq)
+cntmcell=cntmimage[0].header['CDELT2']*u.deg
+bmaj=cntmimage[0].header['BMAJ']*u.deg
+bmajpix=round((bmaj/cntmcell).value)
+bmin=cntmimage[0].header['BMIN']*u.deg
+bminpix=round((bmin/cntmcell).value)
+beamarea_sqdeg=bmaj*bmin
+beamarea_sr=beamarea_sqdeg.to('sr')
+bmajtophyssize=(np.tan(bmaj)*d).to('AU')
+bmintophyssize=(np.tan(bmin)*d).to('AU')
+'''Can probably simplify beamarea_phys to d(np.tan(bmaj)*np.tan(bmin))'''
+beamarea_phys=np.pi*bmajtophyssize*bmintophyssize
+calcdomega=np.pi*bmaj*bmin
+    
+cntmwcs=WCS(cntmimage[0].header)
+texwcs=WCS(texmap[0].header)
+
+equiv=u.brightness_temperature(cntmimage[0].header['RESTFRQ']*u.Hz)
+
+nh2=np.empty((np.shape(texmapdata)[0],np.shape(texmapdata)[1]))
+nh2_unc=np.empty((np.shape(texmapdata)[0],np.shape(texmapdata)[1]))
+ch3ohabundance=np.empty((np.shape(texmapdata)[0],np.shape(texmapdata)[1]))
+lums=np.empty((np.shape(texmapdata)[0],np.shape(texmapdata)[1]))
+
+for y in range(np.shape(texmapdata)[0]):
+    print(f'Start Row {y}')
+    for x in range(np.shape(texmapdata)[1]):
+        hotspottex=texmapdata[y,x]
+        targetpixtoworld=texwcs.pixel_to_world([0,0],[y,x])#wcs_pix2world(([0,0],texmappix),ra_dec_order=True)
+        pix2world2=texwcs.pixel_to_world([y,x],[0,0])
+        #hotspottex=texmapdata[texmappix[0],texmappix[1]]
+        hmm=[[targetpixtoworld.ra[0].value,targetpixtoworld.dec[0].value,0,0],
+             [pix2world2.ra[1].value,pix2world2.dec[1].value,0,0]]
+        cntmworldtopix=cntmwcs.wcs_world2pix(hmm,1,ra_dec_order=True)#world_to_array_index([266.83628632*u.deg,-28.39626318*u.deg,225265023886.0*u.Hz,1*u.m],[0,0,0,0],[1,1,1,1])
+        cntmxpix=math.floor(cntmworldtopix[1][0]-1)
+        cntmypix=math.floor(cntmworldtopix[0][1])
+        
+        hotspotjy=cntmdatasqee[cntmypix,cntmxpix]/beamarea_sr#The equations we're using start from the Plank function, so this gets us to spectral radiance units
+        #ntoterr=(1/snrmap[y,x])*ntotmap[y,x]
+        
+        
+        if hotspotjy < 0 or snrmap[y,x] < 3:
+            #print('Negative continuum flux detected')
+            #print(f'Continuum pixel: ({cntmypix},{cntmxpix})')
+            #print(f'Corresponding Texmap pixel: ({y},{x})')
+            nh2[y,x]=np.nan
+            nh2_unc[y,x]=np.nan
+            ch3ohabundance[y,x]=np.nan
+            lums[y,x]=np.nan
+            continue
+
+        #print(f'Results for region in {source}\nTex pixel {texmappix}):\nCntm pixel: {cntmypix,cntmxpix}')
+        #print(f'target flux density: {cntmdatasqee[cntmypix,cntmxpix].to("mJy")}, target temperature {hotspottex}')
+        jysrtoK=hotspotjy.to(u.K,equivalencies=equiv)
+        targetlum=luminosity(bmajtophyssize,jysrtoK).to("solLum")#per Ginsburg+2017, this uses the peak of the continuum, not methanol
+        targetgasmass=gasmass(hotspotjy,beamarea_sr,restfreq,cntmkappa,hotspottex)
+        gassmass_unc=gassmasserr(hotspotjy,beamarea_sr,restfreq,cntmkappa,hotspottex,texerrmap[y,x])
+        targetSigmam=((targetgasmass/(np.pi*beamarea_phys)).to('g cm-2'))
+        Sigmam_unc=np.abs(gassmass_unc/targetgasmass)*targetSigmam
+        targetSigmam_reduced=(targetSigmam/mu).to('cm-2')
+        Sigmam_reduced_unc=np.abs(Sigmam_unc/targetSigmam)*targetSigmam_reduced
+        Sigmam_reduced_snr=(targetSigmam_reduced/Sigmam_reduced_unc).to('')
+        if targetSigmam_reduced < 0:
+            print('Negative surface density detected')
+            print(f'Continuum flux density: {hotspotjy}')
+            print(f'Brightness: {jysrtoK}')
+            print(f'Gass mass: {targetgasmass.to("solMass")}')
+            print(f'Sigma_m: {targetSigmam}')
+            print(f'Reduced Sigma_m: {targetSigmam_reduced}')
+            pdb.set_trace()
+        if Sigmam_reduced_snr < 3:
+            print(f'Pixel ({y},{x}) Sigma_m < 3sigma')
+            nh2[y,x]=np.nan
+            nh2_unc[y,x]=Sigmam_reduced_unc.value
+            ch3ohabundance[y,x]=np.nan
+            lums[y,x]=np.nan
+            
+            continue
+        targetch3ohabund=(ntotmap[y,x]/targetSigmam_reduced).to('')
+        
+        nh2[y,x]=targetSigmam_reduced.value
+        ch3ohabundance[y,x]=targetch3ohabund.value
+        lums[y,x]=targetlum.value
+        
+plt.imshow(ch3ohabundance,origin='lower',cmap='cividis')
+plt.colorbar(pad=0)
