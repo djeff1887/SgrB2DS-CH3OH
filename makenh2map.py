@@ -6,6 +6,9 @@ from astropy.wcs import WCS
 import math
 import pdb
 import matplotlib.pyplot as plt
+import matplotlib as mpl
+
+mpl.interactive(True)
 
 def kappa(nu, nu0=271.1*u.GHz, kappa0=0.0114*u.cm**2*u.g**-1, beta=1.75):
     """
@@ -68,23 +71,26 @@ cntmimage=fits.open(cntminfile)
 print(f'Continuum image: {cntminfile}')
 source='SgrB2S'
 
-texmapdict={'SgrB2S':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/SgrB2S/new_testingstdfixandontheflyrepstuff_K_OctReimage_restfreqfix_newvelmask_newpeakamp/texmap_5transmask_3sigma_allspw_withnans_weighted.fits",'DSi':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSi/field10originals_spatialandvelocitymaskingtrial5_newexclusions3andexclusionsnotinfit/texmap_5transmask_3sigma_allspw_withnans_weighted.fits",'DSii':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSii/field10originals_noexclusions/texmap_5transmask_3sigma_allspw_withnans_weighted.fits"}
-texmap=fits.open(texmapdict[source])
+#texmapdict={'SgrB2S':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/SgrB2S/new_testingstdfixandontheflyrepstuff_K_OctReimage_restfreqfix_newvelmask_newpeakamp/texmap_5transmask_3sigma_allspw_withnans_weighted.fits",'DSi':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSi/field10originals_spatialandvelocitymaskingtrial5_newexclusions3andexclusionsnotinfit/texmap_5transmask_3sigma_allspw_withnans_weighted.fits",'DSii':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSii/field10originals_noexclusions/texmap_5transmask_3sigma_allspw_withnans_weighted.fits"}
+sourcedict={'SgrB2S':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/SgrB2S/new_testingstdfixandontheflyrepstuff_K_OctReimage_restfreqfix_newvelmask_newpeakamp/",'DSi':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSi/Kfield10originals_trial7_field10errors_newexclusion_matchslabwidthtorep/",'DSii':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSii/Kfield10originals_noexclusions/",'DSiii':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSiii/Kfield10originals_noexclusions/",'DSiv':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSiv/Kfield10originals_noexclusions/",'DSv':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSv/Kfield10originals_noexclusions_include4-3_150K_trial2/"}
+sourcepath=sourcedict[source]
 
-ntotmapdict={'SgrB2S':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/SgrB2S/new_testingstdfixandontheflyrepstuff_K_OctReimage_restfreqfix_newvelmask_newpeakamp/ntotmap_allspw_withnans_weighted.fits",'DSi':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSi/Kfield10originals_trial7_field10errors_newexclusion_matchslabwidthtorep/ntotmap_allspw_withnans_weighted.fits",'DSii':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSii/Kfield10originals_noexclusions/ntotmap_allspw_withnans_weighted.fits",'DSiii':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSiii/Kfield10originals_noexclusions/ntotmap_allspw_withnans_weighted.fits",'DSiv':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSiv/Kfield10originals_noexclusions/ntotmap_allspw_withnans_weighted.fits",'DSv':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSv/Kfield10originals_noexclusions_include4-3_150K_trial2/ntotmap_allspw_withnans_weighted.fits"}
-ntotmap=fits.getdata(ntotmapdict[source])*u.cm**-2
+texmap=fits.open(sourcepath+'texmap_5transmask_3sigma_allspw_withnans_weighted.fits')
+
+ntotmap=fits.getdata(sourcepath+'ntotmap_allspw_withnans_weighted.fits')*u.cm**-2
 ch3ohSigmam_map=ntotmap*molweight_ch3oh
 
-snrmapdict={'SgrB2S':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/SgrB2S/new_testingstdfixandontheflyrepstuff_K_OctReimage_restfreqfix_newvelmask_newpeakamp/texmap_snr_allspw_weighted.fits"}
-snrmap=fits.getdata(snrmapdict[source])
+snrmapdict={'SgrB2S':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/SgrB2S/new_testingstdfixandontheflyrepstuff_K_OctReimage_restfreqfix_newvelmask_newpeakamp/"}
+snrmap=fits.getdata(sourcepath+'texmap_snr_allspw_weighted.fits')
 
-texerrmapdict={'SgrB2S':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/SgrB2S/new_testingstdfixandontheflyrepstuff_K_OctReimage_restfreqfix_newvelmask_newpeakamp/texmap_error_allspw_withnans_weighted.fits"}
-texerrmap=fits.getdata(texerrmapdict[source])*u.K
+texerrmapdict={'SgrB2S':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/SgrB2S/new_testingstdfixandontheflyrepstuff_K_OctReimage_restfreqfix_newvelmask_newpeakamp/"}
+texerrmap=fits.getdata(sourcepath+'texmap_error_allspw_withnans_weighted.fits')*u.K
 
 texmapdata=texmap[0].data*u.K
 
 cntmdata=cntmimage[0].data*u.Jy
 cntmdatasqee=np.squeeze(cntmdata)
+cntmstd=0.025*u.mJy#np.nanstd(cntmdatasqee)#Taken from 2016 ALMA Proposal here
 restfreq=cntmimage[0].header['RESTFRQ']*u.Hz
 cntmkappa=kappa(restfreq)
 cntmcell=cntmimage[0].header['CDELT2']*u.deg
@@ -110,6 +116,8 @@ nh2_unc=np.empty((np.shape(texmapdata)[0],np.shape(texmapdata)[1]))
 ch3ohabundance=np.empty((np.shape(texmapdata)[0],np.shape(texmapdata)[1]))
 lums=np.empty((np.shape(texmapdata)[0],np.shape(texmapdata)[1]))
 
+snr=3
+
 for y in range(np.shape(texmapdata)[0]):
     print(f'Start Row {y}')
     for x in range(np.shape(texmapdata)[1]):
@@ -127,7 +135,7 @@ for y in range(np.shape(texmapdata)[0]):
         #ntoterr=(1/snrmap[y,x])*ntotmap[y,x]
         
         
-        if hotspotjy < 0 or snrmap[y,x] < 3:
+        if (hotspotjy*beamarea_sr) < snr*cntmstd or snrmap[y,x] < 3:
             #print('Negative continuum flux detected')
             #print(f'Continuum pixel: ({cntmypix},{cntmxpix})')
             #print(f'Corresponding Texmap pixel: ({y},{x})')
@@ -146,8 +154,9 @@ for y in range(np.shape(texmapdata)[0]):
         targetSigmam=((targetgasmass/(np.pi*beamarea_phys)).to('g cm-2'))
         Sigmam_unc=np.abs(gassmass_unc/targetgasmass)*targetSigmam
         targetSigmam_reduced=(targetSigmam/mu).to('cm-2')
-        Sigmam_reduced_unc=np.abs(Sigmam_unc/targetSigmam)*targetSigmam_reduced
+        Sigmam_reduced_unc=np.abs(Sigmam_unc/targetSigmam)*targetSigmam_reduced.to('cm-2')
         Sigmam_reduced_snr=(targetSigmam_reduced/Sigmam_reduced_unc).to('')
+        #pdb.set_trace()
         if targetSigmam_reduced < 0:
             print('Negative surface density detected')
             print(f'Continuum flux density: {hotspotjy}')
@@ -156,7 +165,7 @@ for y in range(np.shape(texmapdata)[0]):
             print(f'Sigma_m: {targetSigmam}')
             print(f'Reduced Sigma_m: {targetSigmam_reduced}')
             pdb.set_trace()
-        if Sigmam_reduced_snr < 3:
+        if Sigmam_reduced_snr < snr:
             print(f'Pixel ({y},{x}) Sigma_m < 3sigma')
             nh2[y,x]=np.nan
             nh2_unc[y,x]=Sigmam_reduced_unc.value
@@ -167,8 +176,28 @@ for y in range(np.shape(texmapdata)[0]):
         targetch3ohabund=(ntotmap[y,x]/targetSigmam_reduced).to('')
         
         nh2[y,x]=targetSigmam_reduced.value
+        nh2_unc[y,x]=Sigmam_reduced_unc.value
         ch3ohabundance[y,x]=targetch3ohabund.value
         lums[y,x]=targetlum.value
         
+nh2primaryhdu=fits.PrimaryHDU(nh2)
+nh2primaryhdu.header=texmap[0].header
+nh2primaryhdu.header['BTYPE']='N(H2)'
+nh2primaryhdu.header['BUNIT']='cm-2'
+nh2hdul=fits.HDUList([nh2primaryhdu])
+nh2fitspath=sourcepath+f'nh2map_{snr}sigmacontandsurfacedensity.fits'
+print(f'Saving N(H2) map at {nh2fitspath}\n')
+nh2hdul.writeto(nh2fitspath,overwrite=True)
+
+nh2uncprimaryhdu=fits.PrimaryHDU(nh2_unc)
+nh2uncprimaryhdu.header=texmap[0].header
+nh2uncprimaryhdu.header['BTYPE']='N(H2) error'
+nh2uncprimaryhdu.header['BUNIT']='cm-2'
+nh2unchdul=fits.HDUList([nh2uncprimaryhdu])
+nh2uncfitspath=sourcepath+f'nh2map_error.fits'
+print(f'Saving N(H2) map at {nh2uncfitspath}\n')
+nh2unchdul.writeto(nh2uncfitspath,overwrite=True)
+        
 plt.imshow(ch3ohabundance,origin='lower',cmap='cividis')
 plt.colorbar(pad=0)
+plt.show()
