@@ -37,12 +37,14 @@ mu_a=(0.896e-18*u.statC*u.cm).to('cm(3/2) g(1/2) s-1 cm')
 R_i=1
 f=1
 Tbg=2.7355*u.K
-#sourceid='SgrB2S'
-#fnum=1
-sourceid='DSii'
-fnum=10
 
-sourcepath='/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSii/field10originals_noexclusions/'
+source='SgrB2S'
+fielddict={'SgrB2S':1,'DSi':10,'DSii':10,'DSiii':10,'DSiv':10,'DSv':10}
+fnum=fielddict[source]
+
+sourcedict={'SgrB2S':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/SgrB2S/new_testingstdfixandontheflyrepstuff_K_OctReimage_restfreqfix_newvelmask_newpeakamp/",'DSi':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSi/Kfield10originals_trial7_field10errors_newexclusion_matchslabwidthtorep/",'DSii':'/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSii/field10originals_noexclusions/','DSiii':'/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSiii/Kfield10originals_noexclusions/','DSiv':'/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSiv/Kfield10originals_noexclusions/','DSv':'/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSv/Kfield10originals_noexclusions_include4-3_trial1/'}
+sourcepath=sourcedict[source]#"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/SgrB2S/new_testingstdfixandontheflyrepstuff_K_OctReimage_restfreqfix_newvelmask_newpeakamp/"
+#sourcepath='/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSii/field10originals_noexclusions/'
 #sourcepath="/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSi/field10originals_spatialandvelocitymaskingtrial5_newexclusions3andexclusionsnotinfit/"#pixelwiserotationaldiagrams/"
 #sourcepath="/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSi/field10originals_spatialandvelocitymaskingtrial3_3kmsslab_varyingslabwidth/"
 #sourcepath="/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSi/field10originals_spatialandvelocitymaskingtrial2_5kmsslab/"
@@ -50,14 +52,8 @@ sourcepath='/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSii/field10ori
 #sourcpath='/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/SgrB2S/K_OctReimage_restfreqfix_newvelmask_newpeakamp'
 #sourcepath="/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/SgrB2S/checkthatutilitiesworks_K_OctReimage_restfreqfix_newvelmask_newpeakamp/"
 #sourcepath="/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSi/field10originals_z0_000186431_5-6mhzwidth_stdfixes/"
-#sourceid='DSv'
-#fnum=10
 #sourcepath="/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSv/field10originals_z0_000190713_5-6mhzwidth_stdfixes/"
-'''
-sourceid='SgrB2S'
-fnum=1
-sourcepath="/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/SgrB2S/OctReimage_z0_0002306756533745274_5-6mhzwidth_stdfixes/"#"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/DSii_iii/z_0_00017594380066803095_box1_5-6mhzwidth/"#'/blue/adamginsburg/d.jeff/imaging_results/SgrB2DS-CH3OH/NupperColDens/field1/testcore1/debug/correctedcubesandmaps/'
-'''
+
 home=sourcepath
 rotdiagpath=home+'pixelwiserotationaldiagrams/'
 
@@ -73,8 +69,8 @@ infile=open(sourcepath+'ch3ohlinesdict.obj','rb')
 spwdict=pickle.load(infile)
 
 fulltexmap=fits.getdata(home+'texmap_3sigma_allspw_withnans_weighted.fits')
-trotdict={'SgrB2S':300*u.K,'DSi':300*u.K,'DSii':150*u.K}
-testT=trotdict[sourceid]
+trotdict={'SgrB2S':300*u.K,'DSi':300*u.K,'DSii':150*u.K,'DSiii':150*u.K,'DSiv':150*u.K,'DSv':100*u.K}
+testT=trotdict[source]
 qrot_partfunc=Q_rot_asym(testT).to('')
 
 print('Setting up and executing model fit')
@@ -176,7 +172,7 @@ for px in pixellist:
             obsTrot=-np.log10(np.e)/(fit_lin.slope)
             #obsTrotcf=-np.log10(np.e)/popt[0]
             #print(f'cf Trot: {obsTrotcf}')
-            obsNtot=qrot_partfunc*10**(np.log10(nugsmap[0,y,x])+fit_lin.slope*eukstofit[0])
+            obsNtot=qrot_partfunc*10**(np.log10(nugsmap[0,y,x])+fit_lin.slope*eukstofit[0])#eukstofit[0] is '5(1)-4(2)E1vt=0', eupper 55.87102 K
             
             A=np.stack((eukstofit,np.ones_like(eukstofit)),axis=1)
             C=np.diagflat(log10variances)
@@ -187,6 +183,8 @@ for px in pixellist:
             #b_unccf=pcov[1,1]**0.5
             
             dobsTrot=np.abs(m_unc/fit_lin.slope)*obsTrot*u.K#(eukstofit[0]*u.K)/(np.log(nupperstofit[0]/masterdegens[0])-np.log(obsNtot/qrot_partfunc))**2#*nuperrors[0]
+            dobsNtot=np.sqrt((qrot_partfunc*10**(np.log10(nugsmap[0,y,x])+fit_lin.slope*eukstofit[0])*np.log(10)*eukstofit[0]*m_unc)**2+(qrot_partfunc*10**(np.log10(nugsmap[0,y,x])+fit_lin.slope*eukstofit[0])*(1/(nugsmap[0,y,x]*np.log(10)))*nuperrors[0])**2)
+            print(f'dobsNtot: {dobsNtot.to("cm-2")}')
             
             texmap[y,x]=obsTrot
             ntotmap[y,x]=obsNtot
@@ -196,8 +194,8 @@ for px in pixellist:
             print('Begin plotting')
             plt.errorbar(eukstofit,np.log10(nupperstofit),yerr=log10nuerr,fmt='o')
             plt.plot(linemod_euks,fit_lin(linemod_euks),label=(f'obsTex: {round(obsTrot, 4)} $\pm$ {round(dobsTrot.value, 2)*u.K}\nobsNtot: {round(obsNtot.value,3)/u.cm**2}'))
-            plt.scatter(excludedeuks,np.log10(excludednuppers),marker='v',color='red')
-            plt.title(f'field{fnum} {sourceid} pixel ({y},{x}) CH$_3$OH Rotational Diagram')
+            #plt.scatter(excludedeuks,np.log10(excludednuppers),marker='v',color='red')
+            plt.title(f'field{fnum} {source} pixel ({y},{x}) CH$_3$OH Rotational Diagram')
             plt.xlabel(r'E$_u$ (K)')
             plt.ylabel(r'log$_{10}$(N$_u$/g$_u$)')
             plt.legend()
@@ -248,15 +246,15 @@ for px in pixellist:
                 log10variances.append(templog10**2)
                 
             fit_lin=fit(linemod,eukstofit,np.log10(nupperstofit), weights=errstofit)
-            popt,pcov=cf(line,eukstofit,np.log10(nupperstofit),sigma=errstofit)
-            perr = np.sqrt(np.diag(pcov))
+            #popt,pcov=cf(line,eukstofit,np.log10(nupperstofit),sigma=errstofit)
+            #perr = np.sqrt(np.diag(pcov))
             
             linemod_euks=np.linspace(min(eukstofit),max(mastereuks),100)
             #print('Model fit complete')
             #print('Compute obsTex and obsNtot')
             obsTrot=-np.log10(np.e)/(fit_lin.slope)
-            obsTrotcf=-np.log10(np.e)/popt[0]
-            print(f'cf Trot: {obsTrotcf}')
+            #obsTrotcf=-np.log10(np.e)/popt[0]
+            #print(f'cf Trot: {obsTrotcf}')
             obsNtot=qrot_partfunc*10**(np.log10(nugsmap[0,y,x])+fit_lin.slope*eukstofit[0])
             
             A=np.stack((eukstofit,np.ones_like(eukstofit)),axis=1)
@@ -266,6 +264,8 @@ for px in pixellist:
             b_unc = covmat[1,1]**0.5
             
             dobsTrot=np.abs(m_unc/fit_lin.slope)*obsTrot*u.K#(eukstofit[0]*u.K)/(np.log(nupperstofit[0]/masterdegens[0])-np.log(obsNtot/qrot_partfunc))**2#*nuperrors[0]
+            dobsNtot=qrot_partfunc*10**(np.log10(nugsmap[0,y,x])+fit_lin.slope*eukstofit[0])*np.log(10)*eukstofit[0]*m_unc
+            print(f'dobsNtot: {dobsNtot.to("cm-2")}')
             
             texmap[y,x]=obsTrot
             ntotmap[y,x]=obsNtot
@@ -275,8 +275,8 @@ for px in pixellist:
             print('Begin plotting')
             plt.errorbar(eukstofit,np.log10(nupperstofit),yerr=log10nuerr,fmt='o')
             plt.plot(linemod_euks,fit_lin(linemod_euks),label=(f'obsTex: {round(obsTrot, 4)} $\pm$ {round(dobsTrot.value, 2)*u.K}\nobsNtot: {round(obsNtot.value,3)/u.cm**2}'))
-            plt.scatter(excludedeuks,np.log10(excludednuppers),marker='v',color='red')
-            plt.title(f'field{fnum} {sourceid} pixel ({y},{x}) CH$_3$OH Rotational Diagram')
+            #plt.scatter(excludedeuks,np.log10(excludednuppers),marker='v',color='red')
+            plt.title(f'field{fnum} {source} pixel ({y},{x}) CH$_3$OH Rotational Diagram')
             plt.xlabel(r'E$_u$ (K)')
             plt.ylabel(r'log$_{10}$(N$_u$/g$_u$)')
             plt.legend()
