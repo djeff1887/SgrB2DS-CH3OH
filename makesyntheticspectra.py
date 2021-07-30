@@ -22,7 +22,7 @@ linelist='JPL'
 
 '''Collect constants for N_tot and N_upper calculations'''
 
-source='DSiv'
+source='DSVI'
 sourceisnew=True
 
 c=cnst.c*u.m/u.s
@@ -35,20 +35,20 @@ c_0=23769.70*u.MHz
 m=b_0**2/(a_0*c_0)
 Tbg=2.7355*u.K
 
-trotdict={'SgrB2S':300*u.K,'DSi':300*u.K,'DSii':150*u.K,'DSiii':150*u.K,'DSiv':150*u.K}
+trotdict={'SgrB2S':300*u.K,'DSi':300*u.K,'DSii':150*u.K,'DSiii':150*u.K,'DSiv':150*u.K,'DSv':100*u.K,'DSVI':300*u.K}
 testT=trotdict[source]
 qrot_partfunc=Q_rot_asym(testT).to('')
-testntot=1e17*u.cm**-2
+testntot=1e16*u.cm**-2
 
 R_i=1
 kappa=((2*b_0)-a_0-c_0)/(a_0-c_0)
 f=1
 
-dopplershifts={'SgrB2S':0.000234806,'DSi':0.000186431,'DSii':0.00015954965399894244,'DSiii':0.00017500261911843952,'DSiv':0.00018225233186845314,'DSv':0.000186431}#:0.000190713}/old doppler S: 0.0002306756533745274/0.00015954965399894244/0.00016236367659115043
+dopplershifts={'SgrB2S':0.000234806,'DSi':0.000186431,'DSii':0.00015954965399894244,'DSiii':0.00017500261911843952,'DSiv':0.00018225233186845314,'DSv':0.0001838576164010067,'DSVI':0.0001661613132158407}#:0.000190713}/old doppler S: 0.0002306756533745274/0.00015954965399894244/0.00016236367659115043
 
 z=dopplershifts[source]
 
-sourcelocs={'SgrB2S':'/blue/adamginsburg/d.jeff/SgrB2DSminicubes/SgrB2S/OctReimage_K/*.fits','DSi':"/blue/adamginsburg/d.jeff/SgrB2DSminicubes/DSi/field10originals_K/*.fits",'DSiii':"/blue/adamginsburg/d.jeff/SgrB2DSminicubes/DSiii/field10originals/*.fits",'DSiv':"/blue/adamginsburg/d.jeff/SgrB2DSminicubes/DSiv/field10originals_K/*.fits"}
+sourcelocs={'SgrB2S':'/blue/adamginsburg/d.jeff/SgrB2DSminicubes/SgrB2S/OctReimage_K/*.fits','DSi':"/blue/adamginsburg/d.jeff/SgrB2DSminicubes/DSi/field10originals_K/*.fits",'DSiii':"/blue/adamginsburg/d.jeff/SgrB2DSminicubes/DSiii/field10originals/*.fits",'DSiv':"/blue/adamginsburg/d.jeff/SgrB2DSminicubes/DSiv/field10originals_K/*.fits",'DSv':"/blue/adamginsburg/d.jeff/SgrB2DSminicubes/DSv/field10originals_K/*.fits",'DSVI':"/blue/adamginsburg/d.jeff/SgrB2DSminicubes/DSVI/field2originals_K/*.fits"}
 dopplershiftimg={'SgrB2S':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/SgrB2S/new_testingstdfixandontheflyrepstuff_K_OctReimage_restfreqfix_newvelmask_newpeakamp/4_2-3_1vt=0repline_mom1.fits",'DSi':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSi/Kfield10originals_trial5carryover_field10errors/8_1-7_0vt=0repline_mom1.fits",'DSii':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSii/field10originals_noexclusions/mom1/CH3OH~8_0-7_1E1vt0.fits",'DSiii':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSiii/field10originals_noexclusions/mom1/CH3OH~10_2--9_3-vt0.fits"}#'DSi':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSi/field10originals_spatialandvelocitymaskingtrial1/8_1-7_0vt=0repline_mom1.fits"}#'DSi':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSi/field10originals_z0_000186431_5-6mhzwidth_stdfixes/mom1/CH3OH~20_1-20_0E1vt0.fits"}
 
 #files=glob.glob("/blue/adamginsburg/d.jeff/SgrB2DSminicubes/DSi/field10originals/*.fits")
@@ -73,6 +73,8 @@ assert 'spw0' in datacubes[0], 'Cube list out of order'
 #imgnum=0
 testline=0
 
+linewidth=3*u.km/u.s#2.5 km/s is ideal for DSVI
+print(f'Absolute model line width: {linewidth}\n')
 
 #cube=sc.read(datacubes[imgnum])
 
@@ -84,7 +86,9 @@ for datacube, img in zip(datacubes,imgnames):
     cube=sc.read(datacube)
     cube.allow_huge_operations=True
     cube_w=cube.wcs#WCS(files[imgnum])
-    targetworldcrd=[[0,0,0],[266.8323834, -28.3954424,0]]#DSiv cont peak
+    targetworldcrd=[[0,0,0],[266.8380037, -28.4050741,0]]#DSVI cont peak
+    #targetworldcrd=[[0,0,0],[266.8321331, -28.3976585, 0]]#DSv cont peak
+    #targetworldcrd=[[0,0,0],[266.8323834, -28.3954424,0]]#DSiv cont peak
     #targetworldcrd=[[0,0,0],[266.8331150,-28.3968609,0]]#DSiii lowest S/N
     #targetworldcrd=[[0,0,0],[266.8332758,-28.3969269,0]]#DSiii cont peak
     #targetworldcrd=[[0,0,0],[266.83183633,-28.3971697,0]]#Near center of new DSi offset hotspot
@@ -97,7 +101,7 @@ for datacube, img in zip(datacubes,imgnames):
     #targetworldcrd=[[0,0,0],[266.8353844,-28.3960720,0]]#SgrB2S hotspot-adjacent
     #targetworldcrd=[[0,0,0],[2.66835339e+02, -2.83961660e+01, 0]]#SgrB2S sample pixel
     #targetworldcrd=[[0,0,0],[266.8335363,-28.3963158,0]]#DSii sample pixel
-    refpix={'SgrB2S':[[0,0,0],[2.66835339e+02, -2.83961660e+01, 0]],'DSi':[[0,0,0],[266.8316149,-28.3972040,0]],'DSii':[[0,0,0],[266.8335363,-28.3963158,0]],'DSiii':[[0,0,0],[266.8332758,-28.3969269,0]],'DSiv':[[0,0,0],[266.8323834, -28.3954424,0]]}
+    refpix={'SgrB2S':[[0,0,0],[2.66835339e+02, -2.83961660e+01, 0]],'DSi':[[0,0,0],[266.8316149,-28.3972040,0]],'DSii':[[0,0,0],[266.8335363,-28.3963158,0]],'DSiii':[[0,0,0],[266.8332758,-28.3969269,0]],'DSiv':[[0,0,0],[266.8323834, -28.3954424,0]],'DSv':[[0,0,0],[266.8321331, -28.3976585, 0]],'DSVI':[[0,0,0],[266.8380037, -28.4050741,0]]}
     targetpixcrd=cube_w.all_world2pix(targetworldcrd,1,ra_dec_order=True)
     targetypix=int(round(targetpixcrd[1][1]))
     targetxpix=int(round(targetpixcrd[1][0]))
@@ -123,8 +127,8 @@ for datacube, img in zip(datacubes,imgnames):
     
     assert freq_max > freq_min, 'Decreasing frequency axis'
     
-    linewidth=0.00485*u.GHz#Half of original 0.0097GHz
-    lw2=linewidth/8
+    #linewidth=0.00485*u.GHz#Half of original 0.0097GHz
+    #lw2=linewidth/8
     originallinewidth=(11231152.36688232*u.Hz/2)
     
             
@@ -168,7 +172,9 @@ for datacube, img in zip(datacubes,imgnames):
         trad=t_rad(f,est_tau,restline,testT).to('K')
         print(f'Estimated brightness: {"{:.3f}".format(trad)}')
         
-        modelline=models.Gaussian1D(mean=line, stddev=0.5 * u.MHz, amplitude=trad)
+        modlinewidth=velocitytofreq(linewidth,line)
+        print(f'Model linewidth (Hz): {modlinewidth}')
+        modelline=models.Gaussian1D(mean=line, stddev=modlinewidth, amplitude=trad)
         #modelgaus+=modelline
         modelspec+=modelline
 

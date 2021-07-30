@@ -29,6 +29,15 @@ def mulu(aij,nu):#Rearranged from Eq 11 (Magnum & Shirley 2015), returns product
 def vradio(frequency,rest_freq):
     velocity=c.to(u.km/u.s)*(1-((rest_freq-frequency)/rest_freq))
     return velocity.to('km s-1')
+    
+'''Converts given velocity width to frequency width'''
+def velocitytofreq(velocity,ref_freq):
+    frequency=((velocity)/c.to(u.km/u.s))*ref_freq
+    return frequency.to('MHz')
+    
+def freqtovelocity(freq,ref_freq):
+    velocity=(freq/ref_freq)*c.to('km s-1')
+    return velocity.to('km s-1')
 
 '''Compute Rayleigh-Jean equivalent brightness temperature per M&S 2015 Eq. 24'''
 def rjequivtemp(nu,T_ex):
@@ -68,4 +77,10 @@ def nupper_estimated(n_tot,g,q,euj,tex):#LTE model upper-state column density (n
 def opticaldepth(aij,nu,T_ex,nupper,lw):#LTE model optical depth using nupper from the above equation
     return (c**2/(8*np.pi*nu**2*lw))*aij*nupper*np.exp((h*nu)/(k*T_ex))
     
+'''Replaces unwanted characters from the QN table for use in file names'''
+def qn_replace(string):
+    string=string.replace('=','')
+    string=string.replace('(','_')
+    string=string.replace(')','')
+    return string
     
