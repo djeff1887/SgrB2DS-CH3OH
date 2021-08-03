@@ -19,14 +19,22 @@ def circle(data,ycenter,xcenter,rad):
                 edgex.append(j)
                 edgey.append(i)
     return np.vstack((edgex,edgey))
+
+def sublinear_profile(r,peak):
+    return peak*((r/pixtophysicalsize)**-0.5)
+
+def linear_profile(r,peak):
+    return peak*((r/pixtophysicalsize)**-1)
     
+def quadratic_profile(r,peak):
+    return peak*((r/pixtophysicalsize)**-2)
     
-source='DSv'
-fielddict={'SgrB2S':1,'DSi':10,'DSii':10,'DSiii':10,'DSiv':10,'DSv':10}
+source='DSVI'
+fielddict={'SgrB2S':1,'DSi':10,'DSii':10,'DSiii':10,'DSiv':10,'DSv':10,'DSVI':2}
 fnum=fielddict[source]
 print(f'Source: {source}')
 base=f'/blue/adamginsburg/d.jeff/SgrB2DSreorg/field{fnum}/CH3OH/{source}/'
-homedict={'SgrB2S':"new_testingstdfixandontheflyrepstuff_K_OctReimage_restfreqfix_newvelmask_newpeakamp/",'DSi':"Kfield10originals_trial7_field10errors_newexclusion_matchslabwidthtorep/",'DSii':"Kfield10originals_noexclusions/",'DSiii':"Kfield10originals_noexclusions/",'DSiv':"Kfield10originals_noexclusions/",'DSv':"Kfield10originals_noexclusions_include4-3_150K_trial2/"}#base+'field10originals_z0_000186431_5-6mhzwidth_stdfixes/'
+homedict={'SgrB2S':"new_testingstdfixandontheflyrepstuff_K_OctReimage_restfreqfix_newvelmask_newpeakamp/",'DSi':"Kfield10originals_trial7_field10errors_newexclusion_matchslabwidthtorep/",'DSii':"Kfield10originals_noexclusions/",'DSiii':"Kfield10originals_noexclusions/",'DSiv':"Kfield10originals_noexclusions/",'DSv':"Kfield10originals_noexclusions_include4-3_150K_trial2/",'DSVI':"Kfield2originals_trial2_16_6-16_7excluded/"}#base+'field10originals_z0_000186431_5-6mhzwidth_stdfixes/'
 home=base+homedict[source]
 '''
 source='SgrB2S'
@@ -55,7 +63,7 @@ pixtophysicalsize=(np.tan(cellsize)*dGC).to('AU')
 
 print(pixtophysicalsize)
 
-pixdict={'SgrB2S':(73,54),'DSi':(36,42),'DSii':(22,24),'DSiii':(24,24),'DSiv':(32,31),'DSv':(19,19)}#y,x
+pixdict={'SgrB2S':(73,54),'DSi':(36,42),'DSii':(22,24),'DSiii':(24,24),'DSiv':(32,31),'DSv':(19,19),'DSVI':(62,62)}#y,x
 
 texpeakpix=pixdict[source]
 #(36,43)#DSi hotspot
@@ -90,33 +98,52 @@ for y in range(np.shape(texmapdata)[0]):
         else:
             pass
             
+copy_centrtopix=np.copy(centrtopix)*u.AU
+#copy_centrtopix.sort()
+lineartex=[]
+quadrtex=[]
+sublinhalftex=[]
+
+for dist in copy_centrtopix:
+    lineartex.append(linear_profile(dist,texmapdata[texpeakpix[0],texpeakpix[1]]).value)
+    quadrtex.append(quadratic_profile(dist,texmapdata[texpeakpix[0],texpeakpix[1]]).value)
+    sublinhalftex.append(sublinear_profile(dist,texmapdata[texpeakpix[0],texpeakpix[1]]).value)
+    
 plt.rcParams["figure.dpi"]=150
 
 ax=plt.subplot(111)
 
 vmaxdict={'DSi':1e-5}
 plt.scatter(centrtopix,texinradius,s=snrsinradius,c=abundinradius,cmap='rainbow')#,norm=mpl.colors.LogNorm())
+plt.plot(copy_centrtopix,lineartex,color='yellow',label=r'r$^{-1}$')
+plt.plot(copy_centrtopix,quadrtex,color='green',label=r'r$^{-2}$')
+plt.plot(copy_centrtopix,sublinhalftex,color='purple',label=r'r$^{-0.5}$')
 ax.set_xlabel('$d$ (AU)',fontsize=14)
 ax.set_ylabel('$T_K$ (K)',fontsize=14)
 ax.tick_params(size=14)
 plt.tight_layout()
 plt.colorbar(pad=0)
+plt.legend()
 
-savefigpath=home+f'figures/radialtexdiag_r{r}px_rphys{int(pixtophysicalsize.value)}AU.png'
+savefigpath=home+f'figures/radialtexdiag_r{r}px_rphys{int(pixtophysicalsize.value)}AU_linear_quad_sqrt.png'
 plt.savefig(savefigpath,overwrite=True)
 plt.show()
 
 plt.close()
 
 ax=plt.subplot(111)
-plt.scatter(centrtopix,texinradius,s=snrsinradius,c=abundinradius,norm=mpl.colors.LogNorm(),cmap='rainbow')
+plt.scatter(centrtopix,texinradius,s=snrsinradius,c=abundinradius,norm=mpl.colors.LogNorm(vmin=1e-8),cmap='rainbow')
+plt.plot(copy_centrtopix,lineartex,color='yellow',label=r'r$^{-1}$')
+plt.plot(copy_centrtopix,quadrtex,color='green',label=r'r$^{-2}$')
+plt.plot(copy_centrtopix,sublinhalftex,color='purple',label=r'r$^{-0.5}$')
 ax.set_xlabel('$d$ (AU)',fontsize=14)
 ax.set_ylabel('$T_K$ (K)',fontsize=14)
 ax.tick_params(size=14)
 plt.tight_layout()
 plt.colorbar(pad=0)
+plt.legend()
 
-savefigpath=home+f'figures/radialtexdiag_r{r}px_rphys{int(pixtophysicalsize.value)}AU_lognorm.png'
+savefigpath=home+f'figures/radialtexdiag_r{r}px_rphys{int(pixtophysicalsize.value)}AU_lognorm_linear_quad_sqrt.png'
 plt.savefig(savefigpath,overwrite=True)
 plt.show()
 
