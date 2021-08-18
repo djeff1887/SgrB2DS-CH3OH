@@ -9,6 +9,7 @@ from scipy.optimize import curve_fit as cf
 from astropy.io import fits
 import glob
 import radio_beam
+from utilities import freqtovelocity
 
 from astropy.modeling import models, fitting#Fittable1DModel, Parameter, fitting
 
@@ -33,13 +34,24 @@ R_i=1
 kappa=((2*b_0)-a_0-c_0)/(a_0-c_0)
 f=1
 
+source='DSVIII'
+print(f'Source: {source}\n')
+
+filesdict={'SgrB2S':'/blue/adamginsburg/d.jeff/SgrB2DSminicubes/SgrB2S/OctReimage_K/*.fits','DSi':"/blue/adamginsburg/d.jeff/SgrB2DSminicubes/DSi/field10originals_K/*.fits",'DSii':"/blue/adamginsburg/d.jeff/SgrB2DSminicubes/DSii/field10originals_K/*.fits",'DSiii':"/blue/adamginsburg/d.jeff/SgrB2DSminicubes/DSiii/field10originals_K/*.fits",'DSiv':"/blue/adamginsburg/d.jeff/SgrB2DSminicubes/DSiv/field10originals_K/*.fits",'DSv':"/blue/adamginsburg/d.jeff/SgrB2DSminicubes/DSv/field10originals_K/*.fits",'DSVI':"/blue/adamginsburg/d.jeff/SgrB2DSminicubes/DSVI/field2originals_K/*.fits",'DSVII':"/blue/adamginsburg/d.jeff/SgrB2DSminicubes/DSVII/field3originals_K/*.fits",'DSVIII':"/blue/adamginsburg/d.jeff/SgrB2DSminicubes/DSVIII/field3originals_K/*.fits"}
 #files=glob.glob('/blue/adamginsburg/d.jeff/SgrB2DSstatcontfix/field10originals/*.fits')
-files=glob.glob('/blue/adamginsburg/d.jeff/SgrB2DSminicubes/SgrB2S/OctReimage_K/*.fits')
-#files=glob.glob("/blue/adamginsburg/d.jeff/SgrB2DSminicubes/DSi/field10originals/*.fits")
+#files=glob.glob('/blue/adamginsburg/d.jeff/SgrB2DSminicubes/SgrB2S/OctReimage_K/*.fits')
+files=glob.glob(filesdict[source])
 
 #z=0.0001854542074721255#0.000190713#DSv#Average of 0.00019597214240510706 (2nd) and 0.0001854542074721255 (main) from goodfit
-#z=0.000186431#DSi
-z=0.000234806#<<<avg of the two to the left#0.000236254#0.0002333587
+#z=0.0001842772437139578#0.000186431#DSi
+#z=0.00016236367659115043#DSii test
+#z=0.00017500261911843952#0.00017744359534629267#DSiii test
+#z=0.00018225233186845314#DSiv test#0.00018436460301043408 
+#z=0.0001838576164010067#0.0001867796109051728244714487560220245339842715628132281191460965#DSv test
+#z=0.000234806#<<<avg of the two to the left#0.000236254#0.0002333587 SgrB2S
+#z=0.0001683701460060292#DSVI test
+#z=0.00016375916278648755#DSVII test
+z=0.0001661546432045067#DSVIII test
 imgnames=['spw0','spw1','spw2','spw3']
 
 datacubes=[]
@@ -165,22 +177,26 @@ def kkms(beams,data):
         #intensitylist.append(velflux_T)
     return t_bright
     
-imgnum=1#0
-testline=0#4
+imgnum=0#1#0
+testline=4#13#11,4
 print('Getting ready - '+imgnames[imgnum])
 cube=sc.read(datacubes[imgnum])
 
-'''Set WCS params [RA,DEC,FRQ].(For non-contsub cubes not using spectral-cube, the Stokes axis hasn't been removed, so the input array must be [RA,DEC,STOKES,FRQ]. '''
+'''Set WCS params [RA,DEC,FRQ].(For non-contsub cubes not using spectral-cube, the Stokes axis hasn't been removed, so the input array must be [RA,DEC,STOKES,FRQ].'''
 cube_w=cube.wcs#WCS(files[imgnum])
 if 'medsub' or '_line' in datacubes[imgnum]:
     contsub=True
 else:
     contsub=False
 
+worldcrddict={'SgrB2S':[[0,0,0],[2.66835339e+02, -2.83961660e+01, 0]],'DSi':[[0,0,0],[266.8316149,-28.3972040,0]],'DSii':[[0,0,0],[266.8335363,-28.3963158,0]],'DSiii':[[0,0,0],[266.8332758,-28.3969269,0]],'DSiv':[[0,0,0],[266.8323834, -28.3954424,0]],'DSv':[[0,0,0],[266.8321331, -28.3976585, 0]],'DSVI':[[0,0,0],[266.8380037, -28.4050741,0]],'DSVII':[[0,0,0],[266.8426074, -28.4094401,0]],'DSVIII':[[0,0,0],[266.8418408, -28.4118242, 0]]}
+targetworldcrd=worldcrddict[source]#[[0,0,0],[266.8335363,-28.3963158,0]]#DSii sample pixel
 #targetworldcrd=[[0,0,0],[266.8316149,-28.3972040,0]]#DSi
 #targetworldcrd=[[0,0,0],[266.8321311,-28.3976633,0]]#DSv
-targetworldcrd=[[0,0,0],[2.66835339e+02, -2.83961660e+01, 0]]#SgrB2S
+#targetworldcrd=[[0,0,0],[2.66835339e+02, -2.83961660e+01, 0]]#SgrB2S
 targetpixcrd=cube_w.all_world2pix(targetworldcrd,1,ra_dec_order=True)
+
+
 
 #header=fits.getheader(files[0])
 #beamer=radio_beam.Beam.from_fits_header(hdu).value
@@ -219,7 +235,7 @@ mdegs=methanol_table['Upper State Degeneracy']
 mlog10aijs=minmethtable['log10_Aij']
 maijs=10**mlog10aijs*u.s**-1
 
-plotwidth=linewidth*1.25#decreased from 1.5
+plotwidth=linewidth*1.3#increased from 1.25#decreased from 1.5
 lwvel=vradio(lw2,mlines[testline])
 print(f'Transition: {mqns[testline]}\nEU_K: {meuks[testline]}')
 
@@ -240,7 +256,7 @@ t_brights=spwwindow.value#kkms(beamlist,spwwindow)
 peakK=spwwindow[np.argmax(spwwindow)]
 
 Tphys=np.linspace(1,1000,100)*u.K
-testT=750*u.K#550*u.K for SgrB2S and DSi
+testT=500*u.K#550*u.K for SgrB2S and DSi
 n_totes=[1e13,1e14,1e15,1e16,1e17,1e18,1e19,1e20,1e21,1e22,1e23]*u.cm**-2
 plot=np.linspace((mlines[testline]-plotwidth),(mlines[testline]+plotwidth),30)
 #plotcmpnt=
@@ -314,9 +330,10 @@ linemin2=0
 linemax2=15
 linemin3=0
 linemax3=31
-testmod1=models.Gaussian1D(mean=mlines[testline], stddev=3 * u.MHz, amplitude=(t_brights[np.argmax(t_brights)]))# * u.K)#testtbthick,mlines[testline],lw2)
+testmod1=models.Gaussian1D(mean=mlines[testline], stddev=1 * u.MHz, amplitude=(t_brights[np.argmax(t_brights)]))# * u.K)#testtbthick,mlines[testline],lw2)
 testmod2=models.Gaussian1D(mean=(mlines[testline]+cmpnt2frqoffset), stddev=1 * u.MHz, amplitude=(t_brights[np.argmax(t_brights)]/1.2))# * u.K)
-testmod3=testmod1+testmod2
+#testmod4=models.Gaussian1D(mean=(mlines[testline]-cmpnt2frqoffset), stddev=1 * u.MHz, amplitude=(t_brights[np.argmax(t_brights)]/1.2))# * u.K)
+testmod3=testmod1+testmod2#+testmod4
 #testfit1=fit_g(testmod1,spwwindow.spectral_axis[linemin:linemax],t_brights[linemin:linemax]*u.K)
 #testfit2=fit_g(testmod2,spwwindow.spectral_axis[linemin2:linemax2],t_brights[linemin2:linemax2]*u.K)
 testfit3=fit_g(testmod3,spwwindow.spectral_axis[linemin3:linemax3],t_brights[linemin3:linemax3]*u.K,epsilon=1e-11)
@@ -337,6 +354,7 @@ print(f'aij: {maijs[testline]} lines: {mlines[testline]}')
 print(f'Model fit params: {testfit3}')
 print(f'Model fit info: {fit_g.fit_info}')
 print(f'Main z: {z_maincmpnt}\nCmpnt2 z: {z_cmpnt2}')
+print(f'Cmpnt1 width: {freqtovelocity(testfit3[0].stddev.quantity,maincmpntfitmean)}\n Cmpnt2 width: {freqtovelocity(testfit3[1].stddev.quantity,cmpnt2fitmean)}')
 plt.plot(spwwindow.spectral_axis,t_brights,drawstyle='steps')
 
 '''
@@ -356,6 +374,7 @@ annotation_shift=7500000*u.Hz#5.25*1.85 km/s in frequency units
 plt.plot(plot,testfit3(plot),label='Composite LMLSQ fit',color='purple')
 plt.plot(plot,testfit3[0](plot),label='Component1 fit',color='green')
 plt.plot(plot,testfit3[1](plot),label='Component2 fit',color='yellow')
+#plt.plot(plot,testfit3[2](plot),label='Component3 fit',color='orange')
 plt.axvline(x=mlines[testline].value,ls='--')
 plt.title(f'Transition: {mqns[testline]} EU_K: {meuks[testline]} Tphys: {testT}')
 plt.annotate((f'Component 1 Input\nT_b: {round(testmod3[0].amplitude.value,4)} K\n$\mu$: {round(((testmod3[0].mean.quantity).to(u.GHz).value),6)} GHz\n$\sigma$: {testmod3[0].stddev.value} MHz\nComponent 1 Output\nT_b: {round(testfit3[0].amplitude.value,4)} K\n$\mu$: {round(((testfit3[0].mean.quantity).to(u.GHz).value),6)} GHz\n$\sigma$: {round((testfit3[0].stddev.quantity.to(u.MHz).value),4)} MHz\nComponent 2 Input\nT_b: {round(testmod3[1].amplitude.value,4)} K\n$\mu$: {round(((testmod3[1].mean.value*u.Hz).to(u.GHz).value),6)} GHz\n$\sigma$: {testmod3[1].stddev.value} MHz\nv_offset: {cmpnt2veloffset}\nComponent 2 Output\nT_b: {round(testfit3[1].amplitude.value,4)} K\n$\mu$: {round(((testfit3[1].mean.quantity).to(u.GHz).value),6)} GHz\n$\sigma$: {round((testfit3[1].stddev.quantity.to(u.MHz).value),4)} MHz\nv_offset: {round(cmpnt2fitveloffset.value, 4)} km/s'),xy=(spwwindow.spectral_axis[5].value,t_brights[15]),xytext=(((mlines[testline]-annotation_shift)).value,(max(t_brights)/8)),fontsize=7,bbox=(dict(facecolor='white', alpha=1.0)))

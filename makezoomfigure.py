@@ -17,6 +17,9 @@ sgrb2dsitexmap="/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSi/Kfield1
 sgrb2dsiitexmap="/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSii/Kfield10originals_noexclusions/texmap_5transmask_3sigma_allspw_withnans_weighted.fits"
 sgrb2dsiiitexmap="/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSiii/Kfield10originals_noexclusions/texmap_5transmask_3sigma_allspw_withnans_weighted.fits"
 sgrb2dsivtexmap="/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSiv/Kfield10originals_noexclusions/texmap_5transmask_3sigma_allspw_withnans_weighted.fits"
+dsvtexmap="/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSv/Kfield10originals_noexclusions_include4-3_150K_trial2/texmap_0transmask_3sigma_allspw_withnans_weighted.fits"
+ds6texmap="/blue/adamginsburg/d.jeff/SgrB2DSreorg/field2/CH3OH/DSVI/Kfield2originals_trial2_16_6-16_7excluded/texmap_5transmask_3sigma_allspw_withnans_weighted.fits"
+ds7texmap="/blue/adamginsburg/d.jeff/SgrB2DSreorg/field3/CH3OH/DSVII/Kfield3originals_trial1_noexclusions/texmap_3sigma_allspw_withnans_weighted.fits"
 
 sgrb2dshdu=fits.open(sgrb2dspath)[0]
 sgrb2dsdata=sgrb2dshdu.data.squeeze()
@@ -27,9 +30,13 @@ sgrb2dsihdu=fits.open(sgrb2dsitexmap)[0]
 dsiihdu=fits.open(sgrb2dsiitexmap)[0]
 dsiiihdu=fits.open(sgrb2dsiiitexmap)[0]
 dsivhdu=fits.open(sgrb2dsivtexmap)[0]
+dsvhdu=fits.open(dsvtexmap)[0]
+ds6hdu=fits.open(ds6texmap)[0]
+ds7hdu=fits.open(ds7texmap)[0]
 
 tmax=520
 jymax=0.050831314
+jymaxfull=0.01
 axins_dims=0.45
 
 centerx=1453
@@ -52,6 +59,18 @@ centerx5=1640
 centery5=3371
 width5=(65/2)
 
+centerx6=1655
+centery6=3211
+width6=(40/2)
+
+centerx7=1282
+centery7=2677
+width7=(125/2)
+
+centerx8=992
+centery8=2363
+width8=(150/2)
+
 sliced=["x","y"]#[0,0,"y","x"]
 ax=plt.subplot(projection=sgrb2dswcs,slices=sliced)
 ra=ax.coords[0]
@@ -60,7 +79,7 @@ axins=ax.inset_axes([-0.75,0.75,axins_dims,axins_dims])
 axins.imshow(sgrb2dsdata,origin='lower', norm=visualization.simple_norm(sgrb2dsdata, stretch='sqrt',max_cut=jymax),cmap='gray')
 axins.set_xlim((centerx-width),(centerx+width))
 axins.set_ylim((centery-width),(centery+width))
-ax.imshow(sgrb2dsdata, origin='lower',norm=visualization.simple_norm(sgrb2dsdata, stretch='sqrt', max_cut=jymax),cmap='gray')
+ax.imshow(sgrb2dsdata, origin='lower',norm=visualization.simple_norm(sgrb2dsdata, stretch='sqrt', max_cut=jymaxfull, min_cut=0),cmap='gray_r')
 axins2=axins.inset_axes([-1.25,0,1,1])
 axins2.imshow(sgrb2shdu.data,vmax=tmax,origin='lower',cmap='inferno')
 
@@ -92,6 +111,27 @@ axins9.set_ylim((centery5-width5),(centery5+width5))
 axins10=axins9.inset_axes([1.25,0,1,1])
 axins10.imshow(dsivhdu.data, vmax=tmax,origin='lower',cmap='inferno')
 
+axins11=ax.inset_axes([-0.75,0.45,axins_dims,axins_dims])
+axins11.imshow(sgrb2dsdata,origin='lower', norm=visualization.simple_norm(sgrb2dsdata, stretch='sqrt',max_cut=jymax),cmap='gray')
+axins11.set_xlim((centerx4-width4),(centerx4+width4))
+axins11.set_ylim((centery4-width4),(centery4+width4))
+axins12=axins11.inset_axes([-1.25,0,1,1])
+axins12.imshow(dsiiihdu.data,vmax=tmax,origin='lower',cmap='inferno')
+
+axins13=ax.inset_axes([-0.75,0.15,axins_dims,axins_dims])
+axins13.imshow(sgrb2dsdata,origin='lower', norm=visualization.simple_norm(sgrb2dsdata, stretch='sqrt',max_cut=jymax),cmap='gray')
+axins13.set_xlim((centerx7-width7),(centerx7+width7))
+axins13.set_ylim((centery7-width7),(centery7+width7))
+axins14=axins13.inset_axes([-1.25,0,1,1])
+axins14.imshow(ds6hdu.data,vmax=tmax,origin='lower',cmap='inferno')
+
+axins15=ax.inset_axes([-0.75,-0.15,axins_dims,axins_dims])
+axins15.imshow(sgrb2dsdata,origin='lower', norm=visualization.simple_norm(sgrb2dsdata, stretch='sqrt',max_cut=jymax),cmap='gray')
+axins15.set_xlim((centerx8-width8),(centerx8+width8))
+axins15.set_ylim((centery8-width8),(centery8+width8))
+axins16=axins15.inset_axes([-1.25,0,1,1])
+axins16.imshow(ds7hdu.data,vmax=tmax,origin='lower',cmap='inferno')
+
 #plt.grid(color='white', ls='solid')
 dec.set_axislabel('Dec')
 ra.set_axislabel('RA')
@@ -108,6 +148,12 @@ axins7.tick_params(direction='in')
 axins8.tick_params(direction='in')
 axins9.tick_params(direction='in')
 axins10.tick_params(direction='in')
+axins11.tick_params(direction='in')
+axins12.tick_params(direction='in')
+axins13.tick_params(direction='in')
+axins14.tick_params(direction='in')
+axins15.tick_params(direction='in')
+axins16.tick_params(direction='in')
 
 ra.set_ticklabel_visible(True)
 dec.set_ticklabel_visible(True)
@@ -131,11 +177,26 @@ axins9.xaxis.set_ticklabels([])
 axins9.yaxis.set_ticklabels([])
 axins10.xaxis.set_ticklabels([])
 axins10.yaxis.set_ticklabels([])
+axins11.xaxis.set_ticklabels([])
+axins11.yaxis.set_ticklabels([])
+axins12.xaxis.set_ticklabels([])
+axins12.yaxis.set_ticklabels([])
+axins13.xaxis.set_ticklabels([])
+axins13.yaxis.set_ticklabels([])
+axins14.xaxis.set_ticklabels([])
+axins14.yaxis.set_ticklabels([])
+axins15.xaxis.set_ticklabels([])
+axins15.yaxis.set_ticklabels([])
+axins16.xaxis.set_ticklabels([])
+axins16.yaxis.set_ticklabels([])
 
 ax.indicate_inset_zoom(axins)
 ax.indicate_inset_zoom(axins3)
 ax.indicate_inset_zoom(axins5)
 ax.indicate_inset_zoom(axins7)
 ax.indicate_inset_zoom(axins9)
+ax.indicate_inset_zoom(axins11)
+ax.indicate_inset_zoom(axins13)
+ax.indicate_inset_zoom(axins15)
 #axins.indicate_inset_zoom(axins2)
 plt.show()

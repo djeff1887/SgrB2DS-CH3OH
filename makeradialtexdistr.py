@@ -114,7 +114,7 @@ plt.rcParams["figure.dpi"]=150
 ax=plt.subplot(111)
 
 vmaxdict={'DSi':1e-5}
-plt.scatter(centrtopix,texinradius,s=snrsinradius,c=abundinradius,cmap='rainbow')#,norm=mpl.colors.LogNorm())
+plt.scatter(centrtopix,texinradius,s=snrsinradius,c=abundinradius,cmap='Greens',alpha=0.7)#,norm=mpl.colors.LogNorm())
 plt.plot(copy_centrtopix,lineartex,color='yellow',label=r'r$^{-1}$')
 plt.plot(copy_centrtopix,quadrtex,color='green',label=r'r$^{-2}$')
 plt.plot(copy_centrtopix,sublinhalftex,color='purple',label=r'r$^{-0.5}$')
@@ -132,7 +132,7 @@ plt.show()
 plt.close()
 
 ax=plt.subplot(111)
-plt.scatter(centrtopix,texinradius,s=snrsinradius,c=abundinradius,norm=mpl.colors.LogNorm(vmin=1e-8),cmap='rainbow')
+plt.scatter(centrtopix,texinradius,s=snrsinradius,c=abundinradius,norm=mpl.colors.LogNorm(vmin=1e-8),cmap='Greens',alpha=0.7)
 plt.plot(copy_centrtopix,lineartex,color='yellow',label=r'r$^{-1}$')
 plt.plot(copy_centrtopix,quadrtex,color='green',label=r'r$^{-2}$')
 plt.plot(copy_centrtopix,sublinhalftex,color='purple',label=r'r$^{-0.5}$')
@@ -140,7 +140,7 @@ ax.set_xlabel('$d$ (AU)',fontsize=14)
 ax.set_ylabel('$T_K$ (K)',fontsize=14)
 ax.tick_params(size=14)
 plt.tight_layout()
-plt.colorbar(pad=0)
+plt.colorbar(pad=0,label='X(CH$_3$OH)')
 plt.legend()
 
 savefigpath=home+f'figures/radialtexdiag_r{r}px_rphys{int(pixtophysicalsize.value)}AU_lognorm_linear_quad_sqrt.png'

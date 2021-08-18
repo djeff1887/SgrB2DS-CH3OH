@@ -54,8 +54,8 @@ def jeanslength(cs,rho):
 def tff(rho):#Free=fall time of gas
     return np.sqrt((3*np.pi)/(32*G*rho))
     
-def opticaldepth(snu,nu,tex):
-    return (snu*c**2)/(2*k*tex*nu**2)
+def opticaldepth(snu,nu,tex):#has sr-1 units
+    return ((snu*c**2)/(2*k*tex*nu**2))
     
 c=cnst.c*u.m/u.s
 k=cnst.k*u.J/u.K
@@ -70,14 +70,17 @@ cntminfile='/blue/adamginsburg/d.jeff/imaging_results/adamcleancontinuum/Sgr_B2_
 cntmimage=fits.open(cntminfile)
 print(f'Continuum image: {cntminfile}')
 restfreq=cntmimage[0].header['RESTFRQ']*u.Hz
-source='SgrB2S'
+source='DSVI'
 print(f'Source: {source}')
 
 #texmapdict={'SgrB2S':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/SgrB2S/new_testingstdfixandontheflyrepstuff_K_OctReimage_restfreqfix_newvelmask_newpeakamp/texmap_5transmask_3sigma_allspw_withnans_weighted.fits",'DSi':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSi/field10originals_spatialandvelocitymaskingtrial5_newexclusions3andexclusionsnotinfit/texmap_5transmask_3sigma_allspw_withnans_weighted.fits",'DSii':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSii/field10originals_noexclusions/texmap_5transmask_3sigma_allspw_withnans_weighted.fits"}
-sourcedict={'SgrB2S':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/SgrB2S/new_testingstdfixandontheflyrepstuff_K_OctReimage_restfreqfix_newvelmask_newpeakamp/",'DSi':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSi/Kfield10originals_trial7_field10errors_newexclusion_matchslabwidthtorep/",'DSii':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSii/Kfield10originals_noexclusions/",'DSiii':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSiii/Kfield10originals_noexclusions/",'DSiv':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSiv/Kfield10originals_noexclusions/",'DSv':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSv/Kfield10originals_noexclusions_include4-3_150K_trial2/"}
+sourcedict={'SgrB2S':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/SgrB2S/new_testingstdfixandontheflyrepstuff_K_OctReimage_restfreqfix_newvelmask_newpeakamp/",'DSi':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSi/Kfield10originals_trial7_field10errors_newexclusion_matchslabwidthtorep/",'DSii':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSii/Kfield10originals_noexclusions/",'DSiii':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSiii/Kfield10originals_noexclusions/",'DSiv':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSiv/Kfield10originals_noexclusions/",'DSv':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSv/Kfield10originals_noexclusions_include4-3_150K_trial2/",'DSVI':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field2/CH3OH/DSVI/Kfield2originals_trial2_16_6-16_7excluded/"}
 sourcepath=sourcedict[source]
 
-texmap=fits.open(sourcepath+'texmap_5transmask_3sigma_allspw_withnans_weighted.fits')
+if source == 'DSv':
+    texmap=fits.open(sourcepath+'texmap_0transmask_3sigma_allspw_withnans_weighted.fits')
+else:
+    texmap=fits.open(sourcepath+'texmap_5transmask_3sigma_allspw_withnans_weighted.fits')
 
 ntotmap=fits.getdata(sourcepath+'ntotmap_allspw_withnans_weighted.fits')*u.cm**-2
 ch3ohSigmam_map=ntotmap*molweight_ch3oh
@@ -155,7 +158,7 @@ for y in range(np.shape(texmapdata)[0]):
         #print(f'Results for region in {source}\nTex pixel {texmappix}):\nCntm pixel: {cntmypix,cntmxpix}')
         #print(f'target flux density: {cntmdatasqee[cntmypix,cntmxpix].to("mJy")}, target temperature {hotspottex}')
         jysrtoK=hotspotjysr.to(u.K,equivalencies=equiv)
-        targettau=opticaldepth(hotspotjy,restfreq,hotspottex).to('')
+        targettau=opticaldepth(hotspotjysr,restfreq,hotspottex).decompose()#.to('')# units are disagreeing at the moment, but pretty sure this is the optical depth in spite of the dangling sr-1 term
         targetlum=luminosity(bmajtophyssize,jysrtoK).to("solLum")#per Ginsburg+2017, this uses the peak of the continuum, not methanol
         targetgasmass=gasmass(hotspotjysr,beamarea_sr,restfreq,cntmkappa,hotspottex)
         gassmass_unc=gassmasserr(hotspotjysr,beamarea_sr,restfreq,cntmkappa,hotspottex,texerrmap[y,x])

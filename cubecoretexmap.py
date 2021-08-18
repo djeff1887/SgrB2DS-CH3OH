@@ -27,19 +27,19 @@ Splatalogue.QUERY_URL= 'https://splatalogue.online/c_export.php'
 print('Cube-->Core-->Tex start\n')
 print('Begin Jy/beam-to-K and region subcube conversion\n')
 
-source='DSVI'
+source='DSVIII'
 print(f'Source: {source}\n')
-fields={'SgrB2S':1,'DSi':10,'DSii':10,'DSiii':10,'DSiv':10,'DSv':10,'DSVI':2}
+fields={'SgrB2S':1,'DSi':10,'DSii':10,'DSiii':10,'DSiv':10,'DSv':10,'DSVI':2,'DSVII':3,'DSVIII':3}
 fnum=fields[source]
 
 #inpath="/orange/adamginsburg/sgrb2/d.jeff/data/field10originalimages/"
-inpaths={1:'/orange/adamginsburg/sgrb2/d.jeff/data/OctReimage_K/',10:"/orange/adamginsburg/sgrb2/d.jeff/data/field10originals_K/",2:"/orange/adamginsburg/sgrb2/d.jeff/data/field2originals_K/"}
+inpaths={1:'/orange/adamginsburg/sgrb2/d.jeff/data/OctReimage_K/',10:"/orange/adamginsburg/sgrb2/d.jeff/data/field10originals_K/",2:"/orange/adamginsburg/sgrb2/d.jeff/data/field2originals_K/",3:"/orange/adamginsburg/sgrb2/d.jeff/data/field3originals_K/"}
 inpath=inpaths[fnum]#'/blue/adamginsburg/d.jeff/imaging_results/data/OctReimage/'
 beamcubes=glob.glob(inpath+'*.fits')
-homes={1:'/orange/adamginsburg/sgrb2/d.jeff/products/OctReimage_K/',10:"/orange/adamginsburg/sgrb2/d.jeff/products/field10originals_K/",2:"/orange/adamginsburg/sgrb2/d.jeff/products/field2originals_K/"}
+homes={1:'/orange/adamginsburg/sgrb2/d.jeff/products/OctReimage_K/',10:"/orange/adamginsburg/sgrb2/d.jeff/products/field10originals_K/",2:"/orange/adamginsburg/sgrb2/d.jeff/products/field2originals_K/",3:"/orange/adamginsburg/sgrb2/d.jeff/products/field3originals_K/"}
 home=homes[fnum]#'/blue/adamginsburg/d.jeff/imaging_results/products/OctReimage/'
 cubes=glob.glob(home+'*pbcor_line.fits')
-sourceregs={'SgrB2S':'fk5; box(266.8353410, -28.3962005, 0.0016806, 0.0016806)','DSi':'fk5; box(266.8316387, -28.3971867, 0.0010556, 0.0010556)','DSii':'fk5; box(266.8335363, -28.3963159, 0.0006389, 0.0006389)','DSiii':'fk5; box(266.8332758, -28.3969270, 0.0006944, 0.0006944)','DSiv':'fk5; box(266.8323834, -28.3954424, 0.0009000, 0.0009000)','DSv':'fk5; box(266.8321331, -28.3976585, 0.0005556, 0.0005556)','DSVI':'fk5; box(266.8380037, -28.4050741, 0.0017361, 0.0017361)'}
+sourceregs={'SgrB2S':'fk5; box(266.8353410, -28.3962005, 0.0016806, 0.0016806)','DSi':'fk5; box(266.8316387, -28.3971867, 0.0010556, 0.0010556)','DSii':'fk5; box(266.8335363, -28.3963159, 0.0006389, 0.0006389)','DSiii':'fk5; box(266.8332758, -28.3969270, 0.0006944, 0.0006944)','DSiv':'fk5; box(266.8323834, -28.3954424, 0.0009000, 0.0009000)','DSv':'fk5; box(266.8321331, -28.3976585, 0.0005556, 0.0005556)','DSVI':'fk5; box(266.8380037, -28.4050741, 0.0017361, 0.0017361)','DSVII':'fk5; box(266.8426074, -28.4094401, 0.0020833, 0.0020833)', 'DSVIII':'fk5; box(266.8418408, -28.4118242, 0.0014028, 0.0014028)'}
 #region='fk5; box(266.8321311,-28.3976633, 0.0010833, 0.0010833)'#DSv
 #region='fk5; box(266.8323834,-28.39544244, 0.0009000, 0.0009000)'#DSiv
 region=sourceregs[source]#'fk5; box(266.8316387, -28.3971867, 0.0010556, 0.0010556)'#DSi-large
@@ -49,7 +49,7 @@ region=sourceregs[source]#'fk5; box(266.8316387, -28.3971867, 0.0010556, 0.00105
 #/iii
 #box(266.8315833, -28.3971867, 0.0006528, 0.0006528)' #DSi-small
 outpath_base=f'/blue/adamginsburg/d.jeff/SgrB2DSminicubes/{source}/'
-outstatpath_end={1:'OctReimage_K/',10:'field10originals_K/',2:'field2originals_K/'}
+outstatpath_end={1:'OctReimage_K/',10:'field10originals_K/',2:'field2originals_K/',3:'field3originals_K/'}
 outpath=outpath_base+outstatpath_end[fnum]#f'/blue/adamginsburg/d.jeff/SgrB2DSminicubes/{source}/field10originals/'
 #outpath=f'/blue/adamginsburg/d.jeff/SgrB2DSminicubes/{source}/OctReimage_K/'#imaging_results/DSii_iiibox1/'
 statfixpath_base='/blue/adamginsburg/d.jeff/SgrB2DSstatcontfix/'
@@ -62,7 +62,7 @@ if os.path.isdir(outpath):
     sourceisnew=False
     pass
 else:
-    sourceisnew=True#***REMEMBER TO CHANGE BACK TO TRUE ONCE ERROR FIXES ARE DONE****
+    sourceisnew=True
   
     cubestobox=[]
     
@@ -175,7 +175,7 @@ R_i=1
 f=1
 Tbg=2.7355*u.K
 
-dopplershifts={'SgrB2S':0.000234806,'DSi':0.0001842772437139578,'DSii':0.00016236367659115043,'DSiii':0.00017500261911843952,'DSiv':0.00018225233186845314,'DSv':0.0001838576164010067,'DSVI':0.0001661613132158407}#:0.000190713}/old doppler S: 0.0002306756533745274/old doppler I: 0.000186431
+dopplershifts={'SgrB2S':0.000234806,'DSi':0.0001842772437139578,'DSii':0.00016236367659115043,'DSiii':0.00017500261911843952,'DSiv':0.00018225233186845314,'DSv':0.0001838576164010067,'DSVI':0.0001661613132158407,'DSVII':0.00016320118280935546,'DSVIII':0.0001661546432045067}#:0.000190713}/old doppler S: 0.0002306756533745274/old doppler I: 0.000186431
 
 z=dopplershifts[source]
 #z=0.00017594380066803095 #SgrB2DSII?
@@ -184,9 +184,9 @@ z=dopplershifts[source]
 print(f'Doppler shift: {z} / {(z*c).to("km s-1")}\n')
 
 print('Setting input LTE parameters')
-trotdict={'SgrB2S':300*u.K,'DSi':300*u.K,'DSii':150*u.K,'DSiii':150*u.K,'DSiv':150*u.K,'DSv':150*u.K,'DSVI':300*u.K}
+trotdict={'SgrB2S':300*u.K,'DSi':300*u.K,'DSii':150*u.K,'DSiii':150*u.K,'DSiv':150*u.K,'DSv':150*u.K,'DSVI':300*u.K,'DSVII':250*u.K,'DSVIII':175*u.K}
 testT=trotdict[source]#500*u.K
-ntotdict={'SgrB2S':1e17*u.cm**-2,'DSi':1e17*u.cm**-2,'DSii':1e17*u.cm**-2,'DSiii':1e17*u.cm**-2,'DSiv':1e17*u.cm**-2,'DSv':1e16*u.cm**-2,'DSVI':1e17*u.cm**-2}
+ntotdict={'SgrB2S':1e17*u.cm**-2,'DSi':1e17*u.cm**-2,'DSii':1e17*u.cm**-2,'DSiii':1e17*u.cm**-2,'DSiv':1e17*u.cm**-2,'DSv':1e16*u.cm**-2,'DSVI':1e17*u.cm**-2,'DSVII':1e16*u.cm**-2,'DSVIII':1e16*u.cm**-2}
 testntot=ntotdict[source]
 print(f'Input Tex: {testT}\nInput Ntot: {testntot}')
 
@@ -624,16 +624,16 @@ assert 'spw0' in datacubes[0], 'Cube list out of order'
 #maskeddatacube=sc.read(maskname)
 #maskeddatacube=maskeddatacube.with_spectral_unit((u.km/u.s),velocity_convention='radio',rest_value=220027805942.10373*u.Hz)
 
-stdhomedict={1:'/orange/adamginsburg/sgrb2/d.jeff/products/OctReimage_K/',10:'/orange/adamginsburg/sgrb2/d.jeff/products/field10originals_K/',2:'/orange/adamginsburg/sgrb2/d.jeff/products/field2originals_K/'}
+stdhomedict={1:'/orange/adamginsburg/sgrb2/d.jeff/products/OctReimage_K/',10:'/orange/adamginsburg/sgrb2/d.jeff/products/field10originals_K/',2:'/orange/adamginsburg/sgrb2/d.jeff/products/field2originals_K/',3:'/orange/adamginsburg/sgrb2/d.jeff/products/field3originals_K/'}
 stdhome=stdhomedict[fnum]
 
 #cubemaskarray=maskeddatacube.get_mask_array()
 
-sourcelocs={'SgrB2S':'new_testingstdfixandontheflyrepstuff_K_OctReimage_restfreqfix_newvelmask_newpeakamp/','DSi':'/Kfield10originals_trial7_field10errors_newexclusion_matchslabwidthtorep/','DSii':'/Kfield10originals_noexclusions/','DSiii':'/Kfield10originals_noexclusions/','DSiv':'/Kfield10originals_noexclusions/','DSv':f'/Kfield10originals_noexclusions_include4-3_{int(testT.value)}K_trial2/','DSVI':'/Kfield2originals_trial1/'}
+sourcelocs={'SgrB2S':'new_testingstdfixandontheflyrepstuff_K_OctReimage_restfreqfix_newvelmask_newpeakamp/','DSi':'/Kfield10originals_trial7_field10errors_newexclusion_matchslabwidthtorep/','DSii':'/Kfield10originals_noexclusions/','DSiii':'/Kfield10originals_noexclusions/','DSiv':'/Kfield10originals_noexclusions/','DSv':f'/Kfield10originals_noexclusions_include4-3_{int(testT.value)}K_trial2/','DSVI':'/Kfield2originals_trial3_8_6-8_7excluded/','DSVII':f'/Kfield3originals_{int(testT.value)}K_trial2_noexclusions/','DSVIII':f'/Kfield3originals_{int(testT.value)}K_trial1_noexclusions/'}
 
-representativelines={'SgrB2S':'4_2-3_1vt=0','DSi':'8_1-7_0vt=0','DSii':'8_1-7_0vt=0','DSiii':'10_2--9_3-vt=0','DSiv':'20_1-20_0vt=0','DSv':'8_1-7_0vt=0','DSVI':'8_1-7_0vt=0'}
-representativelws={'SgrB2S':(10*u.km/u.s),'DSi':(3*u.km/u.s),'DSii':(3*u.km/u.s),'DSiii':(3*u.km/u.s),'DSiv':(4*u.km/u.s),'DSv':(4*u.km/u.s),'DSVI':(3*u.km/u.s)}#{'SgrB2S':8*u.MHz,'DSi':3.6*u.MHz}#11MHz for ~10 km/s
-representativecubes={'SgrB2S':1,'DSi':1,'DSii':1,'DSiii':2,'DSiv':0,'DSv':1,'DSVI':1}#spwnumber
+representativelines={'SgrB2S':'4_2-3_1vt=0','DSi':'8_1-7_0vt=0','DSii':'8_1-7_0vt=0','DSiii':'10_2--9_3-vt=0','DSiv':'20_1-20_0vt=0','DSv':'8_1-7_0vt=0','DSVI':'8_1-7_0vt=0','DSVII':'8_1-7_0vt=0','DSVIII':'8_1-7_0vt=0'}
+representativelws={'SgrB2S':(10*u.km/u.s),'DSi':(3*u.km/u.s),'DSii':(3*u.km/u.s),'DSiii':(3*u.km/u.s),'DSiv':(4*u.km/u.s),'DSv':(4*u.km/u.s),'DSVI':(3*u.km/u.s),'DSVII':(2.5*u.km/u.s),'DSVIII':(2.5*u.km/u.s)}#{'SgrB2S':8*u.MHz,'DSi':3.6*u.MHz}#11MHz for ~10 km/s
+representativecubes={'SgrB2S':1,'DSi':1,'DSii':1,'DSiii':2,'DSiv':0,'DSv':1,'DSVI':1,'DSVII':1,'DSVIII':1}#spwnumber
 
 sourcepath=f'/blue/adamginsburg/d.jeff/SgrB2DSreorg/field{fnum}/CH3OH/{source}/'+sourcelocs[source]
 nupperpath=sourcepath+'nuppers/'
@@ -642,6 +642,8 @@ slabpath=sourcepath+'spectralslabs/km_s/'
 mom0path=sourcepath+'mom0/'
 rotdiagpath=sourcepath+'pixelwiserotationaldiagrams/'
 figpath=sourcepath+'figures/'
+
+overleafpath="/blue/adamginsburg/d.jeff/repos/CH3OHTemps/figures/"
 
 picklepath=sourcepath+'ch3ohlinesdict.obj'
 
@@ -698,8 +700,8 @@ masterfluxes=[]
 masterbeams=[]
 masterstddevs=[]
 
-excludedlines={'SgrB2S':['7_6-7_7E1vt1','14_6-14_7E1vt1','11_6-11_7E1vt1'],'DSi':['11_6-11_7E1vt1','25_3-24_4E1vt0','14_6-14_7E1vt1','7_6-7_7E1vt1','13_3--14_4-vt2','13_3+-14_4+vt2','15_6-15_7E1vt1'],'DSii':'','DSiii':'','DSiv':'','DSv':'','DSVI':["6_1--7_2-vt1",'14_6-14_7E1vt1','10_6-10_7E1vt1','9_6-9_7E1vt1','11_6-11_7E1vt1','13_6-13_7E1vt1','12_6-12_7E1vt1','13_3--14_4-vt2','13_3+-14_4+vt2','7_6-7_7E1vt1']}#need exclusions for DSVI
-restfreq_representativeline={'SgrB2S':218.44006300*u.GHz,'DSi':220.07856100*u.GHz,'DSii':220.07856100*u.GHz,'DSiii':231.28111000*u.GHz,'DSiv':217.88650400*u.GHz,'DSv':220.07856100*u.GHz,'DSVI':220.07856100*u.GHz}#All taken from Splatalogue
+excludedlines={'SgrB2S':['7_6-7_7E1vt1','14_6-14_7E1vt1','11_6-11_7E1vt1'],'DSi':['11_6-11_7E1vt1','25_3-24_4E1vt0','14_6-14_7E1vt1','7_6-7_7E1vt1','13_3--14_4-vt2','13_3+-14_4+vt2','15_6-15_7E1vt1'],'DSii':'','DSiii':'','DSiv':'','DSv':'','DSVI':["6_1--7_2-vt1",'14_6-14_7E1vt1','10_6-10_7E1vt1','9_6-9_7E1vt1','11_6-11_7E1vt1','13_6-13_7E1vt1','12_6-12_7E1vt1','13_3--14_4-vt2','13_3+-14_4+vt2','7_6-7_7E1vt1','16_6-16_7E1vt1','8_6-8_7E1vt1'],'DSVII':'','DSVIII':''}#need exclusions for DSVI
+restfreq_representativeline={'SgrB2S':218.44006300*u.GHz,'DSi':220.07856100*u.GHz,'DSii':220.07856100*u.GHz,'DSiii':231.28111000*u.GHz,'DSiv':217.88650400*u.GHz,'DSv':220.07856100*u.GHz,'DSVI':220.07856100*u.GHz,'DSVII':220.07856100*u.GHz,'DSVIII':220.07856100*u.GHz}#All taken from Splatalogue
 representative_filename_base=sourcepath+representativelines[source]+'repline_'
 rep_mom1=representative_filename_base+'mom1.fits'
 rep_fwhm=representative_filename_base+'fwhm.fits'
@@ -756,7 +758,7 @@ for imgnum in range(len(datacubes)):
     #print(velcube.spectral_axis)
     cube_unmasked=velcube.unmasked_data
     
-    targetworldcrds={'SgrB2S':[[0,0,0],[2.66835339e+02, -2.83961660e+01, 0]], 'DSi':[[0,0,0],[266.8316149,-28.3972040,0]], 'DSii':[[0,0,0],[266.8335363,-28.3963158,0]],'DSiii':[[0,0,0],[266.8332758,-28.3969269,0]],'DSiv':[[0,0,0],[266.8323834, -28.3954424,0]],'DSv':[[0,0,0],[266.8321331, -28.3976585, 0]],'DSVI':[[0,0,0],[266.8380037, -28.4050741,0]]}
+    targetworldcrds={'SgrB2S':[[0,0,0],[2.66835339e+02, -2.83961660e+01, 0]], 'DSi':[[0,0,0],[266.8316149,-28.3972040,0]], 'DSii':[[0,0,0],[266.8335363,-28.3963158,0]],'DSiii':[[0,0,0],[266.8332758,-28.3969269,0]],'DSiv':[[0,0,0],[266.8323834, -28.3954424,0]],'DSv':[[0,0,0],[266.8321331, -28.3976585, 0]],'DSVI':[[0,0,0],[266.8380037, -28.4050741,0]],'DSVII':[[0,0,0],[266.8426074, -28.4094401,0]],'DSVIII':[[0,0,0],[266.8418408, -28.4118242, 0]]}
     cube_w=cube.wcs
     stdwcs=WCS(stdimage[0].header)#WCS(stdimage[0].header)
     
@@ -1127,7 +1129,7 @@ for y in range(testyshape):
             else:
                 texsigclipmap[y,x]=np.nan
 
-detectnum=5
+detectnum=0
 transmaskarr=np.ma.masked_where(numtransmap<=detectnum,texsigclipmap)
 transmasktexmap=transmaskarr.filled(fill_value=np.nan)#np.array(np.ma.masked_where(numtransmap<detectnum,texsigclipmap))
             
@@ -1248,7 +1250,15 @@ colormap.set_bad('black')
 dGC=8.34*u.kpc#per Meng et al. 2019 https://www.aanda.org/articles/aa/pdf/2019/10/aa35920-19.pdf
 
 plottexhdu=fits.open(nsigmatransmaskedpath)[0]
-saveimgpath=figpath+f'texmap_{detectnum}transmask_{snr}sigma_allspw_withnans_weighted.png'
+
+saveimghome=overleafpath+f'{source}/{sourcelocs[source]}/'
+saveimgpath=saveimghome+f'texmap_{detectnum}transmask_{snr}sigma_allspw_withnans_weighted.png'
+
+if not os.path.exists(saveimghome):
+    os.makedirs(saveimghome)
+else:
+    print(f"Figure directory {saveimghome} already exists.")
+    pass
 
 plottexwcs=WCS(plottexhdu)
 
@@ -1261,7 +1271,7 @@ dec=ax.coords[1]
 
 plottedtex=ax.imshow(plottexhdu.data,cmap=colormap)#,vmax=1000,vmin=10)
 
-scaledict={'SgrB2S':5000*u.AU,'DSi':5000*u.AU,'DSii':2000*u.AU,'DSiii':2000*u.AU,'DSiv':2000*u.AU,'DSv':2000*u.AU,'DSVI':5000*u.AU}
+scaledict={'SgrB2S':5000*u.AU,'DSi':5000*u.AU,'DSii':2000*u.AU,'DSiii':2000*u.AU,'DSiv':2000*u.AU,'DSv':2000*u.AU,'DSVI':5000*u.AU,'DSVII':5000*u.AU,'DSVIII':5000*u.AU}
 scale=scaledict[source]
 lenn=np.arctan(scale/dGC)
 
