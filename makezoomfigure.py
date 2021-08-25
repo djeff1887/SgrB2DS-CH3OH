@@ -79,7 +79,11 @@ axins=ax.inset_axes([-0.75,0.75,axins_dims,axins_dims])
 axins.imshow(sgrb2dsdata,origin='lower', norm=visualization.simple_norm(sgrb2dsdata, stretch='sqrt',max_cut=jymax),cmap='gray')
 axins.set_xlim((centerx-width),(centerx+width))
 axins.set_ylim((centery-width),(centery+width))
+<<<<<<< HEAD
 ax.imshow(sgrb2dsdata, origin='lower',norm=visualization.simple_norm(sgrb2dsdata, stretch='log', max_cut=jymaxfull,min_cut=0),cmap='gray_r')
+=======
+ax.imshow(sgrb2dsdata, origin='lower',norm=visualization.simple_norm(sgrb2dsdata, stretch='sqrt', max_cut=jymaxfull, min_cut=0),cmap='gray_r')
+>>>>>>> f3c6a9350725472bc086d91f1477ead289bc2c39
 axins2=axins.inset_axes([-1.25,0,1,1])
 axins2.imshow(sgrb2shdu.data,vmax=tmax,origin='lower',cmap='inferno')
 
