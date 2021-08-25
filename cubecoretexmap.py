@@ -50,8 +50,7 @@ region=sourceregs[source]#'fk5; box(266.8316387, -28.3971867, 0.0010556, 0.00105
 #box(266.8315833, -28.3971867, 0.0006528, 0.0006528)' #DSi-small
 outpath_base=f'/blue/adamginsburg/d.jeff/SgrB2DSminicubes/{source}/'
 outstatpath_end={1:'OctReimage_K/',10:'field10originals_K/',2:'field2originals_K/'}
-outpath=outpath_base+outstatpath_end[fnum]#f'/blue/adamginsburg/d.jeff/SgrB2DSminicubes/{source}/field10originals/'
-#outpath=f'/blue/adamginsburg/d.jeff/SgrB2DSminicubes/{source}/OctReimage_K/'#imaging_results/DSii_iiibox1/'
+outpath=outpath_base+outstatpath_end[fnum]
 statfixpath_base='/blue/adamginsburg/d.jeff/SgrB2DSstatcontfix/'
 statfixpath=statfixpath_base+outstatpath_end[fnum]#f'/blue/adamginsburg/d.jeff/SgrB2DSstatcontfix/OctReimage_K/'
 
@@ -185,7 +184,7 @@ print(f'Doppler shift: {z} / {(z*c).to("km s-1")}\n')
 
 print('Setting input LTE parameters')
 trotdict={'SgrB2S':300*u.K,'DSi':300*u.K,'DSii':150*u.K,'DSiii':150*u.K,'DSiv':150*u.K,'DSv':150*u.K,'DSVI':300*u.K}
-testT=trotdict[source]#500*u.K
+testT=trotdict[source]
 ntotdict={'SgrB2S':1e17*u.cm**-2,'DSi':1e17*u.cm**-2,'DSii':1e17*u.cm**-2,'DSiii':1e17*u.cm**-2,'DSiv':1e17*u.cm**-2,'DSv':1e16*u.cm**-2,'DSVI':1e17*u.cm**-2}
 testntot=ntotdict[source]
 print(f'Input Tex: {testT}\nInput Ntot: {testntot}')
