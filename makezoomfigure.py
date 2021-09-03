@@ -9,17 +9,17 @@ cm=plt.cm.get_cmap('inferno')
 cm.set_bad('black')
 
 #sourcepath='/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/SgrB2S/z0_0002306756533745274_testbox2_5-6mhzwidth/'
-sgrb2dspath="/blue/adamginsburg/d.jeff/imaging_results/adamcleancontinuum/Sgr_B2_DS_B6_uid___A001_X1290_X46_continuum_merged_12M_robust0_selfcal4_finaliter.image.tt0.pbcor.fits"
-sgrb2stexmap="/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/SgrB2S/new_testingstdfixandontheflyrepstuff_K_OctReimage_restfreqfix_newvelmask_newpeakamp/texmap_5transmask_3sigma_allspw_withnans_weighted.fits"
+sgrb2dspath=r"C:/Users/desmond/Dropbox/Data/SgrB2DeepSouth/Sgr_B2_DS_B6_uid___A001_X1290_X46_continuum_merged_12M_robust0_selfcal4_finaliter.image.tt0.pbcor.fits"
+sgrb2stexmap=r"C:/Users/desmond/Dropbox/Research/SgrB2DS/Sources/SgrB2S/new_testingstdfixandontheflyrepstuff_K_OctReimage_restfreqfix_newvelmask_newpeakamp/texmap_5transmask_3sigma_allspw_withnans_weighted.fits"
 #sgrb2stexmap="/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/SgrB2S/z0_0002306756533745274_testbox2_5-6mhzwidth/texmap_3sigma_allspw_withnans_weighted.fits"
-sgrb2dsitexmap="/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSi/Kfield10originals_trial7_field10errors_newexclusion_matchslabwidthtorep/texmap_5transmask_3sigma_allspw_withnans_weighted.fits"
+sgrb2dsitexmap=r'C:/Users/desmond/Dropbox/Research/SgrB2DS/Sources/DS1/Kfield10originals_trial7_field10errors_newexclusion_matchslabwidthtorep/texmap_5transmask_3sigma_allspw_withnans_weighted.fits'
 #sgrb2dsitexmap="/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/DSi/z0_000186407_box1_5-6mhzwidth/texmap_3sigma_allspw_withnans_weighted.fits"
-sgrb2dsiitexmap="/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSii/Kfield10originals_noexclusions/texmap_5transmask_3sigma_allspw_withnans_weighted.fits"
-sgrb2dsiiitexmap="/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSiii/Kfield10originals_noexclusions/texmap_5transmask_3sigma_allspw_withnans_weighted.fits"
-sgrb2dsivtexmap="/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSiv/Kfield10originals_noexclusions/texmap_5transmask_3sigma_allspw_withnans_weighted.fits"
-dsvtexmap="/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSv/Kfield10originals_noexclusions_include4-3_150K_trial2/texmap_0transmask_3sigma_allspw_withnans_weighted.fits"
-ds6texmap="/blue/adamginsburg/d.jeff/SgrB2DSreorg/field2/CH3OH/DSVI/Kfield2originals_trial2_16_6-16_7excluded/texmap_5transmask_3sigma_allspw_withnans_weighted.fits"
-ds7texmap="/blue/adamginsburg/d.jeff/SgrB2DSreorg/field3/CH3OH/DSVII/Kfield3originals_trial1_noexclusions/texmap_3sigma_allspw_withnans_weighted.fits"
+sgrb2dsiitexmap=r"C:/Users/desmond/Dropbox/Research/SgrB2DS/Sources/DS2/Kfield10originals_noexclusions/texmap_5transmask_3sigma_allspw_withnans_weighted.fits"
+sgrb2dsiiitexmap=r"C:/Users/desmond/Dropbox/Research/SgrB2DS/Sources/DS3/Kfield10originals_noexclusions/texmap_5transmask_3sigma_allspw_withnans_weighted.fits"
+sgrb2dsivtexmap=r"C:/Users/desmond/Dropbox/Research/SgrB2DS/Sources/DS4/Kfield10originals_noexclusions/texmap_5transmask_3sigma_allspw_withnans_weighted.fits"
+dsvtexmap=r"C:/Users/desmond/Dropbox/Research/SgrB2DS/Sources/DS5/Kfield10originals_noexclusions_include4-3_150K_trial2/texmap_0transmask_3sigma_allspw_withnans_weighted.fits"
+ds6texmap=r'C:/Users/desmond/Dropbox/Research/SgrB2DS/Sources/DS6/DSVI/Kfield2originals_trial2_16_6-16_7excluded/texmap_5transmask_3sigma_allspw_withnans_weighted.fits'
+ds7texmap=r'C:/Users/desmond/Dropbox/Research/SgrB2DS/Sources/DS7/Kfield3originals_trial1_noexclusions/texmap_3sigma_allspw_withnans_weighted.fits'
 
 sgrb2dshdu=fits.open(sgrb2dspath)[0]
 sgrb2dsdata=sgrb2dshdu.data.squeeze()
@@ -79,7 +79,11 @@ axins=ax.inset_axes([-0.75,0.75,axins_dims,axins_dims])
 axins.imshow(sgrb2dsdata,origin='lower', norm=visualization.simple_norm(sgrb2dsdata, stretch='sqrt',max_cut=jymax),cmap='gray')
 axins.set_xlim((centerx-width),(centerx+width))
 axins.set_ylim((centery-width),(centery+width))
+<<<<<<< HEAD
+ax.imshow(sgrb2dsdata, origin='lower',norm=visualization.simple_norm(sgrb2dsdata, stretch='log', max_cut=jymaxfull,min_cut=0),cmap='gray_r')
+=======
 ax.imshow(sgrb2dsdata, origin='lower',norm=visualization.simple_norm(sgrb2dsdata, stretch='sqrt', max_cut=jymaxfull, min_cut=0),cmap='gray_r')
+>>>>>>> f3c6a9350725472bc086d91f1477ead289bc2c39
 axins2=axins.inset_axes([-1.25,0,1,1])
 axins2.imshow(sgrb2shdu.data,vmax=tmax,origin='lower',cmap='inferno')
 
@@ -99,10 +103,10 @@ axins6.imshow(dsiihdu.data, vmax=tmax,origin='lower',cmap='inferno')
 
 axins7=ax.inset_axes([1.25,-0.15,axins_dims,axins_dims])
 axins7.imshow(sgrb2dsdata,origin='lower',norm=visualization.simple_norm(sgrb2dsdata, stretch='sqrt', max_cut=jymax),cmap='gray')
-axins7.set_xlim((centerx4-width4),(centerx4+width4))
-axins7.set_ylim((centery4-width4),(centery4+width4))
+axins7.set_xlim((centerx6-width6),(centerx6+width6))
+axins7.set_ylim((centery6-width6),(centery6+width6))
 axins8=axins7.inset_axes([1.25,0,1,1])
-axins8.imshow(dsiiihdu.data, vmax=tmax,origin='lower',cmap='inferno')
+axins8.imshow(dsvhdu.data, vmax=tmax,origin='lower',cmap='inferno')
 
 axins9=ax.inset_axes([1.25,0.75,axins_dims,axins_dims])
 axins9.imshow(sgrb2dsdata,origin='lower',norm=visualization.simple_norm(sgrb2dsdata, stretch='sqrt', max_cut=jymax),cmap='gray')

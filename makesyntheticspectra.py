@@ -48,28 +48,32 @@ f=1
 dopplershifts={'SgrB2S':0.000234806,'DSi':0.000186431,'DSii':0.00015954965399894244,'DSiii':0.00017500261911843952,'DSiv':0.00018225233186845314,'DSv':0.0001838576164010067,'DSVI':0.0001661613132158407,'DSVII':0.00016320118280935546,'DSVIII':0.0001661546432045067}#:0.000190713}/old doppler S: 0.0002306756533745274/0.00015954965399894244/0.00016236367659115043
 
 z=dopplershifts[source]
+z_vel=z*c
+
 
 sourcelocs={'SgrB2S':'/blue/adamginsburg/d.jeff/SgrB2DSminicubes/SgrB2S/OctReimage_K/*.fits','DSi':"/blue/adamginsburg/d.jeff/SgrB2DSminicubes/DSi/field10originals_K/*.fits",'DSiii':"/blue/adamginsburg/d.jeff/SgrB2DSminicubes/DSiii/field10originals/*.fits",'DSiv':"/blue/adamginsburg/d.jeff/SgrB2DSminicubes/DSiv/field10originals_K/*.fits",'DSv':"/blue/adamginsburg/d.jeff/SgrB2DSminicubes/DSv/field10originals_K/*.fits",'DSVI':"/blue/adamginsburg/d.jeff/SgrB2DSminicubes/DSVI/field2originals_K/*.fits",'DSVII':'/blue/adamginsburg/d.jeff/SgrB2DSminicubes/DSVII/field3originals_K/*.fits','DSVIII':"/blue/adamginsburg/d.jeff/SgrB2DSminicubes/DSVIII/field3originals_K/*.fits"}
 dopplershiftimg={'SgrB2S':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/SgrB2S/new_testingstdfixandontheflyrepstuff_K_OctReimage_restfreqfix_newvelmask_newpeakamp/4_2-3_1vt=0repline_mom1.fits",'DSi':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSi/Kfield10originals_trial5carryover_field10errors/8_1-7_0vt=0repline_mom1.fits",'DSii':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSii/field10originals_noexclusions/mom1/CH3OH~8_0-7_1E1vt0.fits",'DSiii':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSiii/field10originals_noexclusions/mom1/CH3OH~10_2--9_3-vt0.fits",'DSVI':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field2/CH3OH/DSVI/Kfield2originals_trial2_16_6-16_7excluded/8_1-7_0vt=0repline_mom1.fits"}#'DSi':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSi/field10originals_spatialandvelocitymaskingtrial1/8_1-7_0vt=0repline_mom1.fits"}#'DSi':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSi/field10originals_z0_000186431_5-6mhzwidth_stdfixes/mom1/CH3OH~20_1-20_0E1vt0.fits"}
 
-#files=glob.glob("/blue/adamginsburg/d.jeff/SgrB2DSminicubes/DSi/field10originals/*.fits")
-files=glob.glob(sourcelocs[source])
-if sourceisnew:
-    pass
-else:
-    zconvimg=fits.getdata(dopplershiftimg[source])*u.km/u.s
+sourcelocs={'SgrB2S': r'C:/Users/desmond/Dropbox/Research/SgrB2DS/Spectra/files/SgrB2S/OctReimage_K','DSi':r'C:/Users/desmond/Dropbox/Research/SgrB2DS/Spectra/files/DSi/field10originals_K','DSii':r'C:/Users/desmond/Dropbox/Research/SgrB2DS/Spectra/files/DSii/field10originals_K','DSiii':r'C:/Users/desmond/Dropbox/Research/SgrB2DS/Spectra/files/DSiii/field10originals_K','DSiv':r'C:/Users/desmond/Dropbox/Research/SgrB2DS/Spectra/files/DSiv/field10originals_K','DSv':r'C:/Users/desmond/Dropbox/Research/SgrB2DS/Spectra/files/DSv/field10originals_K','DSVI':r'C:/Users/desmond/Dropbox/Research/SgrB2DS/Spectra/files/DSVI/field2originals_K'}
 
-imgnames=['spw0','spw1','spw2','spw3']
+sourcepath=sourcelocs[source]
 
-datacubes=[]
+print(f'Collecting spectra from {sourcepath}')
+inspecs=glob.glob(sourcepath+'/*.txt')
 
-for spew in imgnames:
-    for f1 in files:
+images=['spw0','spw1','spw2','spw3']
+
+spectra=[]
+
+for spew in images:
+    for f1 in inspecs:
         if spew in f1:
-            datacubes.append(f1)
+            spectra.append(f1)
             continue
     
-assert 'spw0' in datacubes[0], 'Cube list out of order'
+assert 'spw0' in spectra[0], 'Cube list out of order'
+
+print('Spectra in sequential order')
 
 #imgnum=0
 testline=0
@@ -77,14 +81,15 @@ testline=0
 linewidth=2.5*u.km/u.s#2.5 km/s is ideal for DSVI
 print(f'Absolute model line width: {linewidth}\n')
 
-#cube=sc.read(datacubes[imgnum])
+#cube=sc.read(spectrums[imgnum])
 
 #targetworldcrd=[[0,0,0],[266.8321311,-28.3976633,0]]#DSv
 #targetworldcrd=[[0,0,0],[2.66835339e+02, -2.83961660e+01, 0]]#SgrB2S
 
-for datacube, img in zip(datacubes,imgnames):
+for spectrum, img in zip(spectra,images):
     print('Getting ready - '+img)
-    cube=sc.read(datacube)
+    spec=np.genfromtxt(spectrum)
+    '''
     cube.allow_huge_operations=True
     cube_w=cube.wcs#WCS(files[imgnum])
     targetworldcrd=[[0,0,0],[266.8418408, -28.4118242, 0]]#DSVIII cont peak
@@ -115,11 +120,13 @@ for datacube, img in zip(datacubes,imgnames):
         dif=zconvimg[targetypix,targetxpix]
         velcorr=vel+dif
         z=velcorr/c
-    
-    freqs=cube.spectral_axis
+    '''
+    freqs=spec[:,0]#cube.spectral_axis
+    data=spec[:,1]
     freqflip=False
     if freqs[0] > freqs[1]:
         freqs=freqs[::-1]
+        data=data[::-1]
         freqflip=True
         print('Corrected decreasing frequency axis')
     else:
@@ -162,7 +169,7 @@ for datacube, img in zip(datacubes,imgnames):
     baseline.bounding_box=(freqs[0],freqs[(len(freqs)-1)])
     modelspec=baseline
     print('Begin model loops')
-    plot=np.linspace(freqs[0],freqs[(len(freqs)-1)],cube.shape[0]).to('GHz')
+    plot=np.linspace(freqs[0],freqs[(len(freqs)-1)],np.shape(spec)[0]).to('GHz')
     modelgaus=models.Gaussian1D(mean=freqs[0], stddev=11 * u.MHz, amplitude=0*u.K)
     
     for line,deg,euj,aij,qn in zip(mlines,mdegs,meujs,maijs,mqns):
@@ -184,7 +191,8 @@ for datacube, img in zip(datacubes,imgnames):
   
     print('Plotting model spectra')
     #plot=np.linspace(freqs[0],freqs[(len(freqs)-1)],cube.shape[0])
-    cube[:,int(round(targetpixcrd[1][1])),int(round(targetpixcrd[1][0]))].quicklook()
+    #cube[:,int(round(targetpixcrd[1][1])),int(round(targetpixcrd[1][0]))].quicklook()
+    plt.plot(freqs,data,drawstyle='steps-mid')
     plt.plot(freqs,modelspec(freqs),drawstyle='steps-mid',color='black')
     #plt.plot(plot,cube[:,int(round(targetpixcrd[1][1])),int(round(targetpixcrd[1][0]))].value,color='black',drawstyle='steps')
     plt.xlabel(r'$\nu$ (Hz)')
