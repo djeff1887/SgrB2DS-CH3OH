@@ -32,10 +32,10 @@ def kappa(nu, nu0=271.1*u.GHz, kappa0=0.0114*u.cm**2*u.g**-1, beta=1.75):
     """
     return (kappa0*(nu.to(u.GHz,u.spectral())/nu0.to(u.GHz,u.spectral()))**(beta)).to(u.cm**2/u.g)
 
-def dustmass(snu,omega,nu,kappa,tex):
+def gasmass(snu,omega,nu,kappa,tex):
     return(snu*beamarea_sr*d**2*c**2)/(2*k*tex*nu**2*kappa)
 
-def luminosity(r,T):
+def luminosity(r,T):#Boltzmann luminosity
     return (4*np.pi*r**2)*sigmasb*T**4
 
 def soundspeed(m,T):
@@ -47,7 +47,7 @@ def jeansmass(cs,rho):
 def jeanslength(cs,rho):
     return cs*G**(-1/2)*rho**(-1/2)
 
-def tff(rho):
+def tff(rho):#Free=fall time of gas
     return np.sqrt((3*np.pi)/(32*G*rho))
 
 
@@ -58,13 +58,13 @@ sigmasb=cnst.sigma*u.W/(u.m**2*u.K**4)
 mu=2.8*u.Dalton
 G=cnst.G*u.m**3/(u.kg*u.s**2)
 
-cntminfile='/blue/adamginsburg/d.jeff/imaging_results/adamcleancontinuum/Sgr_B2_DS_B6_uid___A001_X1290_X46_continuum_merged_12M_robust0_selfcal4_finaliter.image.tt0.pbcor.fits'
+cntminfile='/blue/adamginsburg/d.jeff/imaging_results/adamcleancontinuum/Sgr_B2_DS_B6_uid___A001_X1290_X46_continuum_merged_12M_robust2_selfcal4_finaliter.image.tt0.pbcor.fits'
 cntmimage=fits.open(cntminfile)
 print(f'Continuum image: {cntminfile}')
-#texmap=fits.open("/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSi/field10originals_z0_000186431_5-6mhzwidth_stdfixes/texmap_3transmask_3sigma_allspw_withnans_weighted.fits")
-texmap=fits.open("/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/SgrB2S/OctReimage_z0_0002306756533745274_5-6mhzwidth_stdfixes/texmap_3sigma_allspw_withnans_weighted.fits")
-source='SgrB2S'
-#source='DSi'
+source='DSii'
+
+texmapdict={'SgrB2S':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/SgrB2S/new_testingstdfixandontheflyrepstuff_K_OctReimage_restfreqfix_newvelmask_newpeakamp/texmap_5transmask_3sigma_allspw_withnans_weighted.fits",'DSi':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSi/field10originals_spatialandvelocitymaskingtrial5_newexclusions3andexclusionsnotinfit/texmap_5transmask_3sigma_allspw_withnans_weighted.fits",'DSii':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSii/field10originals_noexclusions/texmap_5transmask_3sigma_allspw_withnans_weighted.fits",'DSVI':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field2/CH3OH/DSVI/Kfield2originals_trial3_8_6-8_7excluded/texmap_3sigma_allspw_withnans_weighted.fits"}
+texmap=fits.open(texmapdict[source])
 
 texmapdata=texmap[0].data*u.K
 
@@ -89,9 +89,15 @@ cntmwcs=WCS(cntmimage[0].header)
 texwcs=WCS(texmap[0].header)
 
 '''Round down for both x and y when converting from DS9 (I think)'''
+#texmappix=[62,62]#DSVI cont peak
+texmappix=[22,24]#DSii cont peak
+#texmappix=[36,42]#DSi cont peak
 #texmappix=[36,43]#DSi field10 hotspot
 #texmappix=[35,44]#DSi hotspot
-texmappix=[73,56]#SgrB2S hotspot
+#texmappix=[69,58]#South-of-hotspot SgrB2S cont peak
+#texmappix=[59,62]#Southern molecular ridge SgrB2S cont peak
+#texmappix=[73,54]#post statcont SgrB2S hotspot
+#texmappix=[73,56]#SgrB2S hotspot
 #texmappix=[69,58]#SgrB2S hotspot-adjacent
 #texmappix=[79,63]#SgrB2S HII hotpost
 
@@ -134,10 +140,10 @@ print(f'target flux density: {cntmdatasqee[cntmypix,cntmxpix].to("mJy")}, target
 equiv=u.brightness_temperature(cntmimage[0].header['RESTFRQ']*u.Hz)
 jysrtoK=hotspotjy.to(u.K,equivalencies=equiv)
 targetlum=luminosity(bmajtophyssize,jysrtoK).to("solLum")#per Ginsburg+2017, this uses the peak of the continuum, not methanol
-targetdustmass=dustmass(hotspotjy,beamarea_sr,restfreq,cntmkappa,hotspottex)
+targetgasmass=gasmass(hotspotjy,beamarea_sr,restfreq,cntmkappa,hotspottex)
 targetcs=soundspeed(mu, hotspottex)
-targetgasmass=100*targetdustmass
-targetsigmam=((targetgasmass/(np.pi*beamarea_phys)).to('g cm-2'))
+targetdustmass=targetgasmass/100
+targetsigmam=((targetgasmass/(beamarea_phys)).to('g cm-2'))
 targetrho=((targetgasmass/((4/3)*np.pi*bmajtophyssize**3)).to('g cm-3'))
 tarMj=jeansmass(targetcs,targetrho)
 tarlambdaj=jeanslength(targetcs,targetrho)

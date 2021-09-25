@@ -5,10 +5,14 @@ import math
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 from astropy import visualization
+import os
+import pdb
 
 mpl.interactive(False)
 
 plt.clf()
+
+mu=2.8*u.Dalton
 
 def circle(data,ycenter,xcenter,rad):
     edgex=[]
@@ -20,6 +24,9 @@ def circle(data,ycenter,xcenter,rad):
                 edgey.append(i)
     return np.vstack((edgex,edgey))
 
+def subquarter_profile(r,peak):
+    return peak*((r/pixtophysicalsize)**-0.25)
+    
 def sublinear_profile(r,peak):
     return peak*((r/pixtophysicalsize)**-0.5)
 
@@ -29,13 +36,20 @@ def linear_profile(r,peak):
 def quadratic_profile(r,peak):
     return peak*((r/pixtophysicalsize)**-2)
     
-source='DSVI'
-fielddict={'SgrB2S':1,'DSi':10,'DSii':10,'DSiii':10,'DSiv':10,'DSv':10,'DSVI':2}
+source='DSi'
+fielddict={'SgrB2S':1,'DSi':10,'DSii':10,'DSiii':10,'DSiv':10,'DSv':10,'DSVI':2,'DSVII':3,'DSVIII':3}
 fnum=fielddict[source]
 print(f'Source: {source}')
 base=f'/blue/adamginsburg/d.jeff/SgrB2DSreorg/field{fnum}/CH3OH/{source}/'
-homedict={'SgrB2S':"new_testingstdfixandontheflyrepstuff_K_OctReimage_restfreqfix_newvelmask_newpeakamp/",'DSi':"Kfield10originals_trial7_field10errors_newexclusion_matchslabwidthtorep/",'DSii':"Kfield10originals_noexclusions/",'DSiii':"Kfield10originals_noexclusions/",'DSiv':"Kfield10originals_noexclusions/",'DSv':"Kfield10originals_noexclusions_include4-3_150K_trial2/",'DSVI':"Kfield2originals_trial2_16_6-16_7excluded/"}#base+'field10originals_z0_000186431_5-6mhzwidth_stdfixes/'
+homedict={'SgrB2S':"new_testingstdfixandontheflyrepstuff_K_OctReimage_restfreqfix_newvelmask_newpeakamp/",'DSi':"Kfield10originals_trial7_field10errors_newexclusion_matchslabwidthtorep/",'DSii':"Kfield10originals_noexclusions/",'DSiii':"Kfield10originals_noexclusions/",'DSiv':"Kfield10originals_noexclusions/",'DSv':"Kfield10originals_noexclusions_include4-3_150K_trial2/",'DSVI':"Kfield2originals_trial3_8_6-8_7excluded/",'DSVII':'Kfield3originals_200K_trial1_noexclusions/','DSVIII':'Kfield3originals_175K_trial1_noexclusions/'}#base+'field10originals_z0_000186431_5-6mhzwidth_stdfixes/'
 home=base+homedict[source]
+fighome=f'/blue/adamginsburg/d.jeff/repos/CH3OHTemps/figures/{source}/'
+figpath=fighome+homedict[source]
+if not os.path.exists(figpath):
+    os.makedirs(figpath)
+    print(f'Creating figpath {figpath}')
+else:
+    print(f'Figpath {figpath} already exists.')
 '''
 source='SgrB2S'
 fnum=1
@@ -43,17 +57,21 @@ home="/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/SgrB2S/new_testingstdf
 #home='/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSi/OctReimage_z0_000186431_5-6mhzwidth_stdfixes/'
 #home="/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/SgrB2S/OctReimage_z0_0002306756533745274_5-6mhzwidth_stdfixes/"
 '''
-if source == 'DSv':
-    texmap=home+"texmap_0transmask_3sigma_allspw_withnans_weighted.fits"
+notransmask=['DSv','DSVI','DSVII','DSVIII']
+if source in notransmask:
+    texmap=home+"texmap_3sigma_allspw_withnans_weighted.fits"
 else:
     texmap=home+"texmap_5transmask_3sigma_allspw_withnans_weighted.fits"
+
 snrmap=home+"texmap_snr_allspw_weighted.fits"
-abunmap=home+"ch3ohabundance.fits"
+abunmap=home+"ch3ohabundance_3sigma_ntotintercept.fits"
+nh2map=home+"nh2map_3sigmacontandsurfacedensity.fits"
 
 texmap=fits.open(texmap)
 texmapdata=texmap[0].data*u.K
 snrs=fits.getdata(snrmap)
 abunds=fits.getdata(abunmap)
+nh2s=fits.getdata(nh2map)*u.cm**-2
 
 dGC=8.34*u.kpc#per Meng et al. 2019 https://www.aanda.org/articles/aa/pdf/2019/10/aa35920-19.pdf
 
@@ -63,7 +81,18 @@ pixtophysicalsize=(np.tan(cellsize)*dGC).to('AU')
 
 print(pixtophysicalsize)
 
-pixdict={'SgrB2S':(73,54),'DSi':(36,42),'DSii':(22,24),'DSiii':(24,24),'DSiv':(32,31),'DSv':(19,19),'DSVI':(62,62)}#y,x
+bmaj=texmap[0].header['BMAJ']*u.deg
+bmajpix=round((bmaj/cellsize).value)
+bmin=texmap[0].header['BMIN']*u.deg
+bminpix=round((bmin/cellsize).value)
+beamarea_sqdeg=bmaj*bmin
+beamarea_sr=beamarea_sqdeg.to('sr')
+bmajtophyssize=(np.tan(bmaj)*dGC).to('AU')
+bmintophyssize=(np.tan(bmin)*dGC).to('AU')
+'''Can probably simplify beamarea_phys to d(np.tan(bmaj)*np.tan(bmin))'''
+beamarea_phys=np.pi*bmajtophyssize*bmintophyssize
+
+pixdict={'SgrB2S':(73,54),'DSi':(36,42),'DSii':(22,24),'DSiii':(24,24),'DSiv':(32,31),'DSv':(19,19),'DSVI':(62,62),'DSVII':(75,75),'DSVIII':(50,50)}#y,x
 
 texpeakpix=pixdict[source]
 #(36,43)#DSi hotspot
@@ -72,7 +101,7 @@ texpeakpix=pixdict[source]
 
 print(f'Center p: {texmapdata[texpeakpix[0],texpeakpix[1]]}')
 
-r=35
+r=35 #for 15,000 AU
 #pixradius=math.ceil((0.08*u.pc/pixtophysicalsize).to(''))
 r_phys=r*pixtophysicalsize.to('pc')
 print(f'physical radius: {r_phys}')
@@ -85,6 +114,9 @@ yinradius=[]
 centrtopix=[]
 snrsinradius=[]
 abundinradius=[]
+nh2inradius=[]
+
+lookformax=[]
 
 for y in range(np.shape(texmapdata)[0]):
     for x in range(np.shape(texmapdata)[1]):
@@ -95,24 +127,78 @@ for y in range(np.shape(texmapdata)[0]):
             centrtopix.append((np.sqrt((y-texpeakpix[0])**2+(x-texpeakpix[1])**2)*pixtophysicalsize).value)
             snrsinradius.append(snrs[y,x]/5)#Scaling down by 5 to better be able to distinguish datapoints in plot
             abundinradius.append(abunds[y,x])
+            nh2inradius.append((nh2s[y,x]*mu*beamarea_phys).to('solMass').value)
+            #pdb.set_trace()
+        if (y-texpeakpix[0])**2+(x-texpeakpix[1])**2 <= 10:
+            lookformax.append(texmapdata[y,x].value)
         else:
             pass
             
+teststack=np.stack((centrtopix,nh2inradius,snrsinradius),axis=1)
+teststack=teststack[teststack[:,0].argsort()]
+set_centrtopix=set(teststack[:,0])
+listordered_centrtopix=list(set_centrtopix)
+listordered_centrtopix.sort()
+
+avglist=[]
+
+for bin in listordered_centrtopix:
+    tempmass=[]
+    tempsnr=[]
+    for data in teststack:
+        #print(f'Bin: {bin} AU')
+        if bin == data[0]:
+            if np.isnan(data[1]):
+                continue
+            else:
+                tempmass.append(data[1])
+                tempsnr.append(data[2]*5)
+        else:
+            pass
+    if len(tempmass)==0:
+        avglist.append(0)
+    else:
+        avg=np.average(tempmass,weights=tempsnr)
+        avglist.append(avg)
+    #pdb.set_trace()
+
+massderivative=list(np.diff(avglist))
+edge=0
+for diff in massderivative:
+    if diff >= 0:
+        index=massderivative.index(diff)
+        edge=listordered_centrtopix[index]
+        break
+        
+massestosum=[]
+m2sum2=avglist[:index]
+for data2 in teststack:
+    if data2[0] <= edge:
+        massestosum.append(data2[1])
+    else:
+        break
+masssum=np.nansum(massestosum)
+msum=np.nansum(m2sum2)
+print(f'Sum: {masssum}')
+print(f'Sum2: {msum}')
+plottexmax=np.max(lookformax)+10
 copy_centrtopix=np.copy(centrtopix)*u.AU
 #copy_centrtopix.sort()
 lineartex=[]
 quadrtex=[]
 sublinhalftex=[]
+sublinquarttex=[]
 
 for dist in copy_centrtopix:
     lineartex.append(linear_profile(dist,texmapdata[texpeakpix[0],texpeakpix[1]]).value)
     quadrtex.append(quadratic_profile(dist,texmapdata[texpeakpix[0],texpeakpix[1]]).value)
     sublinhalftex.append(sublinear_profile(dist,texmapdata[texpeakpix[0],texpeakpix[1]]).value)
+    sublinquarttex.append(subquarter_profile(dist,texmapdata[texpeakpix[0],texpeakpix[1]]).value)
     
 plt.rcParams["figure.dpi"]=150
 
 ax=plt.subplot(111)
-
+'''
 vmaxdict={'DSi':1e-5}
 plt.scatter(centrtopix,texinradius,s=snrsinradius,c=abundinradius,cmap='Greens',alpha=0.7)#,norm=mpl.colors.LogNorm())
 plt.plot(copy_centrtopix,lineartex,color='yellow',label=r'r$^{-1}$')
@@ -130,21 +216,30 @@ plt.savefig(savefigpath,overwrite=True)
 plt.show()
 
 plt.close()
-
+'''
 ax=plt.subplot(111)
-plt.scatter(centrtopix,texinradius,s=snrsinradius,c=abundinradius,norm=mpl.colors.LogNorm(vmin=1e-8),cmap='Greens',alpha=0.7)
+plt.scatter(centrtopix,texinradius,s=snrsinradius,c=abundinradius,norm=mpl.colors.LogNorm(vmin=1e-8),cmap='viridis',alpha=0.7)
 plt.plot(copy_centrtopix,lineartex,color='yellow',label=r'r$^{-1}$')
 plt.plot(copy_centrtopix,quadrtex,color='green',label=r'r$^{-2}$')
 plt.plot(copy_centrtopix,sublinhalftex,color='purple',label=r'r$^{-0.5}$')
+plt.plot(copy_centrtopix,sublinquarttex,color='orange',label=r'r$^{-0.25}$')
 ax.set_xlabel('$d$ (AU)',fontsize=14)
 ax.set_ylabel('$T_K$ (K)',fontsize=14)
+plt.ylim((-10,plottexmax))
 ax.tick_params(size=14)
 plt.tight_layout()
 plt.colorbar(pad=0,label='X(CH$_3$OH)')
-plt.legend()
+plt.legend(loc=1)
 
-savefigpath=home+f'figures/radialtexdiag_r{r}px_rphys{int(pixtophysicalsize.value)}AU_lognorm_linear_quad_sqrt.png'
-plt.savefig(savefigpath,overwrite=True)
+savefigpath=home+f'figures/radialtexdiag_r{r}px_rphys{int(pixtophysicalsize.value)}AU_lognorm_linear_quad_sqrt_interceptabundances.png'
+figsavepath=figpath+f'radialtexdiag_r{r}px_rphys{int(pixtophysicalsize.value)}AU_lognorm_linear_quad_sqrt_interceptabundances.png'
+#plt.savefig(savefigpath,overwrite=True)
+#plt.savefig(figsavepath,overwrite=True)
+
+plt.show()
+
+plt.plot(listordered_centrtopix,avglist)
+plt.axvline(edge,ls='--')
 plt.show()
 
 

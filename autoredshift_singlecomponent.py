@@ -218,7 +218,7 @@ mdegs=methanol_table['Upper State Degeneracy']
 mlog10aijs=minmethtable['log10_Aij']
 maijs=10**mlog10aijs*u.s**-1
 
-plotwidth=linewidth*1.25#decreased from 1.5
+plotwidth=linewidth*1.5#decreased from 1.5
 lwvel=vradio(lw2,mlines[testline])
 print(f'Transition: {mqns[testline]}\nEU_K: {meuks[testline]}')
 
@@ -312,7 +312,7 @@ linemax=30
 linemin2=0
 linemax2=15
 linemin3=0
-linemax3=28
+linemax3=31
 testmod1=models.Gaussian1D(mean=mlines[testline], stddev=3 * u.MHz, amplitude=(t_brights[np.argmax(t_brights)]))# * u.K)#testtbthick,mlines[testline],lw2)
 #testmod2=models.Gaussian1D(mean=(mlines[testline]+cmpnt2frqoffset), stddev=1 * u.MHz, amplitude=(t_brights[np.argmax(t_brights)]/1.2))# * u.K)
 testmod3=testmod1#+testmod2
@@ -337,13 +337,13 @@ print(f'Model fit params: {testfit3}')
 print(f'Model fit info: {fit_g.fit_info}')
 print(f'Main z (unitless redshift): {cmpntfitz}')
 print(f'Main z (km/s): {cmpntfitz_vel}')
-plt.plot(spwwindow.spectral_axis,t_brights,drawstyle='steps')
+plt.plot(spwwindow.spectral_axis,t_brights,drawstyle='steps-mid')
 
 '''
 plt.plot(plot,plotprofilethin,label=(r'$\tau << 1$'))
 plt.plot(plot,plotprofilethick,label=(r'$\tau \geq 1$'))
 '''
-plt.plot(spwwindow.spectral_axis[linemin3:linemax3],t_brights[linemin3:linemax3],drawstyle='steps',color='orange')
+plt.plot(spwwindow.spectral_axis[linemin3:linemax3],t_brights[linemin3:linemax3],drawstyle='steps-mid',color='orange')
 '''
 plt.plot(spwwindow.spectral_axis[linemin2:linemax2],t_brights[linemin2:linemax2],drawstyle='steps',color='green')
 
