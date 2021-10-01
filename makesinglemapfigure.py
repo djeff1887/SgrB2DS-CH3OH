@@ -38,8 +38,8 @@ def make_scalebar(ax, left_side, length, color='black', linestyle='-', label='',
                  zorder=2,bbox=dict(facecolor='white', alpha=0.6))
     ax.axis(axlims)
     return lines,txt
-set=0
-colordict={0:('trot','inferno','texmap_3sigma_allspw_withnans_weighted.fits'),1:('mom0','bone'),2:('nupper','Blues_r'),3:('detections','CMRmap',"ch3ohdetections5_3sigma_allspw_withnans_weighted.fits"),4:('abundance','viridis','ch3ohabundance_3sigma_ntotintercept.fits')}
+set=1
+colordict={0:('trot','inferno','texmap_3sigma_allspw_withnans_weighted.fits'),1:('mom0','bone',"CH3OH~5_1-4_2E1vt0_masked.fits"),2:('nupper','Blues_r'),3:('detections','CMRmap',"ch3ohdetections5_3sigma_allspw_withnans_weighted.fits"),4:('abundance','viridis','ch3ohabundance_3sigma_ntotintercept.fits')}
 mode=colordict[set][0]
 color=colordict[set][1]
 pathsuffix=colordict[set][2]
@@ -141,13 +141,13 @@ ra=ax.coords[0]
 dec=ax.coords[1]
 if mode == 'trot':
     vmaxdict={'SgrB2S':520,'DSi':320,'DSii':225,'DSiii':300,'DSiv':313,'DSv':281,'DSVI':378,'DSVII':250,'DSVIII':225}
-    img=ax.imshow(np.squeeze(hdu.data),vmax=vmaxdict[source],interpolation=None, cmap=cm)#, norm=mpl.colors.LogNorm())#vmaxcntm=0.005, vmaxdsi=300 (no min value),vmaxsgrb2s=605 tmin=10 (try no min value), ntotmax=6.26e17, dsintotmax=2.21e17
+    img=ax.imshow(np.squeeze(hdu.data),vmax=vmaxdict[source],vmin=25,interpolation=None, cmap=cm)#, norm=mpl.colors.LogNorm())#vmaxcntm=0.005, vmaxdsi=300 (no min value),vmaxsgrb2s=605 tmin=10 (try no min value), ntotmax=6.26e17, dsintotmax=2.21e17
 elif mode == 'abundance':
     img=ax.imshow(np.squeeze(hdu.data),interpolation=None, cmap=cm, norm=mpl.colors.LogNorm(vmax=5e-5,vmin=1e-7))
 else:
     img=ax.imshow(np.squeeze(hdu.data),interpolation=None, cmap=cm)
 lims=ax.axis()
-ax.contour(cntrdata, levels=cntrlist, colors='white',transform=ax.get_transform(cntrwcs),linewidths=0.5)#, alpha=0.5)#ax.contour(data=hdu.data)#, colors='black')#binary/Greys are other good cmaps
+#ax.contour(cntrdata, levels=cntrlist, colors='white',transform=ax.get_transform(cntrwcs),linewidths=0.5)#, alpha=0.5)#ax.contour(data=hdu.data)#, colors='black')#binary/Greys are other good cmaps
 #ax.contour(cntrdata,levels=(-1*cntrlist),colors='white',linestyles='dashed')#YlGn is alt for both
 
 scaledict={'SgrB2S':5000*u.AU,'DSi':5000*u.AU,'DSii':2000*u.AU,'DSiii':2000*u.AU,'DSiv':2000*u.AU,'DSv':2000*u.AU,'DSVI':5000*u.AU,'DSVII':5000*u.AU,'DSVIII':5000*u.AU}
@@ -199,14 +199,14 @@ hdubeamplot=hdubeam.ellipse_to_plot(10,10,pixscale)
 hdubeamplot.set_facecolor('none')
 hdubeamplot.set_edgecolor('cyan')
 
-labeldict={0:'T$_{K}$ (K)',1:r'S$_\nu$ (K)',2:r'N$_{upper}$ (cm$^{-2}$)',3:'$n_{transition}$',4:'X(CH$_3$OH)'}
+labeldict={0:'T$_{K}$ (K)',1:r'Intensity (K km s$^{-1}$)',2:r'N$_{upper}$ (cm$^{-2}$)',3:'$n_{transition}$',4:'X(CH$_3$OH)'}
 ax.axis(lims)
 ra.set_axislabel('RA (J2000)',fontsize=14,minpad=0.9)
 ra.set_ticklabel(exclude_overlapping=True)
 dec.set_axislabel('Dec (J2000)',fontsize=14,minpad=-0.7)
 ax.tick_params(fontsize=14)
-cbar1=plt.colorbar(img,pad=0,label=labeldict[set])#r'S$_\nu$ (Jy)')#'$n_{transition}$')#plt.colorbar()
-plt.savefig(savefigpath)
+cbar1=plt.colorbar(img,label=labeldict[set],pad=0)#r'S$_\nu$ (Jy)')#'$n_{transition}$')#plt.colorbar()
+#plt.savefig(savefigpath)
 
 '''Plotting shapes
 r = Rectangle((2000,2000),1000,1000,facecolor='red')
