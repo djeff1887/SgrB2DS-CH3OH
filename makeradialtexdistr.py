@@ -36,7 +36,7 @@ def linear_profile(r,peak):
 def quadratic_profile(r,peak):
     return peak*((r/pixtophysicalsize)**-2)
     
-source='DSiv'
+source='DSVIII'
 fielddict={'SgrB2S':1,'DSi':10,'DSii':10,'DSiii':10,'DSiv':10,'DSv':10,'DSVI':2,'DSVII':3,'DSVIII':3}
 fnum=fielddict[source]
 print(f'Source: {source}')
@@ -99,7 +99,9 @@ bmintophyssize=(np.tan(bmin)*dGC).to('AU')
 beamarea_phys=np.pi*bmajtophyssize*bmintophyssize
 
 pixdict={'SgrB2S':(73,54),'DSi':(36,42),'DSii':(22,24),'DSiii':(24,24),'DSiv':(32,31),'DSv':(19,19),'DSVI':(62,62),'DSVII':(75,75),'DSVIII':(50,50)}#y,x; DSiii was 24,24
+#SgrB2S tpeak is 73,54
 #nh2dict={'DSiii':(27,27)}
+#ntotdict={'SgrB2S':(63,71)'}
 
 texpeakpix=pixdict[source]
 #nh2peakpix=nh2dict[source]
@@ -109,9 +111,10 @@ texpeakpix=pixdict[source]
 
 print(f'Center p: {texmapdata[texpeakpix[0],texpeakpix[1]]}')
 
-r=35 #for 15,000 AU
+#r=35 #for 15,000 AU
 #pixradius=math.ceil((0.08*u.pc/pixtophysicalsize).to(''))
-r_phys=r*pixtophysicalsize.to('pc')
+r_phys=12000*u.AU#r*pixtophysicalsize.to('pc')
+r=math.ceil((r_phys/pixtophysicalsize).to(''))
 print(f'physical radius: {r_phys}')
 
 xpixs=np.arange(texpeakpix[0],(texpeakpix[0]+r))
@@ -208,6 +211,7 @@ print(f'Sum2: {msum}')
 print(f'Core radius: {edge}')
 print(f'Core luminosity: {lumsum}')
 plottexmax=np.max(lookformax)+10
+print(f'Max Tex: {np.max(lookformax)}')
 copy_centrtopix=np.copy(centrtopix)*u.AU
 #copy_centrtopix.sort()
 lineartex=[]
@@ -243,23 +247,24 @@ plt.show()
 
 plt.close()
 '''
-ax=plt.subplot(111)
-plt.scatter(centrtopix,texinradius,s=snrsinradius,c=abundinradius,norm=mpl.colors.LogNorm(vmin=1e-8),cmap='viridis',alpha=0.7)
+#ax=plt.subplot(111)
+#plt.scatter(centrtopix,texinradius,s=snrsinradius,c=abundinradius,norm=mpl.colors.LogNorm(vmin=1e-8),cmap='viridis',alpha=0.7)
 '''
 plt.plot(copy_centrtopix,lineartex,color='yellow',label=r'r$^{-1}$')
 plt.plot(copy_centrtopix,quadrtex,color='green',label=r'r$^{-2}$')
 plt.plot(copy_centrtopix,sublinhalftex,color='purple',label=r'r$^{-0.5}$')
 plt.plot(copy_centrtopix,sublinquarttex,color='orange',label=r'r$^{-0.25}$')
 '''
+'''
 ax.set_xlabel('$d$ (AU)',fontsize=14)
 ax.set_ylabel('$T_K$ (K)',fontsize=14)
-plt.ylim((-10,plottexmax))
+plt.ylim(ymax=plottexmax)
 ax.tick_params(size=14)
 plt.tight_layout()
 plt.colorbar(pad=0,label='X(CH$_3$OH)')
 #plt.legend(loc=1)
 
-savefigpath=home+f'figures/radialtexdiag_r{r}px_rphys{int(pixtophysicalsize.value)}AU_lognorm_linear_quad_sqrt_interceptabundances.png'
+savefigpath=home+f'figures/radialtexdiag_r{r}px_rphys{int(pixtophysicalsize.value)}AU_interceptabundances.png'#home+f'figures/radialtexdiag_r{r}px_rphys{int(pixtophysicalsize.value)}AU_lognorm_linear_quad_sqrt_interceptabundances.png'
 figsavepath=figpath+f'radialtexdiag_r{r}px_rphys{int(pixtophysicalsize.value)}AU_lognorm_linear_quad_sqrt_interceptabundances.png'
 #plt.savefig(savefigpath,overwrite=True)
 #plt.savefig(figsavepath,overwrite=True)
@@ -274,9 +279,20 @@ plt.scatter(texinradius,abundinradius,s=abundsnrinradius,c=ntotsinradius,norm=mp
 plt.yscale('log')
 plt.xlabel('$T_K$ (K)',fontsize=14)
 plt.ylabel('X(CH$_3$OH)',fontsize=14)
-plt.colorbar(pad=0,label='N(CH$_3$OH) (cm-2)')#'N(H2) (cm-2)')#
+plt.xlim(xmax=plottexmax)
+#plt.colorbar(pad=0,label='Luminosity (Lsun)')
+plt.colorbar(pad=0,label='N(CH$_3$OH) (cm$^{-2}$)')#'N(H2) (cm-2)')#
+figsavepath=figpath+f'radialabundiag_r{r}px_rphys{int(pixtophysicalsize.value)}AU_interceptabundances.png'
+#plt.savefig(figsavepath,overwrite=True)
 plt.show()
-
+'''
+plt.scatter(nh2inradius,ntotsinradius,s=snrsinradius,c=texinradius)
+plt.yscale('log')
+plt.xscale('log')
+plt.colorbar(pad=0,label='T$_K$ (K)')
+plt.xlabel('N(H$_2$) (cm$^{-2}$)')
+plt.ylabel('N(CH$_3$OH) (cm$^{-2}$)')
+plt.show()
 
 '''
 edgepoints=circle(texmapdata,texpeakpix[0],texpeakpix[1],r)
