@@ -66,18 +66,18 @@ mu=2.8*u.Dalton
 G=cnst.G*u.m**3/(u.kg*u.s**2)
 molweight_ch3oh=(32.042*u.u).to('g')#https://pubchem.ncbi.nlm.nih.gov/compound/methanol
 
-cntminfile='/blue/adamginsburg/d.jeff/imaging_results/adamcleancontinuum/Sgr_B2_DS_B6_uid___A001_X1290_X46_continuum_merged_12M_robust2_selfcal4_finaliter.image.tt0.pbcor.fits'
+cntminfile='/orange/adamginsburg/sgrb2/2017.1.00114.S/imaging_results/Sgr_B2_DS_B6_uid___A001_X1290_X46_continuum_merged_12M_robust2_selfcal4_finaliter_feathered_with_bolocam.fits'#'/blue/adamginsburg/d.jeff/imaging_results/adamcleancontinuum/Sgr_B2_DS_B6_uid___A001_X1290_X46_continuum_merged_12M_robust2_selfcal4_finaliter.image.tt0.pbcor.fits'
 cntmimage=fits.open(cntminfile)
 print(f'Continuum image: {cntminfile}')
 restfreq=cntmimage[0].header['RESTFRQ']*u.Hz
-source='DSVIII'
+source='DSX'
 print(f'Source: {source}')
 
 #texmapdict={'SgrB2S':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/SgrB2S/new_testingstdfixandontheflyrepstuff_K_OctReimage_restfreqfix_newvelmask_newpeakamp/texmap_5transmask_3sigma_allspw_withnans_weighted.fits",'DSi':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSi/field10originals_spatialandvelocitymaskingtrial5_newexclusions3andexclusionsnotinfit/texmap_5transmask_3sigma_allspw_withnans_weighted.fits",'DSii':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSii/field10originals_noexclusions/texmap_5transmask_3sigma_allspw_withnans_weighted.fits"}
-sourcedict={'SgrB2S':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/SgrB2S/new_testingstdfixandontheflyrepstuff_K_OctReimage_restfreqfix_newvelmask_newpeakamp/",'DSi':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSi/Kfield10originals_trial7_field10errors_newexclusion_matchslabwidthtorep/",'DSii':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSii/Kfield10originals_noexclusions/",'DSiii':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSiii/Kfield10originals_noexclusions/",'DSiv':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSiv/Kfield10originals_noexclusions/",'DSv':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSv/Kfield10originals_noexclusions_include4-3_150K_trial2/",'DSVI':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field2/CH3OH/DSVI/Kfield2originals_trial3_8_6-8_7excluded/",'DSVII':'/blue/adamginsburg/d.jeff/SgrB2DSreorg/field3/CH3OH/DSVII/Kfield3originals_200K_trial1_noexclusions/','DSVIII':'/blue/adamginsburg/d.jeff/SgrB2DSreorg/field3/CH3OH/DSVIII/Kfield3originals_175K_trial1_noexclusions/'}
+sourcedict={'SgrB2S':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/SgrB2S/new_testingstdfixandontheflyrepstuff_K_OctReimage_restfreqfix_newvelmask_newpeakamp/",'DSi':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSi/Kfield10originals_trial7_field10errors_newexclusion_matchslabwidthtorep/",'DSii':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSii/Kfield10originals_noexclusions/",'DSiii':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSiii/Kfield10originals_noexclusions/",'DSiv':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSiv/Kfield10originals_noexclusions/",'DSv':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSv/Kfield10originals_noexclusions_include4-3_150K_trial2/",'DSVI':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field2/CH3OH/DSVI/Kfield2originals_trial3_8_6-8_7excluded/",'DSVII':'/blue/adamginsburg/d.jeff/SgrB2DSreorg/field3/CH3OH/DSVII/Kfield3originals_200K_trial1_noexclusions/','DSVIII':'/blue/adamginsburg/d.jeff/SgrB2DSreorg/field3/CH3OH/DSVIII/Kfield3originals_175K_trial1_noexclusions/','DSIX':'/blue/adamginsburg/d.jeff/SgrB2DSreorg/field7/CH3OH/DSIX/Kfield7originals_150K_trial1_noexclusions/','DSX':'/blue/adamginsburg/d.jeff/SgrB2DSreorg/field7/CH3OH/DSX/Kfield7originals_100K_trial1_noexclusions/'}
 sourcepath=sourcedict[source]
 
-notransmask=['DSv','DSVI','DSVII','DSVIII']
+notransmask=['DSv','DSVI','DSVII','DSVIII','DSIX','DSX']
 if source in notransmask:
     texmap=fits.open(sourcepath+'texmap_3sigma_allspw_withnans_weighted.fits')
 else:
@@ -87,10 +87,10 @@ ntotmap=fits.getdata(sourcepath+'ntotmap_allspw_withnans_weighted_useintercept_3
 ntoterrmap=fits.getdata(sourcepath+'ntoterrmap_allspw_withnans_weighted_useintercept.fits')*u.cm**-2
 ch3ohSigmam_map=ntotmap*molweight_ch3oh
 
-snrmapdict={'SgrB2S':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/SgrB2S/new_testingstdfixandontheflyrepstuff_K_OctReimage_restfreqfix_newvelmask_newpeakamp/"}
+#snrmapdict={'SgrB2S':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/SgrB2S/new_testingstdfixandontheflyrepstuff_K_OctReimage_restfreqfix_newvelmask_newpeakamp/"}
 snrmap=fits.getdata(sourcepath+'texmap_snr_allspw_weighted.fits')
 
-texerrmapdict={'SgrB2S':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/SgrB2S/new_testingstdfixandontheflyrepstuff_K_OctReimage_restfreqfix_newvelmask_newpeakamp/"}
+#texerrmapdict={'SgrB2S':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/SgrB2S/new_testingstdfixandontheflyrepstuff_K_OctReimage_restfreqfix_newvelmask_newpeakamp/"}
 texerrmap=fits.getdata(sourcepath+'texmap_error_allspw_withnans_weighted.fits')*u.K
 
 texmapdata=texmap[0].data*u.K
@@ -218,7 +218,7 @@ nh2primaryhdu.header=texmap[0].header
 nh2primaryhdu.header['BTYPE']='N(H2)'
 nh2primaryhdu.header['BUNIT']='cm-2'
 nh2hdul=fits.HDUList([nh2primaryhdu])
-nh2fitspath=sourcepath+f'nh2map_{snr}sigmacontandsurfacedensity.fits'
+nh2fitspath=sourcepath+f'nh2map_{snr}sigmacontandsurfacedensity_bolocamfeather.fits'
 print(f'Saving N(H2) map at {nh2fitspath}\n')
 nh2hdul.writeto(nh2fitspath,overwrite=True)
 
@@ -227,7 +227,7 @@ nh2uncprimaryhdu.header=texmap[0].header
 nh2uncprimaryhdu.header['BTYPE']='N(H2) error'
 nh2uncprimaryhdu.header['BUNIT']='cm-2'
 nh2unchdul=fits.HDUList([nh2uncprimaryhdu])
-nh2uncfitspath=sourcepath+f'nh2map_error.fits'
+nh2uncfitspath=sourcepath+f'nh2map_error_bolocamfeather.fits'
 print(f'Saving N(H2) map at {nh2uncfitspath}\n')
 nh2unchdul.writeto(nh2uncfitspath,overwrite=True)
 
@@ -236,7 +236,7 @@ ch3ohabundprimaryhdu.header=texmap[0].header
 ch3ohabundprimaryhdu.header['BTYPE']='Abundance (CH3OH)'
 ch3ohabundprimaryhdu.header['BUNIT']='cm-2/cm-2'
 ch3ohabundhdul=fits.HDUList([ch3ohabundprimaryhdu])
-ch3ohabundfitspath=sourcepath+f'ch3ohabundance_ntotintercept.fits'
+ch3ohabundfitspath=sourcepath+f'ch3ohabundance_ntotintercept_bolocamfeather.fits'
 print(f'Saving CH3OH abundance map at {ch3ohabundfitspath}\n')
 ch3ohabundhdul.writeto(ch3ohabundfitspath,overwrite=True)
 
@@ -245,7 +245,7 @@ errch3ohabundprimaryhdu.header=texmap[0].header
 errch3ohabundprimaryhdu.header['BTYPE']='Abundance error (CH3OH)'
 errch3ohabundprimaryhdu.header['BUNIT']='cm-2/cm-2'
 errch3ohabundhdul=fits.HDUList([errch3ohabundprimaryhdu])
-errch3ohabundfitspath=sourcepath+f'ch3ohabundance_error_ntotintercept.fits'
+errch3ohabundfitspath=sourcepath+f'ch3ohabundance_error_ntotintercept_bolocamfeather.fits'
 print(f'Saving CH3OH abundance error map at {errch3ohabundfitspath}\n')
 errch3ohabundhdul.writeto(errch3ohabundfitspath,overwrite=True)
 
@@ -254,7 +254,7 @@ snrch3ohabundprimaryhdu.header=texmap[0].header
 snrch3ohabundprimaryhdu.header['BTYPE']='Abundance SNR (CH3OH)'
 snrch3ohabundprimaryhdu.header['BUNIT']='cm-2/cm-2'
 snrch3ohabundhdul=fits.HDUList([snrch3ohabundprimaryhdu])
-snrch3ohabundfitspath=sourcepath+f'ch3ohabundance_snr_ntotintercept.fits'
+snrch3ohabundfitspath=sourcepath+f'ch3ohabundance_snr_ntotintercept_bolocamfeather.fits'
 print(f'Saving CH3OH abundance SNR map at {snrch3ohabundfitspath}\n')
 snrch3ohabundhdul.writeto(snrch3ohabundfitspath,overwrite=True)
 
@@ -263,7 +263,7 @@ sigclipch3ohabundprimaryhdu.header=texmap[0].header
 sigclipch3ohabundprimaryhdu.header['BTYPE']='Abundance (CH3OH)'
 sigclipch3ohabundprimaryhdu.header['BUNIT']='cm-2'
 sigclipch3ohabundhdul=fits.HDUList([sigclipch3ohabundprimaryhdu])
-sigclipch3ohabundfitspath=sourcepath+f'ch3ohabundance_3sigma_ntotintercept.fits'
+sigclipch3ohabundfitspath=sourcepath+f'ch3ohabundance_3sigma_ntotintercept_bolocamfeather.fits'
 print(f'Saving CH3OH abundance map at {sigclipch3ohabundfitspath}\n')
 sigclipch3ohabundhdul.writeto(sigclipch3ohabundfitspath,overwrite=True)
 
@@ -272,7 +272,7 @@ lumprimaryhdu.header=texmap[0].header
 lumprimaryhdu.header['BTYPE']='Luminosity'
 lumprimaryhdu.header['BUNIT']='Lsun'
 lumhdul=fits.HDUList([lumprimaryhdu])
-lumfitspath=sourcepath+f'boltzmannlum.fits'
+lumfitspath=sourcepath+f'boltzmannlum_bolocamfeather.fits'
 print(f'Saving luminosity map at {lumfitspath}\n')
 lumhdul.writeto(lumfitspath,overwrite=True)
 
@@ -281,7 +281,7 @@ tauprimaryhdu.header=texmap[0].header
 tauprimaryhdu.header['BTYPE']='Optical depth (tau)'
 tauprimaryhdu.header['BUNIT']='unitless'
 tauhdul=fits.HDUList([tauprimaryhdu])
-taufitspath=sourcepath+f'opticaldepth.fits'
+taufitspath=sourcepath+f'opticaldepth_bolocamfeather.fits'
 print(f'Saving optical depth map at {taufitspath}\n')
 tauhdul.writeto(taufitspath,overwrite=True)
         
