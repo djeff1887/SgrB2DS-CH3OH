@@ -70,7 +70,7 @@ cntminfile='/orange/adamginsburg/sgrb2/2017.1.00114.S/imaging_results/Sgr_B2_DS_
 cntmimage=fits.open(cntminfile)
 print(f'Continuum image: {cntminfile}')
 restfreq=cntmimage[0].header['RESTFRQ']*u.Hz
-source='DSX'
+source='DSIX'
 print(f'Source: {source}')
 
 #texmapdict={'SgrB2S':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/SgrB2S/new_testingstdfixandontheflyrepstuff_K_OctReimage_restfreqfix_newvelmask_newpeakamp/texmap_5transmask_3sigma_allspw_withnans_weighted.fits",'DSi':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSi/field10originals_spatialandvelocitymaskingtrial5_newexclusions3andexclusionsnotinfit/texmap_5transmask_3sigma_allspw_withnans_weighted.fits",'DSii':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSii/field10originals_noexclusions/texmap_5transmask_3sigma_allspw_withnans_weighted.fits"}
@@ -97,7 +97,7 @@ texmapdata=texmap[0].data*u.K
 
 cntmdata=cntmimage[0].data*u.Jy
 cntmdatasqee=np.squeeze(cntmdata)
-cntmstd=0.025*u.mJy#np.nanstd(cntmdatasqee)#Taken from 2016 ALMA Proposal here
+cntmstd=0.2*u.mJy#0.025*u.mJy#np.nanstd(cntmdatasqee)#Taken from 2016 ALMA Proposal here
 cntmkappa=kappa(restfreq)
 cntmcell=cntmimage[0].header['CDELT2']*u.deg
 bmaj=cntmimage[0].header['BMAJ']*u.deg
@@ -218,7 +218,7 @@ nh2primaryhdu.header=texmap[0].header
 nh2primaryhdu.header['BTYPE']='N(H2)'
 nh2primaryhdu.header['BUNIT']='cm-2'
 nh2hdul=fits.HDUList([nh2primaryhdu])
-nh2fitspath=sourcepath+f'nh2map_{snr}sigmacontandsurfacedensity_bolocamfeather.fits'
+nh2fitspath=sourcepath+f'nh2map_{snr}sigmacontandsurfacedensity_bolocamfeather_20ujytest.fits'
 print(f'Saving N(H2) map at {nh2fitspath}\n')
 nh2hdul.writeto(nh2fitspath,overwrite=True)
 
@@ -227,7 +227,7 @@ nh2uncprimaryhdu.header=texmap[0].header
 nh2uncprimaryhdu.header['BTYPE']='N(H2) error'
 nh2uncprimaryhdu.header['BUNIT']='cm-2'
 nh2unchdul=fits.HDUList([nh2uncprimaryhdu])
-nh2uncfitspath=sourcepath+f'nh2map_error_bolocamfeather.fits'
+nh2uncfitspath=sourcepath+f'nh2map_error_bolocamfeather_20ujytest.fits'
 print(f'Saving N(H2) map at {nh2uncfitspath}\n')
 nh2unchdul.writeto(nh2uncfitspath,overwrite=True)
 
@@ -236,7 +236,7 @@ ch3ohabundprimaryhdu.header=texmap[0].header
 ch3ohabundprimaryhdu.header['BTYPE']='Abundance (CH3OH)'
 ch3ohabundprimaryhdu.header['BUNIT']='cm-2/cm-2'
 ch3ohabundhdul=fits.HDUList([ch3ohabundprimaryhdu])
-ch3ohabundfitspath=sourcepath+f'ch3ohabundance_ntotintercept_bolocamfeather.fits'
+ch3ohabundfitspath=sourcepath+f'ch3ohabundance_ntotintercept_bolocamfeather_20ujytest.fits'
 print(f'Saving CH3OH abundance map at {ch3ohabundfitspath}\n')
 ch3ohabundhdul.writeto(ch3ohabundfitspath,overwrite=True)
 
@@ -245,7 +245,7 @@ errch3ohabundprimaryhdu.header=texmap[0].header
 errch3ohabundprimaryhdu.header['BTYPE']='Abundance error (CH3OH)'
 errch3ohabundprimaryhdu.header['BUNIT']='cm-2/cm-2'
 errch3ohabundhdul=fits.HDUList([errch3ohabundprimaryhdu])
-errch3ohabundfitspath=sourcepath+f'ch3ohabundance_error_ntotintercept_bolocamfeather.fits'
+errch3ohabundfitspath=sourcepath+f'ch3ohabundance_error_ntotintercept_bolocamfeather_20ujytest.fits'
 print(f'Saving CH3OH abundance error map at {errch3ohabundfitspath}\n')
 errch3ohabundhdul.writeto(errch3ohabundfitspath,overwrite=True)
 
@@ -254,7 +254,7 @@ snrch3ohabundprimaryhdu.header=texmap[0].header
 snrch3ohabundprimaryhdu.header['BTYPE']='Abundance SNR (CH3OH)'
 snrch3ohabundprimaryhdu.header['BUNIT']='cm-2/cm-2'
 snrch3ohabundhdul=fits.HDUList([snrch3ohabundprimaryhdu])
-snrch3ohabundfitspath=sourcepath+f'ch3ohabundance_snr_ntotintercept_bolocamfeather.fits'
+snrch3ohabundfitspath=sourcepath+f'ch3ohabundance_snr_ntotintercept_bolocamfeather_20ujytest.fits'
 print(f'Saving CH3OH abundance SNR map at {snrch3ohabundfitspath}\n')
 snrch3ohabundhdul.writeto(snrch3ohabundfitspath,overwrite=True)
 
@@ -263,7 +263,7 @@ sigclipch3ohabundprimaryhdu.header=texmap[0].header
 sigclipch3ohabundprimaryhdu.header['BTYPE']='Abundance (CH3OH)'
 sigclipch3ohabundprimaryhdu.header['BUNIT']='cm-2'
 sigclipch3ohabundhdul=fits.HDUList([sigclipch3ohabundprimaryhdu])
-sigclipch3ohabundfitspath=sourcepath+f'ch3ohabundance_3sigma_ntotintercept_bolocamfeather.fits'
+sigclipch3ohabundfitspath=sourcepath+f'ch3ohabundance_3sigma_ntotintercept_bolocamfeather_20ujytest.fits'
 print(f'Saving CH3OH abundance map at {sigclipch3ohabundfitspath}\n')
 sigclipch3ohabundhdul.writeto(sigclipch3ohabundfitspath,overwrite=True)
 
@@ -272,7 +272,7 @@ lumprimaryhdu.header=texmap[0].header
 lumprimaryhdu.header['BTYPE']='Luminosity'
 lumprimaryhdu.header['BUNIT']='Lsun'
 lumhdul=fits.HDUList([lumprimaryhdu])
-lumfitspath=sourcepath+f'boltzmannlum_bolocamfeather.fits'
+lumfitspath=sourcepath+f'boltzmannlum_bolocamfeather_20ujytest.fits'
 print(f'Saving luminosity map at {lumfitspath}\n')
 lumhdul.writeto(lumfitspath,overwrite=True)
 
@@ -281,7 +281,7 @@ tauprimaryhdu.header=texmap[0].header
 tauprimaryhdu.header['BTYPE']='Optical depth (tau)'
 tauprimaryhdu.header['BUNIT']='unitless'
 tauhdul=fits.HDUList([tauprimaryhdu])
-taufitspath=sourcepath+f'opticaldepth_bolocamfeather.fits'
+taufitspath=sourcepath+f'opticaldepth_bolocamfeather_20ujytest.fits'
 print(f'Saving optical depth map at {taufitspath}\n')
 tauhdul.writeto(taufitspath,overwrite=True)
         

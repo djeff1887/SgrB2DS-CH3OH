@@ -13,6 +13,7 @@ from astropy import coordinates
 from matplotlib.patches import Rectangle
 import matplotlib as mpl
 import os
+import math
 #from astropy.visualization.wcsaxes import Quadrangle
 
 plt.close()
@@ -38,8 +39,8 @@ def make_scalebar(ax, left_side, length, color='black', linestyle='-', label='',
                  zorder=2,bbox=dict(facecolor='white', alpha=0.6))
     ax.axis(axlims)
     return lines,txt
-set=1
-colordict={0:('trot','inferno','texmap_3sigma_allspw_withnans_weighted.fits'),1:('mom0','bone',"CH3OH~5_1-4_2E1vt0_masked.fits"),2:('nupper','Blues_r'),3:('detections','CMRmap',"ch3ohdetections5_3sigma_allspw_withnans_weighted.fits"),4:('abundance','viridis','ch3ohabundance_3sigma_ntotintercept.fits')}
+set=4
+colordict={0:('trot','inferno','texmap_3sigma_allspw_withnans_weighted.fits'),1:('mom0','bone',"CH3OH~5_1-4_2E1vt0_masked.fits"),2:('nupper','Blues_r'),3:('detections','CMRmap',"ch3ohdetections5_3sigma_allspw_withnans_weighted.fits"),4:('abundance','viridis','ch3ohabundance_3sigma_ntotintercept_bolocamfeather_20ujytest.fits')}
 mode=colordict[set][0]
 color=colordict[set][1]
 pathsuffix=colordict[set][2]
@@ -48,36 +49,17 @@ print(f'Mode: {mode}')
 cm= copy.copy(mpl.cm.get_cmap(color))#mom0 bone, temperature inferno, nupper Blues_r, detections CMRmap, abundance cividis
 cm.set_bad('black')
 dGC=8.34*u.kpc#per Meng et al. 2019 https://www.aanda.org/articles/aa/pdf/2019/10/aa35920-19.pdf
-source='SgrB2S'
+source='DSIX'
 print(f'Source: {source}\n')
-fields={'SgrB2S':1,'DSi':10,'DSii':10,'DSiii':10,'DSiv':10,'DSv':10,'DSVI':2,'DSVII':3,'DSVIII':3}
+fields={'SgrB2S':1,'DSi':10,'DSii':10,'DSiii':10,'DSiv':10,'DSv':10,'DSVI':2,'DSVII':3,'DSVIII':3,'DSIX':7}
 fnum=fields[source]
 
 home=f'/blue/adamginsburg/d.jeff/SgrB2DSreorg/field{fnum}/CH3OH/'
 sourcepath=home+f'{source}/field10originals_z0_000186431_5-6mhzwidth_stdfixes/'+'figures/'
-#saveimgpath=sourcepath+'texmap_ntotcontours-3-6-8to48.png'
 
-cntrfile="/blue/adamginsburg/d.jeff/imaging_results/adamcleancontinuum/Sgr_B2_DS_B6_uid___A001_X1290_X46_continuum_merged_12M_robust0_selfcal4_finaliter.image.tt0.pbcor.fits"
-#cntrfile="/blue/adamginsburg/d.jeff/imaging_results/products/OctReimage/SgrB2DS_field1_spw2_cube_robust0_niter1e6_chunks16_minimize.image.pbcor_continuum.fits"#"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/SgrB2S/OctReimage_z0_0002306756533745274_5-6mhzwidth/ntotmap_allspw_withnans_weighted.fits"#"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/SgrB2S/z0_0002306756533745274_testbox2_5-6mhzwidth/ntotmap_allspw_withnans_weighted.fits"#"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/DSi/z0_000186407_box1_5-6mhzwidth/ntotmap_allspw_withnans_weighted.fits"#input('Map fits file: ')
-#infile="/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSv/200K_field10originals_z0_000190713_5-6mhzwidth_stdfixes/texmap_5transmask_3sigma_allspw_withnans_weighted.fits"
-#infile="/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSv/200K_field10originals_z0_000190713_5-6mhzwidth_stdfixes/mom0/CH3OH~25_3-24_4E1vt0.fits"
-#infile="/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSv/200K_field10originals_z0_000190713_5-6mhzwidth_stdfixes/ch3ohdetections3_3sigma_allspw_withnans_weighted.fits"
-#infile='/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSv/200K_field10originals_z0_000190713_5-6mhzwidth_stdfixes/texmap_5transmask_3sigma_allspw_withnans_weighted.fits'
+cntrfile='/blue/adamginsburg/d.jeff/imaging_results/adamcleancontinuum/Sgr_B2_DS_B6_uid___A001_X1290_X46_continuum_merged_12M_robust0_selfcal4_finaliter.image.tt0.pbcor.fits'#'/orange/adamginsburg/sgrb2/2017.1.00114.S/imaging_results/Sgr_B2_DS_B6_uid___A001_X1290_X46_continuum_merged_12M_robust2_selfcal4_finaliter_feathered_with_bolocam.fits'
 
-#infile=cntrfile
-
-sourcedict={'SgrB2S':'/new_testingstdfixandontheflyrepstuff_K_OctReimage_restfreqfix_newvelmask_newpeakamp/','DSi':'/Kfield10originals_trial7_field10errors_newexclusion_matchslabwidthtorep/','DSii':'/Kfield10originals_noexclusions/','DSiii':'/Kfield10originals_noexclusions/','DSiv':'/Kfield10originals_noexclusions/','DSv':f'/Kfield10originals_noexclusions_include4-3_150K_trial2/','DSVI':'/Kfield2originals_trial3_8_6-8_7excluded/','DSVII':'/Kfield3originals_200K_trial1_noexclusions/','DSVIII':'/Kfield3originals_175K_trial1_noexclusions/'}#"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSi/field10originals_spatialandvelocitymaskingtrial4_3kmsslab_newexclusions/texmap_5transmask_3sigma_allspw_withnans_weighted.fits"#"/blue/adamginsburg/d.jeff/field10/CH3OH/DSi/field10originals_spatialandvelocitymaskingtrial4_3kmsslab_newexclusions/texmap_5transmask_3sigma_allspw_withnans_weighted.fits"
-#infile="/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/SgrB2S/OctReimage_large_z0_0002306756533745274_5-6mhzwidth_stdfixes/ch3ohdetections5_3sigma_allspw_withnans_weighted.fits"
-#infile="/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/SgrB2S/new_testingstdfixandontheflyrepstuff_K_OctReimage_restfreqfix_newvelmask_newpeakamp/texmap_5transmask_3sigma_allspw_withnans_weighted.fits"
-#infile="/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/SgrB2S/employingrepresentativelineprocedure_K_OctReimage_restfreqfix_newvelmask_newpeakamp/mom0/CH3OH~10_2+-9_3+vt0_masked.fits"
-#infile="/blue/adamginsburg/d.jeff/imaging_results/SgrB2DS-CH3OH/peakintensity6-7_octreimageKlarge.fits"
-#infile="/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/SgrB2S/OctReimage_large_z0_0002306756533745274_5-6mhzwidth_stdfixes/mom0/CH3OH~6_1--7_2-vt1.fits"
-#infile="/blue/adamginsburg/d.jeff/imaging_results/adamcleancontinuum/SgrB2_selfcal_full_TCTE7m_try2_selfcal6_ampphase_robust0.image.tt0.pbcor.fits"
-#infile="/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/SgrB2S/OctReimage_z0_0002306756533745274_5-6mhzwidth_stdfixes/ch3ohdetections3_3sigma_allspw_withnans_weighted.fits"
-#infile="/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/SgrB2S/OctReimage_z0_0002306756533745274_5-6mhzwidth_stdfixes/texmap_3transmask_3sigma_allspw_withnans_weighted.fits"
-#infile="/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSi/field10originals_z0_000186431_5-6mhzwidth_stdfixes/ch3ohdetections3_3sigma_allspw_withnans_weighted.fits"
-#infile="/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSi/field10originals_z0_000186431_5-6mhzwidth_stdfixes/texmap_5transmask_3sigma_allspw_withnans_weighted.fits"
-#infile="/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/SgrB2S/OctReimage_z0_0002306756533745274_5-6mhzwidth/texmap_3sigma_allspw_withnans_weighted.fits"#"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/SgrB2S/z0_0002306756533745274_testbox2_5-6mhzwidth/texmap_3sigma_allspw_withnans_weighted.fits"#"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/DSi/z0_000186407_box1_5-6mhzwidth/texmap_3sigma_allspw_withnans_weighted.fits"
+sourcedict={'SgrB2S':'/new_testingstdfixandontheflyrepstuff_K_OctReimage_restfreqfix_newvelmask_newpeakamp/','DSi':'/Kfield10originals_trial7_field10errors_newexclusion_matchslabwidthtorep/','DSii':'/Kfield10originals_noexclusions/','DSiii':'/Kfield10originals_noexclusions/','DSiv':'/Kfield10originals_noexclusions/','DSv':f'/Kfield10originals_noexclusions_include4-3_150K_trial2/','DSVI':'/Kfield2originals_trial3_8_6-8_7excluded/','DSVII':'/Kfield3originals_200K_trial1_noexclusions/','DSVIII':'/Kfield3originals_175K_trial1_noexclusions/','DSIX':f'/Kfield7originals_150K_trial1_noexclusions/'}
 
 infile=home+source+'/'+sourcedict[source]+pathsuffix
 
@@ -140,19 +122,25 @@ plt.rcParams['figure.dpi'] = 150
 ra=ax.coords[0]
 dec=ax.coords[1]
 if mode == 'trot':
-    vmaxdict={'SgrB2S':520,'DSi':320,'DSii':225,'DSiii':300,'DSiv':313,'DSv':281,'DSVI':378,'DSVII':250,'DSVIII':225}
+    vmaxdict={'SgrB2S':520,'DSi':320,'DSii':225,'DSiii':300,'DSiv':313,'DSv':281,'DSVI':378,'DSVII':250,'DSVIII':225,'DSIX':''}
     img=ax.imshow(np.squeeze(hdu.data),vmax=vmaxdict[source],vmin=25,interpolation=None, cmap=cm)#, norm=mpl.colors.LogNorm())#vmaxcntm=0.005, vmaxdsi=300 (no min value),vmaxsgrb2s=605 tmin=10 (try no min value), ntotmax=6.26e17, dsintotmax=2.21e17
 elif mode == 'abundance':
-    img=ax.imshow(np.squeeze(hdu.data),interpolation=None, cmap=cm, norm=mpl.colors.LogNorm(vmax=5e-5,vmin=1e-7))
+    img=ax.imshow(np.squeeze(hdu.data),interpolation=None, cmap=cm, norm=mpl.colors.LogNorm())#(vmax=5e-5,vmin=1e-7))
 else:
     img=ax.imshow(np.squeeze(hdu.data),interpolation=None, cmap=cm)
 lims=ax.axis()
-#ax.contour(cntrdata, levels=cntrlist, colors='white',transform=ax.get_transform(cntrwcs),linewidths=0.5)#, alpha=0.5)#ax.contour(data=hdu.data)#, colors='black')#binary/Greys are other good cmaps
+if mode == 'detections':
+    ax.contour(cntrdata, levels=cntrlist, colors='black',transform=ax.get_transform(cntrwcs),linewidths=0.5)
+else:
+    ax.contour(cntrdata, levels=cntrlist, colors='white',transform=ax.get_transform(cntrwcs),linewidths=0.5)#, alpha=0.5)#ax.contour(data=hdu.data)#, colors='black')#binary/Greys are other good cmaps
 #ax.contour(cntrdata,levels=(-1*cntrlist),colors='white',linestyles='dashed')#YlGn is alt for both
 
-scaledict={'SgrB2S':5000*u.AU,'DSi':5000*u.AU,'DSii':2000*u.AU,'DSiii':2000*u.AU,'DSiv':2000*u.AU,'DSv':2000*u.AU,'DSVI':5000*u.AU,'DSVII':5000*u.AU,'DSVIII':5000*u.AU}
+scaledict={'SgrB2S':5000*u.AU,'DSi':5000*u.AU,'DSii':2000*u.AU,'DSiii':2000*u.AU,'DSiv':2000*u.AU,'DSv':2000*u.AU,'DSVI':5000*u.AU,'DSVII':5000*u.AU,'DSVIII':5000*u.AU,'DSIX':5000*u.AU}
 scale=scaledict[source]
 lenn=np.arctan(scale/dGC)
+h_img=hdu.header['NAXIS1']
+l_img=hdu.header['NAXIS2']
+
 #SgrB2S
 if source=='SgrB2S':
     make_scalebar(ax, coordinates.SkyCoord('17:47:20.6618 -28:23:48.734', unit=(u.hour, u.deg), 
@@ -183,21 +171,47 @@ elif source == 'DSiii':
     make_scalebar(ax, coordinates.SkyCoord('17:47:20.0577 -28:23:49.912', unit=(u.hour, u.deg), 
                                        frame='icrs'),
               length=lenn, label=f'{int(scale.value)} AU', fontsize=12, 
-              text_offset=0.02*u.arcsec)
+              text_offset=0.015*u.arcsec)
     crd=coordinates.SkyCoord('17:47:20.0549 -28:23:49.950', unit=(u.hour,u.deg), frame='icrs')
     
-elif source=='DSall':
-    make_scalebar(ax, coordinates.SkyCoord('17:47:24.0 -28:26:25', unit=(u.hour, u.deg), 
+elif source == 'DSv':
+    scalebar_vert=math.ceil(h_img/10)
+    scalebar_hor=math.ceil(l_img/10)
+    scalebar_position=hduwcs.wcs_pix2world([[scalebar_vert,scalebar_hor],[0,0]],0)
+
+    make_scalebar(ax, coordinates.SkyCoord(scalebar_position[0,0],scalebar_position[0,1], unit=u.deg, 
                                            frame='icrs'),
-                  length=lenn, label=f'{scale.value} pc', fontsize=12, 
+                  length=lenn, label=f'{int(scale.value)} AU', fontsize=12, 
+                  text_offset=0.015*u.arcsec)
+    
+else:
+    scalebar_vert=math.ceil(h_img/10)
+    scalebar_hor=math.ceil(l_img/10)
+    scalebar_position=hduwcs.wcs_pix2world([[scalebar_vert,scalebar_hor],[0,0]],0)
+
+    make_scalebar(ax, coordinates.SkyCoord(scalebar_position[0,0],scalebar_position[0,1], unit=u.deg, 
+                                           frame='icrs'),
+                  length=lenn, label=f'{int(scale.value)} AU', fontsize=12, 
                   text_offset=0.02*u.arcsec)
+'''
 else:
     print('No scalebar available for this object')
-
+'''
 pixscale=np.mean(wcs.utils.proj_plane_pixel_scales(hduwcs))*u.deg
-hdubeamplot=hdubeam.ellipse_to_plot(10,10,pixscale)
-hdubeamplot.set_facecolor('none')
-hdubeamplot.set_edgecolor('cyan')
+if source == 'SgrB2S':
+    beam_vert=math.ceil(h_img/20)
+    beam_hor=math.ceil(l_img/17)
+elif source == 'DSi':
+    beam_vert=math.ceil(h_img/20)
+    beam_hor=math.ceil(l_img/1.15)
+else:
+    beam_vert=math.ceil(h_img/7.78)#20 for DSi
+    beam_hor=math.ceil(l_img/1.17)
+hdubeamplot=hdubeam.ellipse_to_plot(beam_hor,beam_vert,pixscale)
+ax.add_patch(hdubeamplot)
+
+hdubeamplot.set_facecolor('gray')
+hdubeamplot.set_edgecolor('white')
 
 labeldict={0:'T$_{K}$ (K)',1:r'Intensity (K km s$^{-1}$)',2:r'N$_{upper}$ (cm$^{-2}$)',3:'$n_{transition}$',4:'X(CH$_3$OH)'}
 ax.axis(lims)
@@ -206,7 +220,12 @@ ra.set_ticklabel(exclude_overlapping=True)
 dec.set_axislabel('Dec (J2000)',fontsize=14,minpad=-0.7)
 ax.tick_params(fontsize=14)
 cbar1=plt.colorbar(img,label=labeldict[set],pad=0)#r'S$_\nu$ (Jy)')#'$n_{transition}$')#plt.colorbar()
-#plt.savefig(savefigpath)
+
+
+print(f'Saving figure at {savefigpath}')
+plt.savefig(savefigpath)
+print('Saved')
+
 
 '''Plotting shapes
 r = Rectangle((2000,2000),1000,1000,facecolor='red')

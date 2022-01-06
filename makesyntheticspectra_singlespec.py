@@ -23,7 +23,7 @@ linelist='JPL'
 
 '''Collect constants for N_tot and N_upper calculations'''
 
-source='DSi'
+source='DSVIII'
 sourceisnew=True
 
 c=cnst.c*u.m/u.s
@@ -36,7 +36,7 @@ c_0=23769.70*u.MHz
 m=b_0**2/(a_0*c_0)
 Tbg=2.7355*u.K
 
-trotdict={'SgrB2S':300*u.K,'DSi':300*u.K,'DSii':150*u.K,'DSiii':150*u.K,'DSiv':150*u.K,'DSv':100*u.K,'DSVI':300*u.K,'DSVII':200*u.K}
+trotdict={'SgrB2S':300*u.K,'DSi':300*u.K,'DSii':150*u.K,'DSiii':150*u.K,'DSiv':150*u.K,'DSv':100*u.K,'DSVI':300*u.K,'DSVII':200*u.K,'DSVIII':150*u.K,'DSIX':150*u.K}
 testT=trotdict[source]
 qrot_partfunc=Q_rot_asym(testT).to('')
 
@@ -45,23 +45,21 @@ R_i=1
 kappa=((2*b_0)-a_0-c_0)/(a_0-c_0)
 f=1
 
-dopplershifts={'SgrB2S':0.000234806,'DSi':0.000186431,'DSii':0.00015954965399894244,'DSiii':0.00017500261911843952,'DSiv':0.00018225233186845314,'DSv':0.0001838576164010067,'DSVI':0.0001661613132158407,'DSVII':0.00016320118280935546}#:0.000190713}/old doppler S: 0.0002306756533745274/0.00015954965399894244/0.00016236367659115043
+dopplershifts={'SgrB2S':0.000234806,'DSi':0.000186431,'DSii':0.00015954965399894244,'DSiii':0.00017500261911843952,'DSiv':0.00018225233186845314,'DSv':0.0001838576164010067,'DSVI':0.0001661613132158407,'DSVII':0.00016320118280935546,'DSVIII':0.0001661546432045067,'DSIX':0.00015453732389175085}#:0.000190713}/old doppler S: 0.0002306756533745274/0.00015954965399894244/0.00016236367659115043
 
 z=dopplershifts[source]
 z_vel=z*c
 
-sourcelocs={'SgrB2S':'/blue/adamginsburg/d.jeff/SgrB2DSminicubes/SgrB2S/OctReimage_K/*.fits','DSi':"/blue/adamginsburg/d.jeff/SgrB2DSminicubes/DSi/field10originals_K/*.fits",'DSiii':"/blue/adamginsburg/d.jeff/SgrB2DSminicubes/DSiii/field10originals/*.fits",'DSiv':"/blue/adamginsburg/d.jeff/SgrB2DSminicubes/DSiv/field10originals_K/*.fits",'DSv':"/blue/adamginsburg/d.jeff/SgrB2DSminicubes/DSv/field10originals_K/*.fits",'DSVI':"/blue/adamginsburg/d.jeff/SgrB2DSminicubes/DSVI/field2originals_K/*.fits"}
+sourcelocs={'SgrB2S':'/blue/adamginsburg/d.jeff/SgrB2DSminicubes/SgrB2S/OctReimage_K/*.fits','DSi':"/blue/adamginsburg/d.jeff/SgrB2DSminicubes/DSi/field10originals_K/*.fits",'DSiii':"/blue/adamginsburg/d.jeff/SgrB2DSminicubes/DSiii/field10originals/*.fits",'DSiv':"/blue/adamginsburg/d.jeff/SgrB2DSminicubes/DSiv/field10originals_K/*.fits",'DSv':"/blue/adamginsburg/d.jeff/SgrB2DSminicubes/DSv/field10originals_K/*.fits",'DSVI':"/blue/adamginsburg/d.jeff/SgrB2DSminicubes/DSVI/field2originals_K/*.fits",'DSIX':"/blue/adamginsburg/d.jeff/XCLASS2021/files/DSIX/field7originals_K/"}
 dopplershiftimg={'SgrB2S':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/SgrB2S/new_testingstdfixandontheflyrepstuff_K_OctReimage_restfreqfix_newvelmask_newpeakamp/4_2-3_1vt=0repline_mom1.fits",'DSi':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSi/Kfield10originals_trial5carryover_field10errors/8_1-7_0vt=0repline_mom1.fits",'DSii':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSii/field10originals_noexclusions/mom1/CH3OH~8_0-7_1E1vt0.fits",'DSiii':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSiii/field10originals_noexclusions/mom1/CH3OH~10_2--9_3-vt0.fits"}
 
-sourcelocs={'SgrB2S': r'C:/Users/desmond/Dropbox/Research/SgrB2DS/Spectra/files/SgrB2S/OctReimage_K','DSi':r'C:/Users/desmond/Dropbox/Research/SgrB2DS/Spectra/files/DSi/field10originals_K','DSii':r'C:/Users/desmond/Dropbox/Research/SgrB2DS/Spectra/files/DSii/field10originals_K','DSiii':r'C:/Users/desmond/Dropbox/Research/SgrB2DS/Spectra/files/DSiii/field10originals_K','DSiv':r'C:/Users/desmond/Dropbox/Research/SgrB2DS/Spectra/files/DSiv/field10originals_K','DSv':r'C:/Users/desmond/Dropbox/Research/SgrB2DS/Spectra/files/DSv/field10originals_K','DSVI':r'C:/Users/desmond/Dropbox/Research/SgrB2DS/Spectra/files/DSVI/field2originals_K','DSVII':r'C:/Users/desmond/Dropbox/Research/SgrB2DS/Spectra/files/DSVII/field3originals_K'}
+texlocs={'SgrB2S':'/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/SgrB2S/new_testingstdfixandontheflyrepstuff_K_OctReimage_restfreqfix_newvelmask_newpeakamp/','DSi':'/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSi/Kfield10originals_trial7_field10errors_newexclusion_matchslabwidthtorep/','DSii':'/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSii/Kfield10originals_noexclusions/','DSiii':r'/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSiii/Kfield10originals_noexclusions/','DSiv':'/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSiv/Kfield10originals_noexclusions/','DSv':'/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSv/Kfield10originals_noexclusions_include4-3_trial1/','DSVI':'/blue/adamginsburg/d.jeff/SgrB2DSreorg/field2/CH3OH/DSVI/Kfield2originals_trial2_16_6-16_7excluded/','DSVII':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field3/CH3OH/DSVII/Kfield3originals_trial1_noexclusions/",'DSIX':'/blue/adamginsburg/d.jeff/SgrB2DSreorg/field7/CH3OH/DSIX/Kfield7originals_150K_trial1_noexclusions/'}
 
-texlocs={'SgrB2S':r'C:/Users/desmond/Dropbox/Research/SgrB2DS/Sources/SgrB2S/new_testingstdfixandontheflyrepstuff_K_OctReimage_restfreqfix_newvelmask_newpeakamp/','DSi':r'C:/Users/desmond/Dropbox/Research/SgrB2DS/Sources/DS1/Kfield10originals_trial7_field10errors_newexclusion_matchslabwidthtorep/','DSii':r'C:/Users/desmond/Dropbox/Research/SgrB2DS/Sources/DSii/Kfield10originals_noexclusions/','DSiii':r'C:/Users/desmond/Dropbox/Research/SgrB2DS/Sources/DSiii/Kfield10originals_noexclusions/','DSiv':r'C:/Users/desmond/Dropbox/Research/SgrB2DS/Sources/DSiv/Kfield10originals_noexclusions/','DSv':r'C:/Users/desmond/Dropbox/Research/SgrB2DS/Sources/DSv/Kfield10originals_noexclusions/','DSVI':r'C:/Users/desmond/Dropbox/Research/SgrB2DS/Sources/DS6/DSVI/Kfield2originals_trial2_16_6-16_7excluded/','DSVII':r'C:/Users/desmond/Dropbox/Research/SgrB2DS/Sources/DS7/Kfield3originals_trial1_noexclusions/'}
-
-texmappath=texlocs[source]+'texmap_5transmask_3sigma_allspw_withnans_weighted.fits'
+texmappath=texlocs[source]+'texmap_3sigma_allspw_withnans_weighted.fits'
 
 texmapdata=fits.getdata(texmappath)*u.K
 
-pixdict={'SgrB2S':(61,64),'DSi':(36,42),'DSii':(22,24),'DSiii':(24,24),'DSiv':(32,31),'DSv':(19,19),'DSVI':(62,62),'DSVII':(75,75)}
+pixdict={'SgrB2S':(61,64),'DSi':(36,42),'DSii':(22,24),'DSiii':(24,24),'DSiv':(32,31),'DSv':(19,19),'DSVI':(62,62),'DSVII':(75,75),'DSIX':(34,35)}
 
 targetpix=pixdict[source]
 
@@ -100,13 +98,14 @@ print('Spectra and stds are sequential order')
 #imgnum=0
 testline=0
 
-linewidth=3*u.km/u.s#2.5 km/s is ideal for DSVI
+linewidth=2.5*u.km/u.s#2.5 km/s is ideal for DSVI
 print(f'Absolute model line width: {linewidth}\n')
 
 
 specieslist=[' CH3OH ',' CH3OCHO ',' HOONO ',' HNCO ',' DCN ',' H2CO ',' C2H5OH ',' CH3CHO ',' CH3COOH ',' CH3NH2 ', ' CH3OCH3 ', ' HC3N ',' NH2CHO ', ' NH2CN ',' NH2D ',' SO2 ',' SO ',' t-HCOOH ',' a-H2CCHOH ',' s-H2CCHOH ',' H2CCNH ',' CH3CH2CHO ',' HCCCHO ',' SiS ',' CH2DOH ',' C(18)O ',' HDO ',' CH2CHCN ',' CH3CH2CN ',' c-H2COCH2 ', ' c-HCCCH ',' CCS ',' CH2NH ',"Ethylene Glycol",' cis-CH2OHCHO ','Acetone', ' CH3CN ',' CH2CHCN ']
 
-molnum=len(specieslist)-32#37
+#molnum=len(specieslist)-38#38
+molnum=specieslist.index(' CH3OCHO ')
 
 maskcolumnissuemols=['OCS', 'SiO','C(18)O']
 
@@ -122,7 +121,9 @@ ds6columns={' CH3OH ':1e16*u.cm**-2,' CH3OCHO ':1e15*u.cm**-2,' HOONO ':1e15*u.c
 
 ds7columns={' CH3OH ':1e16*u.cm**-2,' CH3OCHO ':1e15*u.cm**-2,' HOONO ':1e15*u.cm**-2,' HNCO ':1e15*u.cm**-2,' DCN ':1e14*u.cm**-2,' H2CO ':1e16*u.cm**-2,' C2H5OH ':3e15*u.cm**-2, ' CH3CHO ':1e14*u.cm**-2,' CH3COOH ':1e14*u.cm**-2, ' CH3NH2 ':1e15*u.cm**-2, ' CH3OCH3 ':1e14*u.cm**-2,' HC3N ':1e14*u.cm**-2, ' NH2CHO ':1e12*u.cm**-2,' NH2CN ':1e14*u.cm**-2, ' NH2D ':1e15*u.cm**-2, ' SO2 ':1e15*u.cm**-2, ' SO ':6e11*u.cm**-2, ' t-HCOOH ':1e14*u.cm**-2,' SiS ':1e14*u.cm**-2}
 
-sourcecolumns={'SgrB2S':sgrb2scolumns,'DSi':dsicolumns,'DSVI':ds6columns,'DSVII':ds7columns}
+ds9columns={' CH3OH ':1e15*u.cm**-2,' CH3OCHO ':2e13*u.cm**-2,' HOONO ':1e15*u.cm**-2,' HNCO ':1e15*u.cm**-2,' DCN ':1e14*u.cm**-2,' H2CO ':1e16*u.cm**-2,' C2H5OH ':3e15*u.cm**-2, ' CH3CHO ':1e14*u.cm**-2,' CH3COOH ':1e14*u.cm**-2, ' CH3NH2 ':1e15*u.cm**-2, ' CH3OCH3 ':1e14*u.cm**-2,' HC3N ':1e14*u.cm**-2, ' NH2CHO ':1e12*u.cm**-2,' NH2CN ':1e14*u.cm**-2, ' NH2D ':1e15*u.cm**-2, ' SO2 ':1e15*u.cm**-2, ' SO ':6e11*u.cm**-2, ' t-HCOOH ':1e14*u.cm**-2,' SiS ':1e14*u.cm**-2}
+
+sourcecolumns={'SgrB2S':sgrb2scolumns,'DSi':dsicolumns,'DSVI':ds6columns,'DSVII':ds7columns,'DSIX':ds9columns}
 
 columndict=sourcecolumns[source]
 if specieslist[molnum] in columndict:
@@ -130,7 +131,7 @@ if specieslist[molnum] in columndict:
 else:
     pass
 
-methntot=dsicolumns[' CH3OH ']
+methntot=columndict[' CH3OH ']
 for spectrum, img, stdimage in zip(spectra,images,stds):
     print('Getting ready - '+img)
     spec=np.genfromtxt(spectrum)
@@ -282,6 +283,7 @@ for spectrum, img, stdimage in zip(spectra,images,stds):
     #plot=np.linspace(freqs[0],freqs[(len(freqs)-1)],cube.shape[0])
     #cube[:,int(round(targetpixcrd[1][1])),int(round(targetpixcrd[1][0]))].quicklook()
     plt.rcParams['figure.dpi'] = 150
+    plt.figure(1, figsize=(20,10))
     plt.plot(freqs.value,data.value,drawstyle='steps-mid',color='blue')
     plt.plot(freqs,compositespec(freqs),drawstyle='steps-mid',color='green')
     plt.plot(freqs,modelspec(freqs),drawstyle='steps-mid',color='orange')
