@@ -316,7 +316,7 @@ plt.plot(copy_centrtopix,quadrtex,color='yellow',label=r'r$^{-1.25}$')
 
 
 
-ax.set_xlabel('$d$ (AU)',fontsize=14)
+ax.set_xlabel('$r$ (AU)',fontsize=14)
 ax.set_ylabel('$T_K$ (K)',fontsize=14)
 plt.ylim(ymax=plottexmax,ymin=(np.nanmin(texinradius)-10))
 ax.tick_params(size=14)
@@ -351,7 +351,7 @@ plt.show()
 plt.figure()
 plt.scatter(centrtopix,abundinradius,s=snrsinradius,c=nh2inradius,norm=mpl.colors.LogNorm())
 plt.yscale('log')
-plt.xlabel('$d$ (AU)',fontsize=14)
+plt.xlabel('$r$ (AU)',fontsize=14)
 plt.ylabel('X(CH$_3$OH)',fontsize=14)
 plt.colorbar(pad=0,label='N(H$_2$) (cm$^{-2}$)')#'T$_K$ (K)')
 figsavepath=figpath+f'radialavgabundiag_r{r}px_rphys{int(pixtophysicalsize.value)}AU_interceptabundances_bolocamfeather.png'
@@ -361,7 +361,7 @@ plt.show()
 plt.figure()
 plt.scatter(centrtopix,nh2inradius,s=snrsinradius,c=texinradius,vmax=plottexmax,cmap='inferno')
 plt.yscale('log')
-plt.xlabel('$d$ (AU)',fontsize=14)
+plt.xlabel('$r$ (AU)',fontsize=14)
 plt.ylabel('N(H$_2$) (cm$^{-2}$)',fontsize=14)
 plt.colorbar(pad=0,label='T$_K$ (K)')#'T$_K$ (K)')
 figsavepath=figpath+f'radialavgnh2s_r{r}px_rphys{int(pixtophysicalsize.value)}AU_bolocamfeather.png'
@@ -375,18 +375,6 @@ spec = gridspec.GridSpec(ncols=1, nrows=2, wspace=0.5,
 
 ax0=fig.add_subplot(spec[0])
 
-ax0.scatter(listordered_centrtopix,avgtexlist)#[:197] for ds4
-ax0.fill_between(listordered_centrtopix,upperfill,lowerfill,alpha=0.2,color='blue')
-#plt.errorbar(listordered_centrtopix,avgtexlist,yerr=avgtexerrlist,fmt='o')#[:(len(listordered_centrtopix)-2)] for ds4
-ax0.plot(copy_centrtopix,fittedtex,color='orange',label=f'index: {round(popt[1],3)} +/- {round(pcov[1,1]**0.5,3)}',zorder=1)
-ax0.plot(copy_centrtopix,fit_pl(copy_centrtopix),color='red',ls='--',zorder=2,label=f'alpha_1={round(fit_pl.alpha_1.value,3)}, alpha_2={round(fit_pl.alpha_2.value,3)}, break={round(fit_pl.x_break.value,3)}\nalpha1_err={round(perr[2],3)}, alpha2_err={round(perr[3],3)}, break_err={round(perr[1],3)}')
-ax0.set_xlabel('$d$ (AU)',fontsize=14)
-ax0.set_ylabel('T$_K$ (K)',fontsize=14)
-ax0.set_ylim(ymax=(max(avgtexlist)+30))
-ax0.legend()
-
-plt.setp(ax0.get_xticklabels(), visible=False)
-
 ax1=fig.add_subplot(spec[1],sharex=ax0)
 
 residual_bpl=list( map(sub,avgtexlist,fit_pl(listordered_centrtopix)))
@@ -395,7 +383,23 @@ residual_spl=list( map(sub,avgtexlist,fittedtex))
 ax1.axhline(y=0,ls='--',color='black')
 ax1.plot(copy_centrtopix,residual_spl,color='orange',label='single')
 ax1.plot(copy_centrtopix,residual_bpl,color='red',label='broken')
-ax1.legend()
+#ax1.legend()
+
+ax0.scatter(listordered_centrtopix,avgtexlist)#[:197] for ds4
+ax0.fill_between(listordered_centrtopix,upperfill,lowerfill,alpha=0.2,color='blue')
+#plt.errorbar(listordered_centrtopix,avgtexlist,yerr=avgtexerrlist,fmt='o')#[:(len(listordered_centrtopix)-2)] for ds4
+ax0.plot(copy_centrtopix,fittedtex,color='orange',label=f'$\\alpha$={round(popt[1],2)} \u00B1 {round(pcov[1,1]**0.5,2)}',zorder=1)
+ax0.plot(copy_centrtopix,fit_pl(copy_centrtopix),color='red',ls='-',zorder=2,label=f'$\\alpha_1$={round(fit_pl.alpha_1.value,2)} \u00B1 {round(perr[2],2)}\n$\\alpha_2$={round(fit_pl.alpha_2.value,2)} \u00B1 {round(perr[3],2)}\n$r_{{break}}$={round(fit_pl.x_break.value)} \u00B1 {round(perr[1])}')
+ax1.set_xlabel('$r$ (AU)',fontsize=14)
+ax0.set_ylabel('T$_K$ (K)',fontsize=14)
+ax1.set_ylabel('Residuals',fontsize=10)
+ax0.set_ylim(ymax=(max(avgtexlist)+30))
+ax0.legend()
+ax0.tick_params(direction='in')
+ax1.tick_params(axis='x',top=True,direction='in')
+#plt.setp(ax0.get_xticklabels(), visible=False)
+#plt.setp(ax0.get_xticks(),visible=True)
+
 plt.tight_layout()
 
 plt.show()
@@ -423,4 +427,3 @@ plt.scatter(edgepoints[0],edgepoints[1],color='orange')
 #plt.scatter(xinradius,yinradius,color='orange')
 plt.show()
 '''
-
