@@ -51,7 +51,7 @@ def quadratic_profile(r):
 def powerlaw_profile(x,a,n):
     return a*((x/pixtophysicalsize.value)**-n)
     
-source='DSi'
+source='DSIX'
 fielddict={'SgrB2S':1,'DSi':10,'DSii':10,'DSiii':10,'DSiv':10,'DSv':10,'DSVI':2,'DSVII':3,'DSVIII':3,'DSIX':7}
 fnum=fielddict[source]
 print(f'Source: {source}')
@@ -124,7 +124,7 @@ print(f'Center p: {texmapdata[texpeakpix[0],texpeakpix[1]]}')
 
 #r=35 #for 15,000 AU
 #pixradius=math.ceil((0.08*u.pc/pixtophysicalsize).to(''))
-rdict={'SgrB2S':12000*u.AU,'DSi':6400*u.AU,'DSii':9000*u.AU,'DSiii':6000*u.AU,'DSv':4000*u.AU,'DSIX':5000*u.AU}
+rdict={'SgrB2S':12000*u.AU,'DSi':6400*u.AU,'DSii':9000*u.AU,'DSiii':6000*u.AU,'DSv':4000*u.AU,'DSVII':6600*u.AU,'DSVIII':8000*u.AU,'DSIX':5000*u.AU}
 rdictkeys=rdict.keys()
 if source not in rdictkeys:
     r_phys=10000*u.AU
@@ -178,6 +178,8 @@ avglist=[]
 avgtexlist=[]
 avgtexerrlist=[]
 avginversesigma=[]
+radialmaxtex=[]
+radialmintex=[]
 
 for bin in listordered_centrtopix:
     tempmass=[]
@@ -185,6 +187,7 @@ for bin in listordered_centrtopix:
     temptex=[]
     temptexerr=[]
     tempinvsig=[]
+    temprads=[]
     for data in teststack:
         #print(f'Bin: {bin} AU')
         if bin == data[0]:
@@ -192,11 +195,12 @@ for bin in listordered_centrtopix:
                 #print(f'Nan present in bin {data[0]}')
                 continue
             else:
+                truesnr=data[2]*5
                 tempmass.append(data[1])
-                tempsnr.append(data[2]*5)
+                tempsnr.append(truesnr)
                 temptex.append(data[6])
-                temptexerr.append(data[6]/data[2])
-                tempinvsig.append(data[2]/data[6])
+                temptexerr.append(data[6]/truesnr)
+                tempinvsig.append(truesnr/data[6])
         else:
             pass
     if len(tempmass)==0:
@@ -204,12 +208,17 @@ for bin in listordered_centrtopix:
     else:
         avg=np.average(tempmass,weights=tempsnr)
         avgtex=np.average(temptex,weights=tempsnr)
-        avgtexerr=np.average(temptexerr)
+        avgtexerr=np.sqrt(np.sum(np.square(temptexerr)))#np.average(temptexerr)
+        #pdb.set_trace()
         avginvsig=np.average(tempinvsig)
+        tempmaxtex=np.nanmax(temptex)
+        tempmintex=np.nanmin(temptex)
         avglist.append(avg)
         avgtexlist.append(avgtex)
         avgtexerrlist.append(avgtexerr)
         avginversesigma.append(avginvsig)
+        radialmaxtex.append(tempmaxtex)
+        radialmintex.append(tempmintex)
     #pdb.set_trace()
 
 massderivative=list(np.diff(avglist))
@@ -221,8 +230,8 @@ for diff in massderivative:
         break
         
 fillwidth=np.copy(avgtexerrlist)#[x/2 for x in avgtexerrlist]
-upperfill=list( map(add,avgtexlist,fillwidth))
-lowerfill=list( map(sub,avgtexlist,fillwidth))
+upperfill=list( map(add,avgtexlist,fillwidth))#radialmaxtex
+lowerfill=list( map(sub,avgtexlist,fillwidth))#radialmintex#
 
 massestosum=[]
 lumstosum=[]
@@ -248,18 +257,41 @@ fiducial_norm=powerlawpair[0]*(powerlawpair[1]/pixtophysicalsize)**fiducial_inde
 lowerbound_initialguess={'SgrB2S':0.25,'DSi':0.25,'DSii':0.1,'DSiii':0.25,'DSiv':0.25,'DSv':0.25,'DSVI':0.25,'DSVII':0.25,'DSVIII':0.25,'DSIX':0.25}
 bpl_alpha2_initialguess={'SgrB2S':0.25,'DSi':0.5,'DSii':0.5,'DSiii':0.25,'DSiv':0.25,'DSv':0.25,'DSVI':0.25,'DSVII':0.25,'DSVIII':0.25,'DSIX':0.25}
 
-fitter=fitting.LevMarLSQFitter()
-base_bpl=powerlaws.BrokenPowerLaw1D(amplitude=1,x_break=1000,alpha_1=-1,alpha_2=bpl_alpha2_initialguess[source])#lowerbound_initialguess[source])#amp=150,xbreak=1500 for ds7
+if source == 'DSVII':
+    inputamp=150
+elif source == 'DSIX':
+    inputamp=100
+elif source == 'SgrB2S':
+    inputamp=300
+else:
+    inputamp=100
 
-innerradius=1
-radiustofit=listordered_centrtopix[innerradius:]
-textofit=avgtexlist[innerradius:]
-texerrtofit=avgtexerrlist[innerradius:]
-weightstofit=avginversesigma[innerradius:]
+fitter=fitting.LevMarLSQFitter()
+base_bpl=powerlaws.BrokenPowerLaw1D(amplitude=inputamp,x_break=1000,alpha_1=-1,alpha_2=bpl_alpha2_initialguess[source])#lowerbound_initialguess[source])#amp=150,xbreak=1500 for ds7
+
+if source=='DSIX':
+    innerradius=9
+    outerradius=None
+
+elif source=='DSiv':
+    innerradius=1
+    outerradius=197
+
+elif source=='DSVII':
+    innerradius=1
+    outerradius=None
+
+else:
+    innerradius=1
+    outerradius=None
+
+radiustofit=listordered_centrtopix[innerradius:outerradius]
+textofit=avgtexlist[innerradius:outerradius]
+texerrtofit=avgtexerrlist[innerradius:outerradius]
+weightstofit=avginversesigma[innerradius:outerradius]
 
 popt,pcov=cf(powerlaw_profile,radiustofit,textofit,sigma=texerrtofit,bounds=([0,lowerbound_initialguess[source]],[1000,1.25]))#[1:197] for ds4 (some nans may be present further out),[5:] for ds7, [9:] for ds9
-testindex=1
-fit_pl=fitter(base_bpl,listordered_centrtopix[testindex:],avgtexlist[testindex:],weights=avginversesigma[testindex:])
+fit_pl=fitter(base_bpl,radiustofit,textofit,weights=weightstofit)
 perr=np.sqrt(np.diag(fitter.fit_info['param_cov']))
 
 print(f'Sum: {masssum}')
@@ -379,28 +411,32 @@ ax1=fig.add_subplot(spec[1],sharex=ax0)
 
 residual_bpl=list( map(sub,avgtexlist,fit_pl(listordered_centrtopix)))
 residual_spl=list( map(sub,avgtexlist,fittedtex))
+avgsnr=np.array(list( map(truediv,avgtexlist,avgtexerrlist)))
+avgsnrforplot=avgsnr/2
 
 ax1.axhline(y=0,ls='--',color='black')
-ax1.plot(copy_centrtopix,residual_spl,color='orange',label='single')
-ax1.plot(copy_centrtopix,residual_bpl,color='red',label='broken')
+ax1.plot(copy_centrtopix,residual_spl,color='orange',label='single')#[:197] for ds4,[1:] for ds7
+ax1.plot(copy_centrtopix,residual_bpl,color='red',label='broken')#[:197] for ds4,
 #ax1.legend()
 
 ax0.scatter(listordered_centrtopix,avgtexlist)#[:197] for ds4
-ax0.fill_between(listordered_centrtopix,upperfill,lowerfill,alpha=0.2,color='blue')
+ax0.fill_between(listordered_centrtopix,upperfill,lowerfill,alpha=0.2,color='blue')#[:197] for ds4
 #plt.errorbar(listordered_centrtopix,avgtexlist,yerr=avgtexerrlist,fmt='o')#[:(len(listordered_centrtopix)-2)] for ds4
 ax0.plot(copy_centrtopix,fittedtex,color='orange',label=f'$\\alpha$={round(popt[1],2)} \u00B1 {round(pcov[1,1]**0.5,2)}',zorder=1)
-ax0.plot(copy_centrtopix,fit_pl(copy_centrtopix),color='red',ls='-',zorder=2,label=f'$\\alpha_1$={round(fit_pl.alpha_1.value,2)} \u00B1 {round(perr[2],2)}\n$\\alpha_2$={round(fit_pl.alpha_2.value,2)} \u00B1 {round(perr[3],2)}\n$r_{{break}}$={round(fit_pl.x_break.value)} \u00B1 {round(perr[1])}')
+ax0.plot(copy_centrtopix,fit_pl(copy_centrtopix),color='red',ls='-',zorder=2,label=f'$\\alpha_1$={round(fit_pl.alpha_1.value,2)} \u00B1 {round(perr[2],2)}\n$\\alpha_2$={round(fit_pl.alpha_2.value,2)} \u00B1 {round(perr[3],2)}\n$r_{{break}}$={round(fit_pl.x_break.value)} \u00B1 {round(perr[1])}')#[1:] for ds7
 ax1.set_xlabel('$r$ (AU)',fontsize=14)
 ax0.set_ylabel('T$_K$ (K)',fontsize=14)
 ax1.set_ylabel('Residuals',fontsize=10)
 ax0.set_ylim(ymax=(max(avgtexlist)+30))
 ax0.legend()
 ax0.tick_params(direction='in')
+ax0.tick_params(axis='x',labelcolor='w')
 ax1.tick_params(axis='x',top=True,direction='in')
-#plt.setp(ax0.get_xticklabels(), visible=False)
-#plt.setp(ax0.get_xticks(),visible=True)
+figsavepath=figpath+f'radialavgtex_residuals_r{r}px_rphys{int(pixtophysicalsize.value)}AU_bolocamfeather.png'
 
 plt.tight_layout()
+
+plt.savefig(figsavepath,overwrite=True)
 
 plt.show()
 print(f'Norm initial guess: {fiducial_norm}')
