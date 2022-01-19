@@ -11,6 +11,7 @@ from scipy.optimize import curve_fit as cf
 from astropy.modeling import powerlaws, fitting
 from operator import add,sub,truediv
 from matplotlib import gridspec
+from astropy.table import QTable, vstack
 
 mpl.interactive(True)
 
@@ -51,7 +52,7 @@ def quadratic_profile(r):
 def powerlaw_profile(x,a,n):
     return a*((x/pixtophysicalsize.value)**-n)
     
-source='DSIX'
+source='SgrB2S'
 fielddict={'SgrB2S':1,'DSi':10,'DSii':10,'DSiii':10,'DSiv':10,'DSv':10,'DSVI':2,'DSVII':3,'DSVIII':3,'DSIX':7}
 fnum=fielddict[source]
 print(f'Source: {source}')
@@ -72,22 +73,26 @@ if source in notransmask:
 else:
     texmap=home+"texmap_5transmask_3sigma_allspw_withnans_weighted.fits"
 
+texerrmap=home+"texmap_error_allspw_withnans_weighted.fits"
 snrmap=home+"texmap_snr_allspw_weighted.fits"
-abunmap=home+"ch3ohabundance_3sigma_ntotintercept_bolocamfeather.fits"
-abunsnrmap=home+'ch3ohabundance_snr_ntotintercept_bolocamfeather.fits'
-nh2map=home+"nh2map_3sigmacontandsurfacedensity_bolocamfeather.fits"
-nh2errormap=home+"nh2map_error_bolocamfeather.fits"
-lummap=home+"boltzmannlum_bolocamfeather.fits"
+abunmap=home+"ch3ohabundance_3sigma_ntotintercept_bolocamfeather_20ujytest.fits"
+abunsnrmap=home+'ch3ohabundance_snr_ntotintercept_bolocamfeather_20ujytest.fits'
+nh2map=home+"nh2map_3sigmacontandsurfacedensity_bolocamfeather_20ujytest.fits"
+nh2errormap=home+"nh2map_error_bolocamfeather_20ujytest.fits"
+lummap=home+"boltzmannlum_bolocamfeather_20ujytest.fits"
+lumerrmap=home+"boltzmannlum_error_bolocamfeather_20ujytest.fits"
 ntotmap=home+'ntotmap_allspw_withnans_weighted_useintercept_3sigma.fits'
 
 texmap=fits.open(texmap)
 texmapdata=texmap[0].data*u.K
+texerrdata=fits.getdata(texerrmap)*u.K
 snrs=fits.getdata(snrmap)
 abunds=fits.getdata(abunmap)
 snr_abund=fits.getdata(abunsnrmap)
 nh2s=fits.getdata(nh2map)*u.cm**-2
 nh2s_error=fits.getdata(nh2errormap)*u.cm**-2
 lums=fits.getdata(lummap)*u.solLum
+lumserr=fits.getdata(lumerrmap)*u.solLum
 ntots=fits.getdata(ntotmap)*u.cm**-2
 
 dGC=8.34*u.kpc#per Meng et al. 2019 https://www.aanda.org/articles/aa/pdf/2019/10/aa35920-19.pdf
@@ -108,6 +113,9 @@ bmajtophyssize=(np.tan(bmaj)*dGC).to('AU')
 bmintophyssize=(np.tan(bmin)*dGC).to('AU')
 '''Can probably simplify beamarea_phys to d(np.tan(bmaj)*np.tan(bmin))'''
 beamarea_phys=np.pi*bmajtophyssize*bmintophyssize
+
+cntmbmaj=3.629587176773e-05*u.deg
+cntmbmajtoAU=(np.tan(cntmbmaj)*dGC).to('AU')
 
 pixdict={'SgrB2S':(73,54),'DSi':(36,42),'DSii':(22,24),'DSiii':(24,24),'DSiv':(32,31),'DSv':(19,19),'DSVI':(62,62),'DSVII':(75,75),'DSVIII':(50,50),'DSIX':(34,35)}#y,x; DSiii was 24,24
 #SgrB2S tpeak is 73,54
@@ -163,23 +171,32 @@ abundsnrinradius=snr_abund[rr<r]/5
 nh2inradius=nh2s[rr<r].value
 nh2errorinradius=nh2s_error[rr<r].value
 lumsinradius=lums[rr<r].value
+lumerrinradius=lumserr[rr<r].value
 ntotsinradius=ntots[rr<r].value
 massinradius=(nh2s[rr<r]*mu*beamarea_phys).to('solMass').value
+masserrinradius=(nh2s_error[rr<r]*mu*beamarea_phys).to('solMass').value
 
 lookformax=texmapdata[rr<10**0.5].value
+lookformax_err=texerrdata[rr<10**0.5].value
 
-teststack=np.stack((centrtopix,massinradius,snrsinradius,lumsinradius,nh2inradius,nh2errorinradius,texinradius),axis=1)
+teststack=np.stack((centrtopix,massinradius,snrsinradius,lumsinradius,nh2inradius,nh2errorinradius,texinradius,lumerrinradius,masserrinradius),axis=1)
 teststack=teststack[teststack[:,0].argsort()]
 set_centrtopix=set(teststack[:,0])
 listordered_centrtopix=list(set_centrtopix)
 listordered_centrtopix.sort()
 
 avglist=[]
+radialdensitylist=[]
+mrcubedlist=[]
 avgtexlist=[]
 avgtexerrlist=[]
 avginversesigma=[]
 radialmaxtex=[]
 radialmintex=[]
+
+totalmass=np.nansum(teststack[:,1])
+sanitycheckmass=0
+edge=None
 
 for bin in listordered_centrtopix:
     tempmass=[]
@@ -187,7 +204,7 @@ for bin in listordered_centrtopix:
     temptex=[]
     temptexerr=[]
     tempinvsig=[]
-    temprads=[]
+    massesinterior=[]
     for data in teststack:
         #print(f'Bin: {bin} AU')
         if bin == data[0]:
@@ -201,52 +218,80 @@ for bin in listordered_centrtopix:
                 temptex.append(data[6])
                 temptexerr.append(data[6]/truesnr)
                 tempinvsig.append(truesnr/data[6])
+        if bin >= data[0]:
+            massesinterior.append(data[1])
         else:
             pass
     if len(tempmass)==0:
         avglist.append(0)
     else:
         avg=np.average(tempmass,weights=tempsnr)
+        massinbin=np.nansum(tempmass)*u.solMass
+        binvolume=(4/3)*np.pi*(bin*u.AU)**3
+        rawdensityinbin=massinbin/binvolume
+        numberdensityinbin=(rawdensityinbin/mu).to('cm-3')
+        mrcubed=((massinbin/mu).to(''))/((bin*u.AU).to('cm'))**3
         avgtex=np.average(temptex,weights=tempsnr)
         avgtexerr=np.sqrt(np.sum(np.square(temptexerr)))#np.average(temptexerr)
         #pdb.set_trace()
         avginvsig=np.average(tempinvsig)
         tempmaxtex=np.nanmax(temptex)
         tempmintex=np.nanmin(temptex)
+
+        massinteriorsum=np.nansum(massesinterior)
+        if massinteriorsum >= 0.5*totalmass:
+            if edge == None:
+                edge=bin
+                sanitycheckmass=massinteriorsum
+                #pdb.set_trace()
+            else:
+                pass
+        else:
+            pass
+
         avglist.append(avg)
         avgtexlist.append(avgtex)
         avgtexerrlist.append(avgtexerr)
         avginversesigma.append(avginvsig)
         radialmaxtex.append(tempmaxtex)
         radialmintex.append(tempmintex)
+        radialdensitylist.append(numberdensityinbin.value)
+        mrcubedlist.append(mrcubed.value)
     #pdb.set_trace()
 
-massderivative=list(np.diff(avglist))
-edge=0
+#massderivative=list(np.diff(mrcubedlist))#list(np.diff(avglist))
+
+'''
 for diff in massderivative:
-    if diff >= 0 and massderivative.index(diff) > 30:
+    if diff >= 0 and massderivative.index(diff) > 1:
         index=massderivative.index(diff)
         edge=listordered_centrtopix[index]
         break
-        
+'''
 fillwidth=np.copy(avgtexerrlist)#[x/2 for x in avgtexerrlist]
 upperfill=list( map(add,avgtexlist,fillwidth))#radialmaxtex
 lowerfill=list( map(sub,avgtexlist,fillwidth))#radialmintex#
 
 massestosum=[]
+masserrtoprop=[]
 lumstosum=[]
+lumerrtoprop=[]
 nh2tomean=[]
 nh2errortomean=[]
 for data2 in teststack:
     if data2[0] <= edge:
         massestosum.append(data2[1])
+        masserrtoprop.append(data2[8])
         lumstosum.append(data2[3])
+        lumerrtoprop.append(data2[7])
         nh2tomean.append(data2[4])
         nh2errortomean.append(data2[5])
     else:
         break
 masssum=np.nansum(massestosum)
+propmasserr=np.sqrt(np.nansum(np.square(masserrtoprop)))
 lumsum=np.nansum(lumstosum)
+proplumerr=np.sqrt(np.nansum(np.square(lumerrtoprop)))
 nh2mean=np.nanmean(nh2tomean)
 nh2errormean=np.nanmean(nh2errortomean)
 
@@ -294,12 +339,14 @@ popt,pcov=cf(powerlaw_profile,radiustofit,textofit,sigma=texerrtofit,bounds=([0,
 fit_pl=fitter(base_bpl,radiustofit,textofit,weights=weightstofit)
 perr=np.sqrt(np.diag(fitter.fit_info['param_cov']))
 
-print(f'Sum: {masssum}')
-print(f'Core radius: {edge} AU')
-print(f'Core luminosity: {lumsum}')
+print(f'Sum: {masssum} +/- {propmasserr} Msun')
+print(f'Core radius: {edge} +/- {cntmbmajtoAU} AU')
+print(f'Core luminosity: {lumsum} +/- {proplumerr} Lsun')
 print(f'Average H2 column in {edge} AU radius: {nh2mean} +/- {nh2errormean}')
 plottexmax=np.nanmax(lookformax)+10
-print(f'Max Tex: {np.max(lookformax)}')
+maxtexindex=np.where(lookformax==np.nanmax(lookformax))
+maxtexerror=lookformax_err[maxtexindex]
+print(f'Max Tex: {np.max(lookformax)} +/- {float(maxtexerror)} K')
 #copy_centrtopix=np.copy(centrtopix)*u.AU
 copy_centrtopix=np.copy(listordered_centrtopix)#np.linspace(0,r_phys.value,num=len(avgtexlist))*u.AU
 #copy_centrtopix.sort()
@@ -364,9 +411,17 @@ plt.savefig(figsavepath,bbox_inches='tight',overwrite=True)
 plt.show()
 
 plt.figure()
-plt.plot(listordered_centrtopix,avglist)
-plt.axvline(edge,ls='--')
-plt.show()
+if source == 'DSiv':
+    plt.plot(listordered_centrtopix[:197],radialdensitylist)
+    plt.axvline(edge,ls='--')
+    plt.yscale('log')
+    plt.show()
+
+else:
+    plt.plot(listordered_centrtopix,radialdensitylist)
+    plt.axvline(edge,ls='--')
+    plt.yscale('log')
+    plt.show()
 
 plt.figure()
 plt.scatter(texinradius,abundinradius,s=abundsnrinradius,c=nh2inradius,norm=mpl.colors.LogNorm())
@@ -415,35 +470,113 @@ avgsnr=np.array(list( map(truediv,avgtexlist,avgtexerrlist)))
 avgsnrforplot=avgsnr/2
 
 ax1.axhline(y=0,ls='--',color='black')
-ax1.plot(copy_centrtopix,residual_spl,color='orange',label='single')#[:197] for ds4,[1:] for ds7
-ax1.plot(copy_centrtopix,residual_bpl,color='red',label='broken')#[:197] for ds4,
-#ax1.legend()
+if source == 'DSiv':
+    ax1.plot(copy_centrtopix[:197],residual_spl[:197],color='orange',label='single')#[:197] for ds4,[1:] for ds7
+    ax1.plot(copy_centrtopix[:197],residual_bpl[:197],color='red',label='broken')#[:197] for ds4,
+    ax0.scatter(listordered_centrtopix[:197],avgtexlist)#[:197] for ds4
+    ax0.fill_between(listordered_centrtopix[:197],upperfill[:197],lowerfill[:197],alpha=0.2,color='blue')#[:197] for ds
 
-ax0.scatter(listordered_centrtopix,avgtexlist)#[:197] for ds4
-ax0.fill_between(listordered_centrtopix,upperfill,lowerfill,alpha=0.2,color='blue')#[:197] for ds4
-#plt.errorbar(listordered_centrtopix,avgtexlist,yerr=avgtexerrlist,fmt='o')#[:(len(listordered_centrtopix)-2)] for ds4
-ax0.plot(copy_centrtopix,fittedtex,color='orange',label=f'$\\alpha$={round(popt[1],2)} \u00B1 {round(pcov[1,1]**0.5,2)}',zorder=1)
-ax0.plot(copy_centrtopix,fit_pl(copy_centrtopix),color='red',ls='-',zorder=2,label=f'$\\alpha_1$={round(fit_pl.alpha_1.value,2)} \u00B1 {round(perr[2],2)}\n$\\alpha_2$={round(fit_pl.alpha_2.value,2)} \u00B1 {round(perr[3],2)}\n$r_{{break}}$={round(fit_pl.x_break.value)} \u00B1 {round(perr[1])}')#[1:] for ds7
-ax1.set_xlabel('$r$ (AU)',fontsize=14)
-ax0.set_ylabel('T$_K$ (K)',fontsize=14)
-ax1.set_ylabel('Residuals',fontsize=10)
-ax0.set_ylim(ymax=(max(avgtexlist)+30))
-ax0.legend()
-ax0.tick_params(direction='in')
-ax0.tick_params(axis='x',labelcolor='w')
-ax1.tick_params(axis='x',top=True,direction='in')
-figsavepath=figpath+f'radialavgtex_residuals_r{r}px_rphys{int(pixtophysicalsize.value)}AU_bolocamfeather.png'
+    ax0.plot(copy_centrtopix,fittedtex,color='orange',label=f'$\\alpha$={round(popt[1],2)} \u00B1 {round(pcov[1,1]**0.5,2)}',zorder=1)
+    ax0.plot(copy_centrtopix,fit_pl(copy_centrtopix),color='red',ls='-',zorder=2,label=f'$\\alpha_1$={round(fit_pl.alpha_1.value,2)} \u00B1 {round(perr[2],2)}\n$\\alpha_2$={round(fit_pl.alpha_2.value,2)} \u00B1 {round(perr[3],2)}\n$r_{{break}}$={round(fit_pl.x_break.value)} \u00B1 {round(perr[1])}')#[1:] for ds7
+    ax1.set_xlabel('$r$ (AU)',fontsize=14)
+    ax0.set_ylabel('T$_K$ (K)',fontsize=14)
+    ax1.set_ylabel('Residuals',fontsize=10)
+    ax0.set_ylim(ymax=(max(avgtexlist)+30))
+    ax0.legend()
+    ax0.tick_params(direction='in')
+    ax0.tick_params(axis='x',labelcolor='w')
+    ax1.tick_params(axis='x',top=True,direction='in')
+    figsavepath=figpath+f'radialavgtex_residuals_r{r}px_rphys{int(pixtophysicalsize.value)}AU_bolocamfeather.png'
 
-plt.tight_layout()
+    plt.tight_layout()
 
-plt.savefig(figsavepath,overwrite=True)
+    plt.savefig(figsavepath,overwrite=True)
 
-plt.show()
+    plt.show()
+
+elif source == 'DSVII':
+    ax1.plot(copy_centrtopix[1:],residual_spl[1:],color='orange',label='single')#[:197] for ds4,[1:] for ds7
+    ax1.plot(copy_centrtopix[1:],residual_bpl[1:],color='red',label='broken')#[:197] for ds4
+
+    ax0.scatter(listordered_centrtopix,avgtexlist)#[:197] for ds4
+    ax0.fill_between(listordered_centrtopix,upperfill,lowerfill,alpha=0.2,color='blue')#[:197] for ds4
+    ax0.plot(copy_centrtopix,fittedtex,color='orange',label=f'$\\alpha$={round(popt[1],2)} \u00B1 {round(pcov[1,1]**0.5,2)}',zorder=1)
+    ax0.plot(copy_centrtopix[1:],fit_pl(copy_centrtopix)[1:],color='red',ls='-',zorder=2,label=f'$\\alpha_1$={round(fit_pl.alpha_1.value,2)} \u00B1 {round(perr[2],2)}\n$\\alpha_2$={round(fit_pl.alpha_2.value,2)} \u00B1 {round(perr[3],2)}\n$r_{{break}}$={round(fit_pl.x_break.value)} \u00B1 {round(perr[1])}')#[1:] for ds7
+    ax1.set_xlabel('$r$ (AU)',fontsize=14)
+    ax0.set_ylabel('T$_K$ (K)',fontsize=14)
+    ax1.set_ylabel('Residuals',fontsize=10)
+    ax0.set_ylim(ymax=(max(avgtexlist)+30))
+    ax0.legend()
+    ax0.tick_params(direction='in')
+    ax0.tick_params(axis='x',labelcolor='w')
+    ax1.tick_params(axis='x',top=True,direction='in')
+    figsavepath=figpath+f'radialavgtex_residuals_r{r}px_rphys{int(pixtophysicalsize.value)}AU_bolocamfeather.png'
+
+    plt.tight_layout()
+
+    plt.savefig(figsavepath,overwrite=True)
+
+    plt.show()
+else:
+    ax1.plot(copy_centrtopix,residual_spl,color='orange',label='single')#[:197] for ds4,[1:] for ds7
+    ax1.plot(copy_centrtopix,residual_bpl,color='red',label='broken')#[:197] for ds4,
+
+    ax0.scatter(listordered_centrtopix,avgtexlist)#[:197] for ds4
+    ax0.fill_between(listordered_centrtopix,upperfill,lowerfill,alpha=0.2,color='blue')#[:197] for ds4
+    ax0.plot(copy_centrtopix,fittedtex,color='orange',label=f'$\\alpha$={round(popt[1],2)} \u00B1 {round(pcov[1,1]**0.5,2)}',zorder=1)
+    ax0.plot(copy_centrtopix,fit_pl(copy_centrtopix),color='red',ls='-',zorder=2,label=f'$\\alpha_1$={round(fit_pl.alpha_1.value,2)} \u00B1 {round(perr[2],2)}\n$\\alpha_2$={round(fit_pl.alpha_2.value,2)} \u00B1 {round(perr[3],2)}\n$r_{{break}}$={round(fit_pl.x_break.value)} \u00B1 {round(perr[1])}')#[1:] for ds7
+    ax1.set_xlabel('$r$ (AU)',fontsize=14)
+    ax0.set_ylabel('T$_K$ (K)',fontsize=14)
+    ax1.set_ylabel('Residuals',fontsize=10)
+    ax0.set_ylim(ymax=(max(avgtexlist)+30))
+    ax0.legend()
+    ax0.tick_params(direction='in')
+    ax0.tick_params(axis='x',labelcolor='w')
+    ax1.tick_params(axis='x',top=True,direction='in')
+    figsavepath=figpath+f'radialavgtex_residuals_r{r}px_rphys{int(pixtophysicalsize.value)}AU_bolocamfeather.png'
+
+    plt.tight_layout()
+
+    plt.savefig(figsavepath,overwrite=True)
+
+    plt.show()
 print(f'Norm initial guess: {fiducial_norm}')
 print(f'norm error: {pcov[0,0]**0.5}')
 
 print(f'index initial guess: {lowerbound_initialguess[source]}')
 print(f'index error: {pcov[1,1]**0.5}')
+
+sourcenamesfortable={'SgrB2S':'SgrB2S','DSi':'DS1','DSii':'DS2','DSiii':'DS3','DSiv':'DS4','DSv':'DS5','DSVI':'DS6','DSVII':'DS7','DSVIII':'DS8','DSIX':'DS9'}
+sumtablepath='hotcoresummarytable.fits'
+if os.path.exists(sumtablepath):
+    print('\nUpdating summary table with new values')
+    sumtable=QTable.read(sumtablepath)
+    if sourcenamesfortable[source] in sumtable['Source']:
+        print(f'Data for source {source} already exists.')
+        sourceindex=int(np.where(sumtable['Source']==sourcenamesfortable[source])[0])
+        print(sumtable[sourceindex])
+        update=input('Overwrite? [y/n]\n')
+        if update=='y':
+              props=[sourcenamesfortable[source],(float(lookformax[maxtexindex])*u.K),(float(maxtexerror)*u.K),(nh2mean*u.cm**-2),(nh2errormean*u.cm**-2),
+                     (masssum*u.solMass),(propmasserr*u.solMass),(lumsum*u.solLum),(proplumerr*u.solLum),(edge*u.AU),(cntmbmajtoAU)]
+              sumtable[sourceindex]=tuple(props)
+              print(f'{source} source properties updated.')
+              print(f'\nSaving at {sumtablepath}')
+              sumtable.write(sumtablepath,overwrite=True)
+              print('Update complete')
+
+        else:
+              print(f'{source} source properties unchanged.')
+    else:
+        print(f'Adding new source {source} to summary table.')
+        props=[sourcenamesfortable[source],(float(lookformax[maxtexindex])*u.K),(float(maxtexerror)*u.K),(nh2mean*u.cm**-2),(nh2errormean*u.cm**-2),
+               (masssum*u.solMass),(propmasserr*u.solMass),(lumsum*u.solLum),(proplumerr*u.solLum),(edge*u.AU),(cntmbmajtoAU)]
+        tempqtable=QTable(rows=[props],names=['Source','T_max','T_max_error','N(H_2) avg)','N(H_2) error','H_2 Mass','H_2 Mass error','Luminosity','Luminosity_error','Radius','Radius_error'])
+        outtable=vstack([sumtable,tempqtable])
+        print(f'{source} source properties added to table.')
+        print(f'\nSaving at {sumtablepath}')
+        outtable.write(sumtablepath,overwrite=True)
+        print('Update complete')
 
 
 '''
