@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 import matplotlib as mpl
 
 mpl.interactive(True)
+plt.close('all')
 
 def kappa(nu, nu0=271.1*u.GHz, kappa0=0.0114*u.cm**2*u.g**-1, beta=1.75):
     """
@@ -42,6 +43,9 @@ def gassmasserr(snu,omega,nu,kappa,tex,texerr):
 def luminosity(r,T):#Boltzmann luminosity
     return (4*np.pi*r**2)*sigmasb*T**4
 
+def error_luminosity(r,T):
+    return (16*np.pi*r**2)*sigmasb*T**3*rms_1mm_K
+
 def soundspeed(m,T):
     return np.sqrt((k*T)/m)
 
@@ -70,7 +74,8 @@ cntminfile='/orange/adamginsburg/sgrb2/2017.1.00114.S/imaging_results/Sgr_B2_DS_
 cntmimage=fits.open(cntminfile)
 print(f'Continuum image: {cntminfile}')
 restfreq=cntmimage[0].header['RESTFRQ']*u.Hz
-source='DSIX'
+
+source='SgrB2S'
 print(f'Source: {source}')
 
 #texmapdict={'SgrB2S':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/SgrB2S/new_testingstdfixandontheflyrepstuff_K_OctReimage_restfreqfix_newvelmask_newpeakamp/texmap_5transmask_3sigma_allspw_withnans_weighted.fits",'DSi':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSi/field10originals_spatialandvelocitymaskingtrial5_newexclusions3andexclusionsnotinfit/texmap_5transmask_3sigma_allspw_withnans_weighted.fits",'DSii':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSii/field10originals_noexclusions/texmap_5transmask_3sigma_allspw_withnans_weighted.fits"}
@@ -117,6 +122,8 @@ texwcs=WCS(texmap[0].header)
 
 equiv=u.brightness_temperature(cntmimage[0].header['RESTFRQ']*u.Hz)
 
+rms_1mm_K=(cntmstd/beamarea_sr).to(u.K,equivalencies=equiv)
+
 nh2=np.empty((np.shape(texmapdata)[0],np.shape(texmapdata)[1]))
 nh2_unc=np.empty((np.shape(texmapdata)[0],np.shape(texmapdata)[1]))
 nh2_snr=np.empty((np.shape(texmapdata)[0],np.shape(texmapdata)[1]))
@@ -125,6 +132,7 @@ ch3ohabundance_unc=np.empty((np.shape(texmapdata)[0],np.shape(texmapdata)[1]))
 ch3ohabundance_snr=np.empty((np.shape(texmapdata)[0],np.shape(texmapdata)[1]))
 ch3ohabundance_sigclip=np.empty((np.shape(texmapdata)[0],np.shape(texmapdata)[1]))
 lums=np.empty((np.shape(texmapdata)[0],np.shape(texmapdata)[1]))
+lumserr=np.empty((np.shape(texmapdata)[0],np.shape(texmapdata)[1]))
 tau=np.empty((np.shape(texmapdata)[0],np.shape(texmapdata)[1]))
 
 snr=3
@@ -133,19 +141,22 @@ for y in range(np.shape(texmapdata)[0]):
     print(f'Start Row {y}')
     for x in range(np.shape(texmapdata)[1]):
         hotspottex=texmapdata[y,x]
-        targetpixtoworld=texwcs.pixel_to_world([0,0],[y,x])#wcs_pix2world(([0,0],texmappix),ra_dec_order=True)
-        pix2world2=texwcs.pixel_to_world([y,x],[0,0])
+        targetpixtoworld=texwcs.all_pix2world([(x,y)],0)#wcs_pix2world(([0,0],texmappix),ra_dec_order=True)
+        #pix2world2=texwcs.pixel_to_world([x,y],0)
         #hotspottex=texmapdata[texmappix[0],texmappix[1]]
-        hmm=[[targetpixtoworld.ra[0].value,targetpixtoworld.dec[0].value,0,0],
-             [pix2world2.ra[1].value,pix2world2.dec[1].value,0,0]]
-        cntmworldtopix=cntmwcs.wcs_world2pix(hmm,1,ra_dec_order=True)#world_to_array_index([266.83628632*u.deg,-28.39626318*u.deg,225265023886.0*u.Hz,1*u.m],[0,0,0,0],[1,1,1,1])
-        cntmxpix=math.floor(cntmworldtopix[1][0]-1)
-        cntmypix=math.floor(cntmworldtopix[0][1])
+        #hmm=[[targetpixtoworld.ra[0].value,targetpixtoworld.dec[0].value,0,0],[pix2world2.ra[1].value,pix2world2.dec[1].value,0,0]]
+        empty=np.empty((1,4))
+        empty[:,0]=targetpixtoworld[:,0]
+        empty[:,1]=targetpixtoworld[:,1]
+        empty[:,2]=0
+        empty[:,3]=0
+        cntmworldtopix=cntmwcs.all_world2pix(empty,0,ra_dec_order=True)#world_to_array_index([266.83628632*u.deg,-28.39626318*u.deg,225265023886.0*u.Hz,1*u.m],[0,0,0,0],[1,1,1,1])
+        cntmxpix=round(float(cntmworldtopix[:,0]))#math.floor(cntmworldtopix[1][0]-1)
+        cntmypix=round(float(cntmworldtopix[:,1]))#math.floor(cntmworldtopix[0][1])
         
         hotspotjy=cntmdatasqee[cntmypix,cntmxpix]
         hotspotjysr=hotspotjy/beamarea_sr#The equations we're using start from the Plank function, so this gets us to spectral radiance units
         #ntoterr=(1/snrmap[y,x])*ntotmap[y,x]
-        
         
         if (hotspotjysr*beamarea_sr) < snr*cntmstd or snrmap[y,x] < 3:
             #print('Negative continuum flux detected')
@@ -156,10 +167,13 @@ for y in range(np.shape(texmapdata)[0]):
             nh2_snr[y,x]=np.nan
             ch3ohabundance[y,x]=np.nan
             lums[y,x]=np.nan
+            lumserr[y,x]=np.nan
             tau[y,x]=np.nan
             ch3ohabundance_unc[y,x]=np.nan
             ch3ohabundance_snr[y,x]=np.nan
             ch3ohabundance_sigclip[y,x]=np.nan
+            #print(f'Pixel ({y},{x}) flux < 3*sigma in continuum')
+            #pdb.set_trace()
             continue
 
         #print(f'Results for region in {source}\nTex pixel {texmappix}):\nCntm pixel: {cntmypix,cntmxpix}')
@@ -167,6 +181,7 @@ for y in range(np.shape(texmapdata)[0]):
         jysrtoK=hotspotjysr.to(u.K,equivalencies=equiv)
         targettau=opticaldepth(hotspotjysr,restfreq,hotspottex).decompose()#.to('')# units are disagreeing at the moment, but pretty sure this is the optical depth in spite of the dangling sr-1 term
         targetlum=luminosity(bmajtophyssize,jysrtoK).to("solLum")#per Ginsburg+2017, this uses the peak of the continuum, not methanol
+        targetlumerr=error_luminosity(bmajtophyssize,jysrtoK).to('solLum')
         targetgasmass=gasmass(hotspotjysr,beamarea_sr,restfreq,cntmkappa,hotspottex)
         gassmass_unc=gassmasserr(hotspotjysr,beamarea_sr,restfreq,cntmkappa,hotspottex,texerrmap[y,x])
         targetSigmam=((targetgasmass/(np.pi*beamarea_phys)).to('g cm-2'))
@@ -184,12 +199,13 @@ for y in range(np.shape(texmapdata)[0]):
             print(f'Reduced Sigma_m: {targetSigmam_reduced}')
             pdb.set_trace()
         if Sigmam_reduced_snr < snr:
-            print(f'Pixel ({y},{x}) Sigma_m < 3sigma')
+            print(f'Pixel ({y},{x}) Sigma_mass < 3sigma')
             nh2[y,x]=np.nan
             nh2_unc[y,x]=Sigmam_reduced_unc.value
             nh2_snr[y,x]=Sigmam_reduced_snr.value
             ch3ohabundance[y,x]=np.nan
             lums[y,x]=np.nan
+            lumserr[y,x]=np.nan
             tau[y,x]=np.nan
             ch3ohabundance_unc[y,x]=np.nan
             ch3ohabundance_snr[y,x]=np.nan
@@ -206,6 +222,7 @@ for y in range(np.shape(texmapdata)[0]):
         ch3ohabundance_unc[y,x]=ch3ohabun_unc.value
         ch3ohabundance_snr[y,x]=ch3ohabun_snr.value
         lums[y,x]=targetlum.value
+        lumserr[y,x]=targetlumerr.value
         tau[y,x]=targettau.value
         
         if ch3ohabun_snr >= 3:
@@ -218,7 +235,7 @@ nh2primaryhdu.header=texmap[0].header
 nh2primaryhdu.header['BTYPE']='N(H2)'
 nh2primaryhdu.header['BUNIT']='cm-2'
 nh2hdul=fits.HDUList([nh2primaryhdu])
-nh2fitspath=sourcepath+f'nh2map_{snr}sigmacontandsurfacedensity_bolocamfeather_20ujytest.fits'
+nh2fitspath=sourcepath+f'nh2map_{snr}sigmacontandsurfacedensity_bolocamfeather_20ujytest_derotated.fits'
 print(f'Saving N(H2) map at {nh2fitspath}\n')
 nh2hdul.writeto(nh2fitspath,overwrite=True)
 
@@ -227,7 +244,7 @@ nh2uncprimaryhdu.header=texmap[0].header
 nh2uncprimaryhdu.header['BTYPE']='N(H2) error'
 nh2uncprimaryhdu.header['BUNIT']='cm-2'
 nh2unchdul=fits.HDUList([nh2uncprimaryhdu])
-nh2uncfitspath=sourcepath+f'nh2map_error_bolocamfeather_20ujytest.fits'
+nh2uncfitspath=sourcepath+f'nh2map_error_bolocamfeather_20ujytest_derotated.fits'
 print(f'Saving N(H2) map at {nh2uncfitspath}\n')
 nh2unchdul.writeto(nh2uncfitspath,overwrite=True)
 
@@ -236,7 +253,7 @@ ch3ohabundprimaryhdu.header=texmap[0].header
 ch3ohabundprimaryhdu.header['BTYPE']='Abundance (CH3OH)'
 ch3ohabundprimaryhdu.header['BUNIT']='cm-2/cm-2'
 ch3ohabundhdul=fits.HDUList([ch3ohabundprimaryhdu])
-ch3ohabundfitspath=sourcepath+f'ch3ohabundance_ntotintercept_bolocamfeather_20ujytest.fits'
+ch3ohabundfitspath=sourcepath+f'ch3ohabundance_ntotintercept_bolocamfeather_20ujytest_derotated.fits'
 print(f'Saving CH3OH abundance map at {ch3ohabundfitspath}\n')
 ch3ohabundhdul.writeto(ch3ohabundfitspath,overwrite=True)
 
@@ -245,7 +262,7 @@ errch3ohabundprimaryhdu.header=texmap[0].header
 errch3ohabundprimaryhdu.header['BTYPE']='Abundance error (CH3OH)'
 errch3ohabundprimaryhdu.header['BUNIT']='cm-2/cm-2'
 errch3ohabundhdul=fits.HDUList([errch3ohabundprimaryhdu])
-errch3ohabundfitspath=sourcepath+f'ch3ohabundance_error_ntotintercept_bolocamfeather_20ujytest.fits'
+errch3ohabundfitspath=sourcepath+f'ch3ohabundance_error_ntotintercept_bolocamfeather_20ujytest_derotated.fits'
 print(f'Saving CH3OH abundance error map at {errch3ohabundfitspath}\n')
 errch3ohabundhdul.writeto(errch3ohabundfitspath,overwrite=True)
 
@@ -254,7 +271,7 @@ snrch3ohabundprimaryhdu.header=texmap[0].header
 snrch3ohabundprimaryhdu.header['BTYPE']='Abundance SNR (CH3OH)'
 snrch3ohabundprimaryhdu.header['BUNIT']='cm-2/cm-2'
 snrch3ohabundhdul=fits.HDUList([snrch3ohabundprimaryhdu])
-snrch3ohabundfitspath=sourcepath+f'ch3ohabundance_snr_ntotintercept_bolocamfeather_20ujytest.fits'
+snrch3ohabundfitspath=sourcepath+f'ch3ohabundance_snr_ntotintercept_bolocamfeather_20ujytest_derotated.fits'
 print(f'Saving CH3OH abundance SNR map at {snrch3ohabundfitspath}\n')
 snrch3ohabundhdul.writeto(snrch3ohabundfitspath,overwrite=True)
 
@@ -263,7 +280,7 @@ sigclipch3ohabundprimaryhdu.header=texmap[0].header
 sigclipch3ohabundprimaryhdu.header['BTYPE']='Abundance (CH3OH)'
 sigclipch3ohabundprimaryhdu.header['BUNIT']='cm-2'
 sigclipch3ohabundhdul=fits.HDUList([sigclipch3ohabundprimaryhdu])
-sigclipch3ohabundfitspath=sourcepath+f'ch3ohabundance_3sigma_ntotintercept_bolocamfeather_20ujytest.fits'
+sigclipch3ohabundfitspath=sourcepath+f'ch3ohabundance_3sigma_ntotintercept_bolocamfeather_20ujytest_derotated.fits'
 print(f'Saving CH3OH abundance map at {sigclipch3ohabundfitspath}\n')
 sigclipch3ohabundhdul.writeto(sigclipch3ohabundfitspath,overwrite=True)
 
@@ -272,16 +289,25 @@ lumprimaryhdu.header=texmap[0].header
 lumprimaryhdu.header['BTYPE']='Luminosity'
 lumprimaryhdu.header['BUNIT']='Lsun'
 lumhdul=fits.HDUList([lumprimaryhdu])
-lumfitspath=sourcepath+f'boltzmannlum_bolocamfeather_20ujytest.fits'
+lumfitspath=sourcepath+f'boltzmannlum_bolocamfeather_20ujytest_derotated.fits'
 print(f'Saving luminosity map at {lumfitspath}\n')
 lumhdul.writeto(lumfitspath,overwrite=True)
+
+lumerrprimaryhdu=fits.PrimaryHDU(lumserr)
+lumerrprimaryhdu.header=texmap[0].header
+lumerrprimaryhdu.header['BTYPE']='Luminosity error'
+lumerrprimaryhdu.header['BUNIT']='Lsun'
+lumerrhdul=fits.HDUList([lumerrprimaryhdu])
+lumerrfitspath=sourcepath+f'boltzmannlum_error_bolocamfeather_20ujytest_derotated.fits'
+print(f'Saving luminosity error map at {lumerrfitspath}\n')
+lumerrhdul.writeto(lumerrfitspath,overwrite=True)
 
 tauprimaryhdu=fits.PrimaryHDU(tau)
 tauprimaryhdu.header=texmap[0].header
 tauprimaryhdu.header['BTYPE']='Optical depth (tau)'
 tauprimaryhdu.header['BUNIT']='unitless'
 tauhdul=fits.HDUList([tauprimaryhdu])
-taufitspath=sourcepath+f'opticaldepth_bolocamfeather_20ujytest.fits'
+taufitspath=sourcepath+f'opticaldepth_bolocamfeather_20ujytest_derotated.fits'
 print(f'Saving optical depth map at {taufitspath}\n')
 tauhdul.writeto(taufitspath,overwrite=True)
         
