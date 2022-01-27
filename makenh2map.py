@@ -7,6 +7,10 @@ import math
 import pdb
 import matplotlib.pyplot as plt
 import matplotlib as mpl
+import reproject
+import radio_beam
+import os
+from astropy.convolution import convolve
 
 mpl.interactive(True)
 plt.close('all')
@@ -71,34 +75,85 @@ G=cnst.G*u.m**3/(u.kg*u.s**2)
 molweight_ch3oh=(32.042*u.u).to('g')#https://pubchem.ncbi.nlm.nih.gov/compound/methanol
 
 cntminfile='/orange/adamginsburg/sgrb2/2017.1.00114.S/imaging_results/Sgr_B2_DS_B6_uid___A001_X1290_X46_continuum_merged_12M_robust2_selfcal4_finaliter_feathered_with_bolocam.fits'#'/blue/adamginsburg/d.jeff/imaging_results/adamcleancontinuum/Sgr_B2_DS_B6_uid___A001_X1290_X46_continuum_merged_12M_robust2_selfcal4_finaliter.image.tt0.pbcor.fits'
-cntmimage=fits.open(cntminfile)
+notreproj_cntmimage=fits.open(cntminfile)
 print(f'Continuum image: {cntminfile}')
-restfreq=cntmimage[0].header['RESTFRQ']*u.Hz
+restfreq=notreproj_cntmimage[0].header['RESTFRQ']*u.Hz
 
-source='SgrB2S'
+source='DSVI'
 print(f'Source: {source}')
 
 #texmapdict={'SgrB2S':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/SgrB2S/new_testingstdfixandontheflyrepstuff_K_OctReimage_restfreqfix_newvelmask_newpeakamp/texmap_5transmask_3sigma_allspw_withnans_weighted.fits",'DSi':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSi/field10originals_spatialandvelocitymaskingtrial5_newexclusions3andexclusionsnotinfit/texmap_5transmask_3sigma_allspw_withnans_weighted.fits",'DSii':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSii/field10originals_noexclusions/texmap_5transmask_3sigma_allspw_withnans_weighted.fits"}
 sourcedict={'SgrB2S':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/SgrB2S/new_testingstdfixandontheflyrepstuff_K_OctReimage_restfreqfix_newvelmask_newpeakamp/",'DSi':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSi/Kfield10originals_trial7_field10errors_newexclusion_matchslabwidthtorep/",'DSii':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSii/Kfield10originals_noexclusions/",'DSiii':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSiii/Kfield10originals_noexclusions/",'DSiv':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSiv/Kfield10originals_noexclusions/",'DSv':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSv/Kfield10originals_noexclusions_include4-3_150K_trial2/",'DSVI':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field2/CH3OH/DSVI/Kfield2originals_trial3_8_6-8_7excluded/",'DSVII':'/blue/adamginsburg/d.jeff/SgrB2DSreorg/field3/CH3OH/DSVII/Kfield3originals_200K_trial1_noexclusions/','DSVIII':'/blue/adamginsburg/d.jeff/SgrB2DSreorg/field3/CH3OH/DSVIII/Kfield3originals_175K_trial1_noexclusions/','DSIX':'/blue/adamginsburg/d.jeff/SgrB2DSreorg/field7/CH3OH/DSIX/Kfield7originals_150K_trial1_noexclusions/','DSX':'/blue/adamginsburg/d.jeff/SgrB2DSreorg/field7/CH3OH/DSX/Kfield7originals_100K_trial1_noexclusions/'}
 sourcepath=sourcedict[source]
 
-notransmask=['DSv','DSVI','DSVII','DSVIII','DSIX','DSX']
-if source in notransmask:
-    texmap=fits.open(sourcepath+'texmap_3sigma_allspw_withnans_weighted.fits')
-else:
-    texmap=fits.open(sourcepath+'texmap_5transmask_3sigma_allspw_withnans_weighted.fits')
+texmap=fits.open(sourcepath+'texmap_3sigma_allspw_withnans_weighted.fits')
 
-ntotmap=fits.getdata(sourcepath+'ntotmap_allspw_withnans_weighted_useintercept_3sigma.fits')*u.cm**-2
-ntoterrmap=fits.getdata(sourcepath+'ntoterrmap_allspw_withnans_weighted_useintercept.fits')*u.cm**-2
+ntotfits=fits.open(sourcepath+'ntotmap_allspw_withnans_weighted_useintercept_3sigma.fits')
+ntotmap=ntotfits[0].data*u.cm**-2
+ntoterrfits=fits.open(sourcepath+'ntoterrmap_allspw_withnans_weighted_useintercept.fits')
+ntoterrmap=ntoterrfits[0].data*u.cm**-2
 ch3ohSigmam_map=ntotmap*molweight_ch3oh
 
 #snrmapdict={'SgrB2S':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/SgrB2S/new_testingstdfixandontheflyrepstuff_K_OctReimage_restfreqfix_newvelmask_newpeakamp/"}
-snrmap=fits.getdata(sourcepath+'texmap_snr_allspw_weighted.fits')
+snrfits=fits.open(sourcepath+'texmap_snr_allspw_weighted.fits')
+snrmap=snrfits[0].data
 
 #texerrmapdict={'SgrB2S':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/SgrB2S/new_testingstdfixandontheflyrepstuff_K_OctReimage_restfreqfix_newvelmask_newpeakamp/"}
-texerrmap=fits.getdata(sourcepath+'texmap_error_allspw_withnans_weighted.fits')*u.K
+texerrfits=fits.open(sourcepath+'texmap_error_allspw_withnans_weighted.fits')
+texerrmap=texerrfits[0].data*u.K
 
-texmapdata=texmap[0].data*u.K
+reprojtexmappath=sourcepath+'texmap_3sigma_allspw_withnans_weighted_reprojecttobolocamcont_smoothed.fits'
+reprojtexerrpath=sourcepath+'ntotmap_allspw_withnans_weighted_useintercept_3sigma_reprojecttobolocamcont_smoothed.fits'
+reprojsnrpath=sourcepath+'texmap_snr_allspw_weighted_reprojecttobolocamcont_smoothed.fits'
+reprojntotpath=sourcepath+'ntotmap_allspw_withnans_weighted_useintercept_3sigma_reprojecttobolocamcont_smoothed.fits'
+reprojntoterrpath=sourcepath+'ntoterrmap_allspw_withnans_weighted_useintercept_reprojecttobolocamcont_smoothed.fits'
+#reproj
+
+newcontpath=sourcepath+'reprojectedcontinuum.fits'
+
+if os.path.exists(reprojtexmappath):
+    print(f'\nReprojected and smoothed images for source {source} already exist')
+    print('Grabbing from respective paths')
+    smoothed_trot_fits=fits.open(sourcepath+reprojtexmappath)
+    smoothed_trot=smoothed_trot_fits[0].data
+    smoothed_troterr=fits.open(sourcepath+reprojtexerrmappath)
+    smoothed_snr=fits.open(sourcepath+reprojsnrpath)
+    smoothed_ntot=fits.open(sourcepath+reprojntotpath)
+    smoothed_ntoterr=fits.open(sourcepath+reprojntoterrpath)
+else:
+    print('Begin reprojection and smoothing')
+    if os.path.exists(newcontpath):
+        print(f'Reprojected continuum for {source} already exists.')
+        print(f'Loading from {newcontpath}')
+        cntmimage=fits.open(newcontpath)
+    else:
+        newcont,footprint=reproject.reproject_interp((notreproj_cntmimage[0].data.squeeze(),WCS(notreproj_cntmimage[0].header).celestial),texmap[0].header)
+        newcontprimaryHDU=fits.PrimaryHDU(newcont)
+        newcontprimaryHDU.header=texmap[0].header
+        newcontprimaryHDU.header['BUNIT']='Jy/beam'
+        newcontprimaryHDU.header['BTYPE']='1mm continuum flux'
+        newcontprimaryHDU.header['RESTFRQ']=restfreq.to('Hz').value
+    
+        newcontHDUList=fits.HDUList([newcontprimaryHDU])
+
+        newcontHDUList.writeto(newcontpath,overwrite=True)
+        cntmimage=newcontHDUList
+
+    #pdb.set_trace()
+    
+    beam_tex=radio_beam.Beam.from_fits_header(texmap[0].header)
+    beam_cntm=radio_beam.Beam.from_fits_header(notreproj_cntmimage[0].header)
+    beam_deconv=beam_cntm.deconvolve(beam_tex)
+    pixscale=WCS(texmap[0].header).proj_plane_pixel_area()**0.5
+    smoothed_trot = convolve(texmap[0].data, beam_deconv.as_kernel(pixscale))
+    smoothed_troterr = convolve(texerrmap, beam_deconv.as_kernel(pixscale))
+    smoothed_snr = convolve(snrmap, beam_deconv.as_kernel(pixscale))
+    smoothed_ntot = convolve(ntotmap, beam_deconv.as_kernel(pixscale))
+    smoothed_ntoterr=convolve(ntoterrmap, beam_deconv.as_kernel(pixscale))
+
+#pdb.set_trace()
+
+texmapdata=smoothed_trot*u.K#texmap[0].data*u.K
 
 cntmdata=cntmimage[0].data*u.Jy
 cntmdatasqee=np.squeeze(cntmdata)
@@ -137,6 +192,18 @@ tau=np.empty((np.shape(texmapdata)[0],np.shape(texmapdata)[1]))
 
 snr=3
 
+cntmsurfbright=cntmdata/beamarea_sr
+
+cntmsurfbrightK=cntmsurfbright.to(u.K,equivalencies=equiv)
+bettergasmass=(((beamarea_sr*d**2*c**2)/(2*k*restfreq**2*cntmkappa))*((cntmsurfbright)/texmapdata)).to('solMass')
+
+betterSigmam=(bettergasmass/beamarea_phys).to('g cm-2')
+betterNh2=(betterSigmam/mu).to('cm-2')
+betterXch3oh=(smoothed_ntot/betterNh2).to('')
+bettertau=((c**2*cntmsurfbright)/(2*k*texmapdata*restfreq**2)).decompose()
+
+pdb.set_trace()
+
 for y in range(np.shape(texmapdata)[0]):
     print(f'Start Row {y}')
     for x in range(np.shape(texmapdata)[1]):
@@ -152,7 +219,7 @@ for y in range(np.shape(texmapdata)[0]):
         empty[:,3]=0
         cntmworldtopix=cntmwcs.all_world2pix(empty,0,ra_dec_order=True)#world_to_array_index([266.83628632*u.deg,-28.39626318*u.deg,225265023886.0*u.Hz,1*u.m],[0,0,0,0],[1,1,1,1])
         cntmxpix=round(float(cntmworldtopix[:,0]))#math.floor(cntmworldtopix[1][0]-1)
-        cntmypix=round(float(cntmworldtopix[:,1]))#math.floor(cntmworldtopix[0][1])
+        cntmypix=round(float(cntmworldtopix[:,1]))-1#math.floor(cntmworldtopix[0][1])
         
         hotspotjy=cntmdatasqee[cntmypix,cntmxpix]
         hotspotjysr=hotspotjy/beamarea_sr#The equations we're using start from the Plank function, so this gets us to spectral radiance units
