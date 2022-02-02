@@ -79,13 +79,13 @@ notreproj_cntmimage=fits.open(cntminfile)
 print(f'Continuum image: {cntminfile}')
 restfreq=notreproj_cntmimage[0].header['RESTFRQ']*u.Hz
 
-source='DSIX'
+source='DSiv'
 print(f'Source: {source}')
 
 sourcedict={'SgrB2S':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/SgrB2S/new_testingstdfixandontheflyrepstuff_K_OctReimage_restfreqfix_newvelmask_newpeakamp/",'DSi':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSi/Kfield10originals_trial7_field10errors_newexclusion_matchslabwidthtorep/",'DSii':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSii/Kfield10originals_noexclusions/",'DSiii':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSiii/Kfield10originals_noexclusions/",'DSiv':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSiv/Kfield10originals_noexclusions/",'DSv':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSv/Kfield10originals_noexclusions_include4-3_150K_trial2/",'DSVI':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field2/CH3OH/DSVI/Kfield2originals_trial3_8_6-8_7excluded/",'DSVII':'/blue/adamginsburg/d.jeff/SgrB2DSreorg/field3/CH3OH/DSVII/Kfield3originals_200K_trial1_noexclusions/','DSVIII':'/blue/adamginsburg/d.jeff/SgrB2DSreorg/field3/CH3OH/DSVIII/Kfield3originals_175K_trial1_noexclusions/','DSIX':'/blue/adamginsburg/d.jeff/SgrB2DSreorg/field7/CH3OH/DSIX/Kfield7originals_150K_trial1_noexclusions/','DSX':'/blue/adamginsburg/d.jeff/SgrB2DSreorg/field7/CH3OH/DSX/Kfield7originals_100K_trial1_noexclusions/'}
 sourcepath=sourcedict[source]
 
-texmap=fits.open(sourcepath+'texmap_allspw_withnans_weighted.fits')
+texmap=fits.open(sourcepath+'texmap_3sigma_allspw_withnans_weighted.fits')
 
 ntotfits=fits.open(sourcepath+'ntotmap_allspw_withnans_weighted_useintercept_3sigma.fits')
 ntotmap=ntotfits[0].data*u.cm**-2
@@ -97,7 +97,9 @@ snrfits=fits.open(sourcepath+'texmap_snr_allspw_weighted.fits')
 snrmap=snrfits[0].data
 
 texerrfits=fits.open(sourcepath+'texmap_error_allspw_withnans_weighted.fits')
-texerrmap=texerrfits[0].data*u.K
+texerrmap=texerrfits[0].data
+maskedtexerr=np.ma.masked_where(texerrmap>500,texerrmap)
+texerrmap=maskedtexerr.filled(fill_value=np.nan)*u.K
 
 reprojtexmappath=sourcepath+'texmap_3sigma_allspw_withnans_weighted_reprojecttobolocamcont_smoothed.fits'
 reprojtexerrpath=sourcepath+'ntotmap_allspw_withnans_weighted_useintercept_3sigma_reprojecttobolocamcont_smoothed.fits'
@@ -142,11 +144,12 @@ else:
     beam_cntm=radio_beam.Beam.from_fits_header(notreproj_cntmimage[0].header)
     beam_deconv=beam_cntm.deconvolve(beam_tex)
     pixscale=WCS(texmap[0].header).proj_plane_pixel_area()**0.5
-    smoothed_trot = convolve(texmap[0].data, beam_deconv.as_kernel(pixscale))
-    smoothed_troterr = convolve(texerrmap, beam_deconv.as_kernel(pixscale))
+    smoothed_trot = convolve(texmap[0].data, beam_deconv.as_kernel(pixscale),nan_treatment='interpolate')
+    smoothed_troterr = convolve(texerrmap, beam_deconv.as_kernel(pixscale),nan_treatment='interpolate')
+    #pdb.set_trace()
     smoothed_snr = smoothed_trot/smoothed_troterr#convolve(snrmap, beam_deconv.as_kernel(pixscale))
-    smoothed_ntot = convolve(ntotmap, beam_deconv.as_kernel(pixscale))
-    smoothed_ntoterr=convolve(ntoterrmap, beam_deconv.as_kernel(pixscale))
+    smoothed_ntot = convolve(ntotmap, beam_deconv.as_kernel(pixscale),nan_treatment='interpolate')
+    smoothed_ntoterr=convolve(ntoterrmap, beam_deconv.as_kernel(pixscale),nan_treatment='interpolate')
 
 #pdb.set_trace()
 
@@ -161,13 +164,13 @@ bmaj=cntmimage[0].header['BMAJ']*u.deg
 bmajpix=round((bmaj/cntmcell).value)
 bmin=cntmimage[0].header['BMIN']*u.deg
 bminpix=round((bmin/cntmcell).value)
-beamarea_sqdeg=bmaj*bmin
+beamarea_sqdeg=np.pi*(bmaj/2)*(bmin/2)#Added pi and divide by 2 on 2/1/2022, they were missing prior to this date
 beamarea_sr=beamarea_sqdeg.to('sr')
 bmajtophyssize=(np.tan(bmaj)*d).to('AU')
 bmintophyssize=(np.tan(bmin)*d).to('AU')
 '''Can probably simplify beamarea_phys to d(np.tan(bmaj)*np.tan(bmin))'''
-beamarea_phys=np.pi*bmajtophyssize*bmintophyssize
-calcdomega=np.pi*bmaj*bmin
+beamarea_phys=np.pi*(bmajtophyssize/2)*(bmintophyssize/2)
+calcdomega=np.pi*(bmaj/2)*(bmin/2)
     
 cntmwcs=WCS(cntmimage[0].header)
 texwcs=WCS(texmap[0].header)
@@ -175,17 +178,6 @@ texwcs=WCS(texmap[0].header)
 equiv=u.brightness_temperature(cntmimage[0].header['RESTFRQ']*u.Hz)
 
 rms_1mm_K=(cntmstd/beamarea_sr).to(u.K,equivalencies=equiv)
-
-nh2=np.empty((np.shape(texmapdata)[0],np.shape(texmapdata)[1]))
-nh2_unc=np.empty((np.shape(texmapdata)[0],np.shape(texmapdata)[1]))
-nh2_snr=np.empty((np.shape(texmapdata)[0],np.shape(texmapdata)[1]))
-ch3ohabundance=np.empty((np.shape(texmapdata)[0],np.shape(texmapdata)[1]))
-ch3ohabundance_unc=np.empty((np.shape(texmapdata)[0],np.shape(texmapdata)[1]))
-ch3ohabundance_snr=np.empty((np.shape(texmapdata)[0],np.shape(texmapdata)[1]))
-ch3ohabundance_sigclip=np.empty((np.shape(texmapdata)[0],np.shape(texmapdata)[1]))
-lums=np.empty((np.shape(texmapdata)[0],np.shape(texmapdata)[1]))
-lumserr=np.empty((np.shape(texmapdata)[0],np.shape(texmapdata)[1]))
-tau=np.empty((np.shape(texmapdata)[0],np.shape(texmapdata)[1]))
 
 snr=3
 
@@ -232,7 +224,7 @@ masked_tau=np.ma.masked_where(snr_tau<3,bettertau)
 sigma3_tau=masked_tau.filled(fill_value=np.nan)
 tau=sigma3_tau
 
-betterlum=(4*np.pi*bmajtophyssize**2*sigmasb*cntmsurfbrightK**4).to('solLum')
+betterlum=(4*np.pi*(bmajtophyssize/2)**2*sigmasb*cntmsurfbrightK**4).to('solLum')
 err_betterlum=np.sqrt(((16*np.pi*bmajtophyssize**2)*sigmasb*cntmsurfbrightK**3*err_Kcntmsurfbright)**2).to('solLum')
 snr_lum=(betterlum/err_betterlum)
 masked_lum=np.ma.masked_where(snr_lum<3,betterlum)
@@ -240,7 +232,7 @@ sigma3_lum=masked_lum.filled(fill_value=np.nan)
 lums=sigma3_lum
 lumserr=err_betterlum
 
-#pdb.set_trace()
+pdb.set_trace()
 
 '''
 for y in range(np.shape(texmapdata)[0]):
