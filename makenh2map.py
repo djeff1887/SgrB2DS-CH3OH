@@ -73,13 +73,14 @@ sigmasb=cnst.sigma*u.W/(u.m**2*u.K**4)
 mu=2.8*u.Dalton
 G=cnst.G*u.m**3/(u.kg*u.s**2)
 molweight_ch3oh=(32.042*u.u).to('g')#https://pubchem.ncbi.nlm.nih.gov/compound/methanol
+Tcmb=2.722*u.K#Plank Collaboration (2015) https://ui.adsabs.harvard.edu/abs/2016A%26A...594A..13P/abstract
 
 cntminfile='/orange/adamginsburg/sgrb2/2017.1.00114.S/imaging_results/Sgr_B2_DS_B6_uid___A001_X1290_X46_continuum_merged_12M_robust2_selfcal4_finaliter_feathered_with_bolocam.fits'
 notreproj_cntmimage=fits.open(cntminfile)
 print(f'Continuum image: {cntminfile}')
 restfreq=notreproj_cntmimage[0].header['RESTFRQ']*u.Hz
 
-source='DSiv'
+source='SgrB2S'
 print(f'Source: {source}')
 
 sourcedict={'SgrB2S':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/SgrB2S/new_testingstdfixandontheflyrepstuff_K_OctReimage_restfreqfix_newvelmask_newpeakamp/",'DSi':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSi/Kfield10originals_trial7_field10errors_newexclusion_matchslabwidthtorep/",'DSii':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSii/Kfield10originals_noexclusions/",'DSiii':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSiii/Kfield10originals_noexclusions/",'DSiv':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSiv/Kfield10originals_noexclusions/",'DSv':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSv/Kfield10originals_noexclusions_include4-3_150K_trial2/",'DSVI':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field2/CH3OH/DSVI/Kfield2originals_trial3_8_6-8_7excluded/",'DSVII':'/blue/adamginsburg/d.jeff/SgrB2DSreorg/field3/CH3OH/DSVII/Kfield3originals_200K_trial1_noexclusions/','DSVIII':'/blue/adamginsburg/d.jeff/SgrB2DSreorg/field3/CH3OH/DSVIII/Kfield3originals_175K_trial1_noexclusions/','DSIX':'/blue/adamginsburg/d.jeff/SgrB2DSreorg/field7/CH3OH/DSIX/Kfield7originals_150K_trial1_noexclusions/','DSX':'/blue/adamginsburg/d.jeff/SgrB2DSreorg/field7/CH3OH/DSX/Kfield7originals_100K_trial1_noexclusions/'}
@@ -98,8 +99,10 @@ snrmap=snrfits[0].data
 
 texerrfits=fits.open(sourcepath+'texmap_error_allspw_withnans_weighted.fits')
 texerrmap=texerrfits[0].data
-maskedtexerr=np.ma.masked_where(texerrmap>500,texerrmap)
+maskedtexerr=np.ma.masked_where(texerrmap > 500,texerrmap)
 texerrmap=maskedtexerr.filled(fill_value=np.nan)*u.K
+cmbmasktexerr=np.ma.masked_where(texmap[0].data < Tcmb.value, texerrmap)
+texerrmap=cmbmasktexerr.filled(fill_value=np.nan)
 
 reprojtexmappath=sourcepath+'texmap_3sigma_allspw_withnans_weighted_reprojecttobolocamcont_smoothed.fits'
 reprojtexerrpath=sourcepath+'ntotmap_allspw_withnans_weighted_useintercept_3sigma_reprojecttobolocamcont_smoothed.fits'
@@ -145,11 +148,22 @@ else:
     beam_deconv=beam_cntm.deconvolve(beam_tex)
     pixscale=WCS(texmap[0].header).proj_plane_pixel_area()**0.5
     smoothed_trot = convolve(texmap[0].data, beam_deconv.as_kernel(pixscale),nan_treatment='interpolate')
+    cmbmasktrot=np.ma.masked_less_equal(smoothed_trot,Tcmb.value)
+    smoothed_trot=cmbmasktrot#smoothed_trot.filled(fill_value=np.nan)
+
     smoothed_troterr = convolve(texerrmap, beam_deconv.as_kernel(pixscale),nan_treatment='interpolate')
     #pdb.set_trace()
     smoothed_snr = smoothed_trot/smoothed_troterr#convolve(snrmap, beam_deconv.as_kernel(pixscale))
+    cmbmasksnr=np.ma.masked_where(smoothed_trot < Tcmb.value,smoothed_snr)
+    smoothed_snr=cmbmasksnr.filled(fill_value=np.nan)
+
     smoothed_ntot = convolve(ntotmap, beam_deconv.as_kernel(pixscale),nan_treatment='interpolate')
+    cmbmaskntot=np.ma.masked_where(smoothed_trot < Tcmb.value,smoothed_ntot)
+    smoothed_ntot=cmbmaskntot.filled(fill_value=np.nan)
+
     smoothed_ntoterr=convolve(ntoterrmap, beam_deconv.as_kernel(pixscale),nan_treatment='interpolate')
+    cmbmaskntoterr=np.ma.masked_where(smoothed_trot < Tcmb.value, smoothed_ntoterr)
+    smoothed_ntoterr=cmbmaskntoterr.filled(fill_value=np.nan)
 
 #pdb.set_trace()
 
@@ -160,16 +174,16 @@ cntmdatasqee=np.squeeze(cntmdata)
 cntmstd=0.2*u.mJy#0.025*u.mJy#np.nanstd(cntmdatasqee)#Taken from 2016 ALMA Proposal here
 cntmkappa=kappa(restfreq)
 cntmcell=cntmimage[0].header['CDELT2']*u.deg
-bmaj=cntmimage[0].header['BMAJ']*u.deg
+bmaj=notreproj_cntmimage[0].header['BMAJ']*u.deg#Assert original continuum beam 2/2/2022
 bmajpix=round((bmaj/cntmcell).value)
-bmin=cntmimage[0].header['BMIN']*u.deg
+bmin=notreproj_cntmimage[0].header['BMIN']*u.deg#Assert original continuum beam 2/2/2022
 bminpix=round((bmin/cntmcell).value)
 beamarea_sqdeg=np.pi*(bmaj/2)*(bmin/2)#Added pi and divide by 2 on 2/1/2022, they were missing prior to this date
 beamarea_sr=beamarea_sqdeg.to('sr')
 bmajtophyssize=(np.tan(bmaj)*d).to('AU')
 bmintophyssize=(np.tan(bmin)*d).to('AU')
 '''Can probably simplify beamarea_phys to d(np.tan(bmaj)*np.tan(bmin))'''
-beamarea_phys=np.pi*(bmajtophyssize/2)*(bmintophyssize/2)
+beamarea_phys=np.pi*(bmajtophyssize/2)*(bmintophyssize/2)#Added divide by 2 on 2/1/2022, it was missing prior to this date
 calcdomega=np.pi*(bmaj/2)*(bmin/2)
     
 cntmwcs=WCS(cntmimage[0].header)
@@ -232,7 +246,7 @@ sigma3_lum=masked_lum.filled(fill_value=np.nan)
 lums=sigma3_lum
 lumserr=err_betterlum
 
-pdb.set_trace()
+#pdb.set_trace()
 
 '''
 for y in range(np.shape(texmapdata)[0]):
