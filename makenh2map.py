@@ -80,7 +80,7 @@ notreproj_cntmimage=fits.open(cntminfile)
 print(f'Continuum image: {cntminfile}')
 restfreq=notreproj_cntmimage[0].header['RESTFRQ']*u.Hz
 
-source='SgrB2S'
+source='DSIX'
 print(f'Source: {source}')
 
 sourcedict={'SgrB2S':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/SgrB2S/new_testingstdfixandontheflyrepstuff_K_OctReimage_restfreqfix_newvelmask_newpeakamp/",'DSi':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSi/Kfield10originals_trial7_field10errors_newexclusion_matchslabwidthtorep/",'DSii':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSii/Kfield10originals_noexclusions/",'DSiii':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSiii/Kfield10originals_noexclusions/",'DSiv':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSiv/Kfield10originals_noexclusions/",'DSv':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSv/Kfield10originals_noexclusions_include4-3_150K_trial2/",'DSVI':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field2/CH3OH/DSVI/Kfield2originals_trial3_8_6-8_7excluded/",'DSVII':'/blue/adamginsburg/d.jeff/SgrB2DSreorg/field3/CH3OH/DSVII/Kfield3originals_200K_trial1_noexclusions/','DSVIII':'/blue/adamginsburg/d.jeff/SgrB2DSreorg/field3/CH3OH/DSVIII/Kfield3originals_175K_trial1_noexclusions/','DSIX':'/blue/adamginsburg/d.jeff/SgrB2DSreorg/field7/CH3OH/DSIX/Kfield7originals_150K_trial1_noexclusions/','DSX':'/blue/adamginsburg/d.jeff/SgrB2DSreorg/field7/CH3OH/DSX/Kfield7originals_100K_trial1_noexclusions/'}
@@ -173,18 +173,19 @@ cntmdata=cntmimage[0].data*u.Jy
 cntmdatasqee=np.squeeze(cntmdata)
 cntmstd=0.2*u.mJy#0.025*u.mJy#np.nanstd(cntmdatasqee)#Taken from 2016 ALMA Proposal here
 cntmkappa=kappa(restfreq)
+cntmbeam=radio_beam.Beam.from_fits_header(notreproj_cntmimage[0].header)
 cntmcell=cntmimage[0].header['CDELT2']*u.deg
-bmaj=notreproj_cntmimage[0].header['BMAJ']*u.deg#Assert original continuum beam 2/2/2022
+bmaj=cntmbeam.major#notreproj_cntmimage[0].header['BMAJ']*u.deg#Assert original continuum beam 2/2/2022
 bmajpix=round((bmaj/cntmcell).value)
-bmin=notreproj_cntmimage[0].header['BMIN']*u.deg#Assert original continuum beam 2/2/2022
+bmin=cntmbeam.minor#notreproj_cntmimage[0].header['BMIN']*u.deg#Assert original continuum beam 2/2/2022
 bminpix=round((bmin/cntmcell).value)
-beamarea_sqdeg=np.pi*(bmaj/2)*(bmin/2)#Added pi and divide by 2 on 2/1/2022, they were missing prior to this date
-beamarea_sr=beamarea_sqdeg.to('sr')
+beamarea_sr=cntmbeam.sr#np.pi*(bmaj/2)*(bmin/2)#Added pi and divide by 2 on 2/1/2022, they were missing prior to this date
+beamarea_sqdeg=cntmbeam.sr.to('deg2')#beamarea_sqdeg.to('sr')
 bmajtophyssize=(np.tan(bmaj)*d).to('AU')
 bmintophyssize=(np.tan(bmin)*d).to('AU')
 '''Can probably simplify beamarea_phys to d(np.tan(bmaj)*np.tan(bmin))'''
-beamarea_phys=np.pi*(bmajtophyssize/2)*(bmintophyssize/2)#Added divide by 2 on 2/1/2022, it was missing prior to this date
-calcdomega=np.pi*(bmaj/2)*(bmin/2)
+beamarea_phys=cntmbeam.beam_projected_area(d).to('AU2')#np.pi*(bmajtophyssize/2)*(bmintophyssize/2)#Added divide by 2 on 2/1/2022, it was missing prior to this date
+#calcdomega=np.pi*(bmaj/2)*(bmin/2)
     
 cntmwcs=WCS(cntmimage[0].header)
 texwcs=WCS(texmap[0].header)
@@ -238,7 +239,7 @@ masked_tau=np.ma.masked_where(snr_tau<3,bettertau)
 sigma3_tau=masked_tau.filled(fill_value=np.nan)
 tau=sigma3_tau
 
-betterlum=(4*np.pi*(bmajtophyssize/2)**2*sigmasb*cntmsurfbrightK**4).to('solLum')
+betterlum=(4*np.pi*(np.sqrt((bmajtophyssize*bmintophyssize)/2))**2*sigmasb*cntmsurfbrightK**4).to('solLum')
 err_betterlum=np.sqrt(((16*np.pi*bmajtophyssize**2)*sigmasb*cntmsurfbrightK**3*err_Kcntmsurfbright)**2).to('solLum')
 snr_lum=(betterlum/err_betterlum)
 masked_lum=np.ma.masked_where(snr_lum<3,betterlum)
