@@ -54,7 +54,7 @@ def quadratic_profile(r):
 def powerlaw_profile(x,a,n):
     return a*((x/pixtophysicalsize.value)**-n)
     
-source='DSIX'
+source='DSVI'
 fielddict={'SgrB2S':1,'DSi':10,'DSii':10,'DSiii':10,'DSiv':10,'DSv':10,'DSVI':2,'DSVII':3,'DSVIII':3,'DSIX':7}
 fnum=fielddict[source]
 print(f'Source: {source}')
@@ -274,7 +274,7 @@ for bin in listordered_centrtopix:
         massinteriorsum=np.nansum(massesinterior)
         if massinteriorsum >= 0.5*totalmass:
             if edge == None:
-                if source == 'DSii':
+                if source == 'DSii' or source == 'DSVI':
                     sanitycheckmass=massinteriorsum
                     localminmass=True
                 else:
@@ -296,7 +296,12 @@ for bin in listordered_centrtopix:
     #pdb.set_trace()
 
 if localminmass == True:
-    truemin=np.nanmin(avglist)
+    if source == 'DSii':
+        truemin=np.nanmin(avglist)
+    if source == 'DSVI':
+        rad50percent=6199.150667632434
+        rad50index=listordered_centrtopix.index(rad50percent)
+        truemin=np.nanmin(avglist[:rad50index])
     massderivative=list(np.diff(avglist))
     mass2ndderiv=list(np.diff(massderivative))
 
@@ -381,7 +386,7 @@ fit_pl=fitter(base_bpl,radiustofit,textofit,weights=weightstofit)
 perr=np.sqrt(np.diag(fitter.fit_info['param_cov']))
 
 print(f'Sum: {masssum} +/- {propmasserr} Msun')
-print(f'Core radius: {edge} +/- {cntmbmajtoAU} AU')
+print(f'Core radius: {edge} +/- {cntmbmajtoAU}')
 print(f'Core luminosity: {lumsum} +/- {proplumerr} Lsun')
 print(f'Average H2 column in {edge} AU radius: {nh2mean} +/- {nh2errormean}')
 plottexmax=np.nanmax(lookformax)+10
@@ -396,7 +401,7 @@ quadrtex=[]
 sublinhalftex=[]
 sublinmidtex=[]
 fittedtex=[]
-
+#pdb.set_trace()
 for dist in copy_centrtopix:
     lineartex.append(linear_profile(dist).value)
     quadrtex.append(quadratic_profile(dist).value)
@@ -614,7 +619,7 @@ print(f'norm error: {pcov[0,0]**0.5}')
 print(f'index initial guess: {lowerbound_initialguess[source]}')
 print(f'index error: {pcov[1,1]**0.5}')
 '''
-onlypowerlaw=True
+onlypowerlaw=False
 powerlawpath='/blue/adamginsburg/d.jeff/imaging_results/SgrB2DS-CH3OH/powerlawtable.fits'
 pwrlwprams=[(round(fit_pl.alpha_1.value,2)*u.dimensionless_unscaled),(round(perr[2],2)*u.dimensionless_unscaled),(round(fit_pl.alpha_2.value,2)*u.dimensionless_unscaled),(round(perr[3],2)*u.dimensionless_unscaled),(round(fit_pl.x_break.value)*u.AU),(round(perr[1])*u.AU)]
 powerlawparams=QTable(rows=[pwrlwprams],names=['alpha_1','alpha_1 error','alpha_2','alpha_2 error','x_break','x_break error'])
@@ -625,8 +630,8 @@ if os.path.exists(powerlawpath):
     pwrlwtable=QTable.read(powerlawpath)
     if pwrlwprams[4] in pwrlwtable['x_break']:
         print('Current parameter set already exists in table.')
-        print('Exiting...')
-        sys.exit()
+        #print('Exiting...')
+        #sys.exit()
     else:
         print('Appending new values')
         pwrlwstack=vstack([pwrlwtable,powerlawparams])
@@ -649,7 +654,6 @@ if onlypowerlaw:
     sys.exit()
 else:
     pass
-
 
 sourcenamesfortable={'SgrB2S':'SgrB2S','DSi':'DS1','DSii':'DS2','DSiii':'DS3','DSiv':'DS4','DSv':'DS5','DSVI':'DS6','DSVII':'DS7','DSVIII':'DS8','DSIX':'DS9'}
 sumtablepath='hotcoresummarytable_postreprojsmooth.fits'
