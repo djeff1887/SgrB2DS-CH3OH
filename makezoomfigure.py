@@ -5,6 +5,7 @@ from astropy import visualization
 import glob
 import math
 import numpy as np
+import astropy.units as u
 
 cm=plt.cm.get_cmap('inferno')
 cm.set_bad('black')
@@ -38,6 +39,15 @@ ds6hdu=fits.open(ds6texmap)[0]
 ds7hdu=fits.open(ds7texmap)[0]
 ds8hdu=fits.open(ds8texmap)[0]
 ds9hdu=fits.open(ds9texmap)[0]
+
+'''for alma'''
+pixscale=0.05*u.arcsec
+hpbw=42.9*u.arcsec
+pbdiam=math.ceil(hpbw/pixscale)
+pbrad=pbdiam/2
+theta=np.linspace(0,2*np.pi,150)
+a=pbrad*np.cos(theta)
+b=pbrad*np.sin(theta)
 
 tmax=520
 tmin=20
@@ -98,9 +108,10 @@ axins=ax.inset_axes([lefthoriz,0.864,axins_dims,axins_dims])
 axins.imshow(sgrb2dsdata,origin='lower', norm=visualization.simple_norm(sgrb2dsdata, stretch='sqrt',max_cut=jymax),cmap='gray')
 axins.set_xlim((centerx-width),(centerx+width))
 axins.set_ylim((centery-width),(centery+width))
-ax.imshow(sgrb2dsdata, origin='lower',norm=visualization.simple_norm(sgrb2dsdata, stretch='sqrt', max_cut=jymaxfull, min_cut=0),cmap='gray_r')
+continuum=ax.imshow(sgrb2dsdata, origin='lower',norm=visualization.simple_norm(sgrb2dsdata, stretch='sqrt', max_cut=jymaxfull, min_cut=0),cmap='gray_r')
 axins2=axins.inset_axes([-1.25,0,1,1])
 axins2show=axins2.imshow(sgrb2shdu.data,vmax=tmax,vmin=tmin,origin='lower',cmap='inferno')
+axins2.annotate('Sgr B2 (S)',(25,25))
 
 axins3=ax.inset_axes([righthoriz,0.264,axins_dims,axins_dims])
 axins3.imshow(sgrb2dsdata,origin='lower',norm=visualization.simple_norm(sgrb2dsdata, stretch='sqrt', max_cut=jymax),cmap='gray')
@@ -249,5 +260,10 @@ ax.indicate_inset_zoom(axins17)
 ax.indicate_inset_zoom(axins19)
 #axins.indicate_inset_zoom(axins2)
 
-plt.colorbar(axins2show,shrink=1.4,pad=0.25)
+plt.Circle((centerx3,centery3),15)
+
+cb=plt.colorbar(axins2show,shrink=1.4,pad=0.35)
+#cb2=plt.colorbar(continuum,shrink=1.4,pad=0.2)
+cb.set_label(label='T$_{rot}$ (K)',size=15)
+axins2show.figure.axes[1].tick_params(axis='y',labelsize=13)
 plt.show()

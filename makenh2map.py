@@ -80,7 +80,8 @@ notreproj_cntmimage=fits.open(cntminfile)
 print(f'Continuum image: {cntminfile}')
 restfreq=notreproj_cntmimage[0].header['RESTFRQ']*u.Hz
 
-source='DSIX'
+source='DSi'#os.getenv('envsource')
+assert source is not None; 'os.getenv didn\'t work'
 print(f'Source: {source}')
 
 sourcedict={'SgrB2S':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/SgrB2S/new_testingstdfixandontheflyrepstuff_K_OctReimage_restfreqfix_newvelmask_newpeakamp/",'DSi':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSi/Kfield10originals_trial7_field10errors_newexclusion_matchslabwidthtorep/",'DSii':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSii/Kfield10originals_noexclusions/",'DSiii':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSiii/Kfield10originals_noexclusions/",'DSiv':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSiv/Kfield10originals_noexclusions/",'DSv':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSv/Kfield10originals_noexclusions_include4-3_150K_trial2/",'DSVI':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field2/CH3OH/DSVI/Kfield2originals_trial3_8_6-8_7excluded/",'DSVII':'/blue/adamginsburg/d.jeff/SgrB2DSreorg/field3/CH3OH/DSVII/Kfield3originals_200K_trial1_noexclusions/','DSVIII':'/blue/adamginsburg/d.jeff/SgrB2DSreorg/field3/CH3OH/DSVIII/Kfield3originals_175K_trial1_noexclusions/','DSIX':'/blue/adamginsburg/d.jeff/SgrB2DSreorg/field7/CH3OH/DSIX/Kfield7originals_150K_trial1_noexclusions/','DSX':'/blue/adamginsburg/d.jeff/SgrB2DSreorg/field7/CH3OH/DSX/Kfield7originals_100K_trial1_noexclusions/'}
@@ -113,6 +114,8 @@ reprojntoterrpath=sourcepath+'ntoterrmap_allspw_withnans_weighted_useintercept_r
 
 newcontpath=sourcepath+'reprojectedcontinuum.fits'
 
+cntmbeam=radio_beam.Beam.from_fits_header(notreproj_cntmimage[0].header)
+
 if os.path.exists(reprojtexmappath):
     print(f'\nReprojected and smoothed images for source {source} already exist')
     print('Grabbing from respective paths')
@@ -135,6 +138,8 @@ else:
         newcontprimaryHDU.header['BUNIT']='Jy/beam'
         newcontprimaryHDU.header['BTYPE']='1mm continuum flux'
         newcontprimaryHDU.header['RESTFRQ']=restfreq.to('Hz').value
+        newcontprimaryHDU.header['BMAJ']=cntmbeam.major.to('deg').value
+        newcontprimaryHDU.header['BMIN']=cntmbeam.minor.to('deg').value
     
         newcontHDUList=fits.HDUList([newcontprimaryHDU])
 
@@ -149,7 +154,8 @@ else:
     pixscale=WCS(texmap[0].header).proj_plane_pixel_area()**0.5
     smoothed_trot = convolve(texmap[0].data, beam_deconv.as_kernel(pixscale),nan_treatment='interpolate')
     cmbmasktrot=np.ma.masked_less_equal(smoothed_trot,Tcmb.value)
-    smoothed_trot=cmbmasktrot#smoothed_trot.filled(fill_value=np.nan)
+    smoothed_trot=cmbmasktrot
+    smoothed_trot=smoothed_trot.filled(fill_value=np.nan)
 
     smoothed_troterr = convolve(texerrmap, beam_deconv.as_kernel(pixscale),nan_treatment='interpolate')
     #pdb.set_trace()
@@ -173,7 +179,6 @@ cntmdata=cntmimage[0].data*u.Jy
 cntmdatasqee=np.squeeze(cntmdata)
 cntmstd=0.2*u.mJy#0.025*u.mJy#np.nanstd(cntmdatasqee)#Taken from 2016 ALMA Proposal here
 cntmkappa=kappa(restfreq)
-cntmbeam=radio_beam.Beam.from_fits_header(notreproj_cntmimage[0].header)
 cntmcell=cntmimage[0].header['CDELT2']*u.deg
 bmaj=cntmbeam.major#notreproj_cntmimage[0].header['BMAJ']*u.deg#Assert original continuum beam 2/2/2022
 bmajpix=round((bmaj/cntmcell).value)
@@ -195,6 +200,8 @@ equiv=u.brightness_temperature(cntmimage[0].header['RESTFRQ']*u.Hz)
 rms_1mm_K=(cntmstd/beamarea_sr).to(u.K,equivalencies=equiv)
 
 snr=3
+
+pdb.set_trace()
 
 cntmsurfbright=cntmdata/beamarea_sr
 err_cntmsurfbright=cntmstd/beamarea_sr
@@ -451,6 +458,46 @@ errtauhdul=fits.HDUList([errtauprimaryhdu])
 errtaufitspath=sourcepath+f'opticaldepth_error_bolocamfeather_smoothedtobolocam.fits'
 print(f'Saving optical depth error map at {errtaufitspath}\n')
 errtauhdul.writeto(errtaufitspath,overwrite=True)
+
+smoothedtrotprimaryhdu=fits.PrimaryHDU(smoothed_trot)
+smoothedtrotprimaryhdu.header=texmap[0].header
+smoothedtrotprimaryhdu.header['BMAJ']=bmaj.to('deg').value
+smoothedtrotprimaryhdu.header['BMIN']=bmaj.to('deg').value
+smoothedtrothdul=fits.HDUList([smoothedtrotprimaryhdu])
+smoothedtrotpath=sourcepath+f'smoothed_trot_to_bolocamfeathercont.fits'
+print(f'Saving smoothed temperature map at {smoothedtrotpath}\n')
+smoothedtrothdul.writeto(smoothedtrotpath,overwrite=True)
+
+errsmoothedtrotprimaryhdu=fits.PrimaryHDU(smoothed_troterr.value)
+errsmoothedtrotprimaryhdu.header=texmap[0].header
+errsmoothedtrotprimaryhdu.header['BMAJ']=bmaj.to('deg').value
+errsmoothedtrotprimaryhdu.header['BMIN']=bmin.to('deg').value
+errsmoothedtrothdul=fits.HDUList([errsmoothedtrotprimaryhdu])
+errsmoothedtrotpath=sourcepath+f'smoothed_trot_err.fits'
+print(f'Saving smoothed temperature error map at {errsmoothedtrotpath}\n')
+errsmoothedtrothdul.writeto(errsmoothedtrotpath,overwrite=True)
+
+smoothedntotprimaryhdu=fits.PrimaryHDU(smoothed_ntot.value)
+smoothedntotprimaryhdu.header=texmap[0].header
+smoothedntotprimaryhdu.header['BMAJ']=bmaj.to('deg').value
+smoothedntotprimaryhdu.header['BMIN']=bmaj.to('deg').value
+smoothedntotprimaryhdu.header['BTYPE']='Column density (CH3OH)'
+smoothedntotprimaryhdu.header['BUNIT']='cm-2'
+smoothedntothdul=fits.HDUList([smoothedntotprimaryhdu])
+smoothedntotpath=sourcepath+f'smoothed_ntot_to_bolocamfeathercont.fits'
+print(f'Saving smoothed column density map at {smoothedntotpath}\n')
+smoothedntothdul.writeto(smoothedntotpath,overwrite=True)
+
+errsmoothedntotprimaryhdu=fits.PrimaryHDU(smoothed_ntoterr.value)
+errsmoothedntotprimaryhdu.header=texmap[0].header
+errsmoothedntotprimaryhdu.header['BMAJ']=bmaj.to('deg').value
+errsmoothedntotprimaryhdu.header['BMIN']=bmin.to('deg').value
+errsmoothedntotprimaryhdu.header['BTYPE']='Column density error (CH3OH)'
+errsmoothedntotprimaryhdu.header['BUNIT']='cm-2'
+errsmoothedntothdul=fits.HDUList([errsmoothedntotprimaryhdu])
+errsmoothedntotpath=sourcepath+f'smoothed_ntot_err.fits'
+print(f'Saving smoothed column density error map at {errsmoothedntotpath}\n')
+errsmoothedntothdul.writeto(errsmoothedntotpath,overwrite=True)
         
 plt.imshow(ch3ohabundance_sigclip.value,origin='lower',norm=mpl.colors.LogNorm(),cmap='cividis')
 plt.colorbar(pad=0)
