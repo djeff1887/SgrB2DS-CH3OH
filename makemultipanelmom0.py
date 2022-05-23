@@ -18,8 +18,11 @@ import copy
 from astropy.wcs import WCS
 import matplotlib.gridspec as gridspec
 import os
+from utilities import *
 
-source='SgrB2S'
+mpl.interactive(True)
+
+source='DSii'
 print(f'Source: {source}\n')
 fields={'SgrB2S':1,'DSi':10,'DSii':10,'DSiii':10,'DSiv':10}
 romannums={'DSi':'DSI','DSii':'DSii'}
@@ -64,6 +67,7 @@ for master in range(len(masterlist[:,0])):
 mastereuks.sort()
 
 sortedqns=[]
+sortedmom0str=[]
 sortedmom0=[]
 for euk in mastereuks:
     for master in range(len(mastereuks)):
@@ -74,33 +78,38 @@ for euk in mastereuks:
 #print(sortedqns)
 
 for qn in sortedqns:
-    for mom0 in mom0images:
-        if qn_replace(qn) in mom0:
-            sortedmom0.append(mom0)
-        else:
-            continue
+	for mom0 in mom0images:
+		if qn_replace(qn) in mom0:
+			sortedmom0str.append(mom0)
+			sortedmom0.append(fits.getdata(mom0))
+		else:
+			continue
         
 numcols=5
-numrows=math.ceil(len(sortedqns)/numcols)
+numrows=math.ceil(len(sortedmom0)/numcols)
 fig,ax=plt.subplots(numrows,numcols,sharey=True,figsize=(14,13))#,use_gridspec=True)
 plt.rcParams['figure.dpi'] = 150
 print(f'Number of rows: {numrows}')
 print(f'Number of columns: {numcols}')
+maxtb=np.nanmax(sortedmom0)
+brightestimage=int(np.where(sortedmom0==maxtb)[0])
+mintb=np.nanmin(sortedmom0)
+brightestline=sortedmom0str[brightestimage]
 firstpanel=True
 
 gs1 = gridspec.GridSpec(numrows, numcols)
 gs1.update(wspace=0.025, hspace=0.05)
 
 brightestline={'SgrB2S':600,'DSi':450,'DSii':0,'DSiii':0,'DSiv':0,'DSv':0,'DSVI':0,'DSVII':0,'DSVIII':0}
-
+sourcewspace={'SgrB2S':-0.75,'DSi':-0.75,'DSii':0}
 for row in np.arange(numrows):
     for col in np.arange(numcols):
-        transition=fits.getdata(sortedmom0[(col+(row*numcols))-1])
+        transition=sortedmom0[(col+(row*(numcols-1)))]
         whichline=(col+(row*numcols))
         if firstpanel:
             im=ax[row,col].imshow(transition,origin='lower',cmap=cm)
-            fmax=np.nanmax(transition)
-            fmin=np.nanmin(transition)
+            fmax=maxtb#np.nanmax(transition)
+            fmin=mintb#np.nanmin(transition)
             ax[row,col].set_xticklabels([])
             ax[row,col].set_yticklabels([])
             ax[row,col].tick_params(direction='in')
@@ -113,7 +122,8 @@ for row in np.arange(numrows):
         #if row == (numrows-1) and col == (numcols-1):
 
 cax=plt.axes([0.78, 0.11, 0.05, 0.77])
-plt.colorbar(mappable=im,shrink=5,cax=cax,label=r'I$_{\nu}$ (K km s$^{-1}$)')              
-fig.subplots_adjust(wspace=-0.75,hspace=0)
-plt.savefig(savefigpath,dpi=150)
+plt.colorbar(mappable=im,shrink=5,cax=cax,label=r'$I_{\nu}$ (K km s$^{-1}$)')              
+fig.subplots_adjust(wspace=sourcewspace[source],hspace=0)
+#plt.savefig(savefigpath,dpi=150)
+#gs1.tight_layout(fig,pad=1)
 plt.show()
