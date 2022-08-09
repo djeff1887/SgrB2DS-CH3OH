@@ -119,6 +119,7 @@ for y in np.arange(testyshape):
         excludedqns=[]
         excludednuppers=[]
         excludedeuks=[]
+        '''Assemble the list of N/g, Eupper, and errors for fitting'''
         for z in range(testzshape):
             if nugsmap[z,y,x] <= 0 or np.isnan(nugsmap[z,y,x]):
                 continue
@@ -138,6 +139,7 @@ for y in np.arange(testyshape):
             obsNtot=np.nan
             texmap[y,x]=obsTex
             ntotmap[y,x]=obsNtot
+            continue
             #print(f'Pixel ({y}, {x}) has no N_upper value > 0 or != nan')
         else:
             log10nuerr=[]
@@ -205,9 +207,18 @@ for y in np.arange(testyshape):
         
             A=np.stack((eukstofit,np.ones_like(eukstofit)),axis=1)
             C=np.diagflat(log10variances)
-            covmat = np.linalg.inv(np.dot(np.dot(A.T, np.linalg.inv(C)), A))
-            m_unc = covmat[0,0]**0.5
-            b_unc = covmat[1,1]**0.5
+            atc_1a=np.dot(np.dot(A.T, np.linalg.inv(C)), A)
+            if np.linalg.det(atc_1a) == 0:
+                print(f'Singular C matrix detected in pixel {y,x}')
+                m_unc=np.nan
+                b_unc=np.nan
+            else:
+                covmat = np.linalg.inv(atc_1a)
+                m_unc = covmat[0,0]**0.5
+                b_unc = covmat[1,1]**0.5
+            #covmat = np.linalg.inv(np.dot(np.dot(A.T, np.linalg.inv(C)), A))
+            #m_unc = covmat[0,0]**0.5
+            #b_unc = covmat[1,1]**0.5
             #m_unccf=pcov[0,0]**0.5
             #b_unccf=pcov[1,1]**0.5
         
@@ -244,13 +255,14 @@ for y in np.arange(testyshape):
             plt.legend()
             plt.show()
             print('Done.')
-            continue
             '''
+            #continue
+            
 
 plt.figure()
-plt.imshow(texerrormap,origin='lower')
+plt.imshow(texerrormap,origin='lower',vmin=0,vmax=500)
 plt.show()
 
 plt.figure()
-plt.show(ntoterrormap,origin='lower')
+plt.imshow(ntoterrormap,origin='lower',vmin=0,vmax=1e17)
 plt.show()
