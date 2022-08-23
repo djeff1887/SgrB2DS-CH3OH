@@ -16,6 +16,7 @@ import matplotlib as mpl
 from scipy.optimize import curve_fit as cf
 from math import log10, floor
 from astropy.stats import bootstrap
+import astropy.stats
 
 mpl.interactive(True)
 
@@ -43,20 +44,24 @@ R_i=1
 f=1
 Tbg=2.7355*u.K
 
-source='SgrB2S'
+source='DSVI'#os.getenv('envsource')#SgrB2S
 fielddict={'SgrB2S':1,'DSi':10,'DSii':10,'DSiii':10,'DSiv':10,'DSv':10,'DSVI':2,'DSVII':3,'DSVIII':3,'DSIX':7}
 fnum=fielddict[source]
 
-origsourcedict={'SgrB2S':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/SgrB2S/new_testingstdfixandontheflyrepstuff_K_OctReimage_restfreqfix_newvelmask_newpeakamp/",'DSi':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSi/Kfield10originals_trial7_field10errors_newexclusion_matchslabwidthtorep/",'DSii':'/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSii/field10originals_noexclusions/','DSiii':'/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSiii/Kfield10originals_noexclusions/','DSiv':'/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSiv/Kfield10originals_noexclusions/','DSv':'/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSv/Kfield10originals_noexclusions_include4-3_trial1/','DSVI':'/blue/adamginsburg/d.jeff/SgrB2DSreorg/field2/CH3OH/DSVI/Kfield2originals_trial2_16_6-16_7excluded/','DSVII':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field3/CH3OH/DSVII/Kfield3originals_trial1_noexclusions/",'DSVIII':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field3/CH3OH/DSVIII/Kfield3originals_175K_trial1_noexclusions/",'DSIX':'/blue/adamginsburg/d.jeff/SgrB2DSreorg/field7/CH3OH/DSIX/Kfield7originals_150K_trial1_noexclusions/'}
+base=f'/blue/adamginsburg/d.jeff/SgrB2DSreorg/field{fnum}/CH3OH/{source}'
+
 sourcedict={'SgrB2S':'/new_testingstdfixandontheflyrepstuff_K_OctReimage_restfreqfix_newvelmask_newpeakamp/','DSi':'/Kfield10originals_trial7_field10errors_newexclusion_matchslabwidthtorep/','DSii':'/Kfield10originals_noexclusions/','DSiii':'/Kfield10originals_noexclusions/','DSiv':'/Kfield10originals_noexclusions/','DSv':f'/Kfield10originals_noexclusions_include4-3_150K_trial2/','DSVI':'/Kfield2originals_trial3_8_6-8_7excluded/','DSVII':'/Kfield3originals_200K_trial1_noexclusions/','DSVIII':'/Kfield3originals_175K_trial1_noexclusions/','DSIX':f'/Kfield7originals_150K_trial1_noexclusions/'}
-origsourcepath=origsourcedict[source]
+
 sourcepath=sourcedict[source]
 
 savefigbase=f'/blue/adamginsburg/d.jeff/repos/CH3OHTemps/figures/{source}'
 savefighome=savefigbase+sourcepath
 
-home=origsourcepath
+home=base+sourcedict[source]#origsourcepath
 #rotdiagpath=savefighome+'pixelwiserotationaldiagrams/'
+
+print(f'Source: {source}')
+print(f'Getting data from directory {home}')
 
 '''
 if os.path.isdir(rotdiagpath):
@@ -68,7 +73,7 @@ else:
     print('Directory created.\n')
 '''
 #filepath='/blue/adamginsburg/d.jeff/imaging_results/SgrB2DS-CH3OH/NupperColDens/field1/testcore1/debug/pixelwiserotationaldiagrams/'
-infile=open(origsourcepath+'ch3ohlinesdict.obj','rb')
+infile=open(home+'ch3ohlinesdict.obj','rb')#open(origsourcepath+'ch3ohlinesdict.obj','rb')
 spwdict=pickle.load(infile)
 
 fulltexmap=fits.getdata(home+'texmap_3sigma_allspw_withnans_weighted.fits')
@@ -185,11 +190,14 @@ for y in np.arange(testyshape):
             for line in bootlines:
                 tempbootTrot=-np.log10(np.e)/(line.slope)
                 tempbootNtot=qrot_partfunc*10**(line.intercept)
-                bootTrots.append(tempbootTrot)
-                bootInts.append(tempbootNtot)
+                if line.slope >= 0:#tempbootTrot >= 1000 or tempbootTrot <= 0:
+                    continue
+                else:
+                    bootTrots.append(tempbootTrot)
+                    bootInts.append(tempbootNtot)
         
-            bootTstd=np.std(bootTrots)
-            bootNstd=np.std(bootInts)
+            bootTstd=astropy.stats.mad_std(bootTrots)
+            bootNstd=astropy.stats.mad_std(bootInts)
         
 
             #pdb.set_trace()
@@ -257,8 +265,31 @@ for y in np.arange(testyshape):
             print('Done.')
             '''
             #continue
-            
 
+texmaphdu=fits.open(home+'texmap_3sigma_allspw_withnans_weighted.fits')
+templateheader=texmaphdu[0].header
+
+bootntotphdu=fits.PrimaryHDU([ntoterrormap])
+bootntotphdu.header=templateheader
+bootntotphdu.header['BTYPE']='Total column density error (bootstrap)'
+bootntotphdu.header['BUNIT']='cm-2'
+bootntothdul=fits.HDUList([bootntotphdu])
+bootntothdul.writeto(home+'error_ntot_boostrap1000_nonegativeslope.fits',overwrite=True)
+print(f'Saved Ntot error for {source} at {home}error_ntot_boostrap1000_nonegativeslope.fits')
+
+boottexphdu=fits.PrimaryHDU([texerrormap])
+boottexphdu.header=templateheader
+boottexphdu.header['BTYPE']='Rotational temperature error (bootstrap)'
+boottexphdu.header['BUNIT']='K'
+boottexhdul=fits.HDUList([boottexphdu])
+boottexhdul.writeto(home+'error_trot_boostrap1000_nonegativeslope.fits',overwrite=True)
+print(f'Saved Trot error for {source} at {home}error_trot_boostrap1000_nonegativeslope.fits')
+
+#arrayTrots=np.array(bootTrots)
+#arrayNtots=np.array(bootNtots)
+
+            
+'''
 plt.figure()
 plt.imshow(texerrormap,origin='lower',vmin=0,vmax=500)
 plt.show()
@@ -266,3 +297,4 @@ plt.show()
 plt.figure()
 plt.imshow(ntoterrormap,origin='lower',vmin=0,vmax=1e17)
 plt.show()
+'''

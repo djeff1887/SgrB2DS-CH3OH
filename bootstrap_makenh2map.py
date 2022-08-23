@@ -80,7 +80,7 @@ notreproj_cntmimage=fits.open(cntminfile)
 print(f'Continuum image: {cntminfile}')
 restfreq=notreproj_cntmimage[0].header['RESTFRQ']*u.Hz
 
-source='SgrB2S'#os.getenv('envsource')
+source=os.getenv('envsource')
 assert source is not None; 'os.getenv didn\'t work'
 print(f'Source: {source}')
 
@@ -216,7 +216,7 @@ rms_1mm_K=(cntmstd/beamarea_sr).to(u.K,equivalencies=equiv)
 
 snr=3
 
-pdb.set_trace()
+#pdb.set_trace()
 
 cntmsurfbright=cntmdata/beamarea_sr
 err_cntmsurfbright=cntmstd/beamarea_sr
@@ -432,7 +432,7 @@ snrch3ohabundhdul.writeto(snrch3ohabundfitspath,overwrite=True)
 sigclipch3ohabundprimaryhdu=fits.PrimaryHDU(ch3ohabundance_sigclip.value)
 sigclipch3ohabundprimaryhdu.header=texmap[0].header
 sigclipch3ohabundprimaryhdu.header['BTYPE']='Abundance (CH3OH)'
-sigclipch3ohabundprimaryhdu.header['BUNIT']='cm-2'
+sigclipch3ohabundprimaryhdu.header['BUNIT']='cm-2/cm-2'
 sigclipch3ohabundhdul=fits.HDUList([sigclipch3ohabundprimaryhdu])
 sigclipch3ohabundfitspath=sourcepath+f'bootstrap_ch3ohabundance_{snr}sigma_ntotintercept_bolocamfeather_smoothedtobolocam.fits'
 print(f'Saving CH3OH abundance map at {sigclipch3ohabundfitspath}\n')
