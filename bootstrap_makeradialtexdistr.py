@@ -120,6 +120,7 @@ cntmbeam=radio_beam.Beam.from_fits_header(smooth_trotfits[0].header)
 trotbeam=radio_beam.Beam.from_fits_header(texmap[0].header)
 
 cellsize=(np.abs(texmap[0].header['CDELT1']*u.deg)).to('arcsec')
+pixperbeam=(cntmbeam.sr/((cellsize**2).to('sr'))).value
 
 pixtophysicalsize=(np.tan(cellsize)*dGC).to('AU')
 
@@ -373,13 +374,13 @@ else:
         else:
             break
 masssum=np.nansum(massestosum)
-propmasserr=np.sum(masserrtoprop)#np.sqrt(np.nansum(np.square(masserrtoprop)))
+propmasserr=np.sqrt(np.nansum(np.square(masserrtoprop)))*np.sqrt(pixperbeam)#np.sum(masserrtoprop)
 lumsum=np.nansum(lumstosum)
-proplumerr=np.sum(lumerrtoprop)#np.sqrt(np.nansum(np.square(lumerrtoprop)))
+proplumerr=np.sqrt(np.nansum(np.square(lumerrtoprop)))*np.sqrt(pixperbeam)#np.sum(lumerrtoprop)
 nh2mean=np.nanmean(nh2tomean)
 nh2errormean=np.nanmean(nh2errortomean)
 
-#pdb.set_trace()
+pdb.set_trace()
 
 powerlaw_normpairs={'SgrB2S':(275,3500),'DSi':(210,3500),'DSii':(130,5000),'DSiii':(150,3000),'DSiv':(150,4500),'DSv':(160,2000),'DSVI':(130,4000),'DSVII':(75,4000),'DSVIII':(75,5000),'DSIX':(160,2500)}
 powerlawpair=powerlaw_normpairs[source]
