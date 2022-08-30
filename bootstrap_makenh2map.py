@@ -80,7 +80,7 @@ notreproj_cntmimage=fits.open(cntminfile)
 print(f'Continuum image: {cntminfile}')
 restfreq=notreproj_cntmimage[0].header['RESTFRQ']*u.Hz
 
-source=os.getenv('envsource')
+source='DSVI'#os.getenv('envsource')
 assert source is not None; 'os.getenv didn\'t work'
 print(f'Source: {source}')
 

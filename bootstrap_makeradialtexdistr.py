@@ -59,7 +59,7 @@ def powerlaw_profile(x,a,n):
 def round_to_1(x):
     return round(x, -int(math.floor(math.log10(abs(x)))))
     
-source='DSi'
+source='DSVIII'
 fielddict={'SgrB2S':1,'DSi':10,'DSii':10,'DSiii':10,'DSiv':10,'DSv':10,'DSVI':2,'DSVII':3,'DSVIII':3,'DSIX':7}
 fnum=fielddict[source]
 print(f'Source: {source}')
@@ -198,10 +198,10 @@ xinradius=rr[1]
 texinradius=texmapdata[rr<r].value
 snrsinradius=snrs[rr<r]/5
 abundinradius=abunds[rr2<r]
-abundsnrinradius=snr_abund[rr2<r]/5
+abundsnrinradius=snr_abund[rr2<r]
 nh2inradius=nh2s[rr2<r].value
 nh2errorinradius=nh2s_error[rr2<r].value
-nh2snrinradius=(nh2inradius/nh2errorinradius)/5
+nh2snrinradius=(nh2inradius/nh2errorinradius)
 lumsinradius=lums[rr2<r].value
 lumerrinradius=lumserr[rr2<r].value
 ntotsinradius=ntots[rr2<r].value
@@ -276,11 +276,11 @@ for bin in listordered_centrtopix:
     else:
         avg=np.average(tempmass,weights=tempmasssnr)
         massinbin=np.nansum(tempmass)*u.solMass
-        masserrinbin=np.sqrt(np.sum(np.square(tempmasserr)))
+        masserrinbin=np.sqrt(np.sum(np.square(tempmasserr)))*np.sqrt(pixperbeam)
         binvolume=(4/3)*np.pi*(bin*u.AU)**3
 
         massinteriorsum=np.nansum(massesinterior)*u.solMass
-        masserrinteriorsum=np.sqrt(np.nansum(np.square(masserrinterior)))*u.solMass
+        masserrinteriorsum=np.sqrt(np.nansum(np.square(masserrinterior)))*u.solMass*np.sqrt(pixperbeam)
         rawdensityinbin=massinteriorsum/binvolume
         err_binrawdensity=np.sqrt(masserrinteriorsum/binvolume)**2#np.sqrt(binvolume**-1*masserrinbin*u.solMass)**2
         numberdensityinbin=(rawdensityinbin/mu).to('cm-3')
@@ -291,8 +291,14 @@ for bin in listordered_centrtopix:
         avgtexerr=np.sqrt(np.sum(np.square(temptexerr)))#np.average(temptexerr)
         #pdb.set_trace()
         avginvsig=np.average(tempinvsig)
-        tempmaxtex=np.nanmax(temptex)
-        tempmintex=np.nanmin(temptex)
+        
+        if bin == 0:
+            tempmaxtex=temptex[0]+temptexerr[0]
+            tempmintex=temptex[0]-temptexerr[0]
+            #pdb.set_trace()
+        else:
+            tempmaxtex=np.nanmax(temptex)
+            tempmintex=np.nanmin(temptex)
 
         if avgtex<=150:#massinteriorsum >= 0.5*totalmass:
             if edge == None:
@@ -380,8 +386,6 @@ proplumerr=np.sqrt(np.nansum(np.square(lumerrtoprop)))*np.sqrt(pixperbeam)#np.su
 nh2mean=np.nanmean(nh2tomean)
 nh2errormean=np.nanmean(nh2errortomean)
 
-pdb.set_trace()
-
 powerlaw_normpairs={'SgrB2S':(275,3500),'DSi':(210,3500),'DSii':(130,5000),'DSiii':(150,3000),'DSiv':(150,4500),'DSv':(160,2000),'DSVI':(130,4000),'DSVII':(75,4000),'DSVIII':(75,5000),'DSIX':(160,2500)}
 powerlawpair=powerlaw_normpairs[source]
 fiducial_index=0.75
@@ -395,6 +399,8 @@ elif source == 'DSIX':
     inputamp=100
 elif source == 'SgrB2S':
     inputamp=300
+#elif source == 'DSv':
+#    inputamp=250
 else:
     inputamp=100
 
@@ -430,13 +436,11 @@ popt,pcov=cf(powerlaw_profile,radiustofit,textofit,sigma=texerrtofit,bounds=([0,
 fit_pl=fitter(base_bpl,radiustofit,textofit,weights=weightstofit)
 perr=np.sqrt(np.diag(fitter.fit_info['param_cov']))
 
-if source == 'DSiv':
+if source == 'DSiv'or 'DSv':
     fit_dens=fitter2(base_spl,radiustofit[:(len(radiustofit)-1)],denstofit[:(len(radiustofit)-1)],weights=densweightstofit[:(len(radiustofit)-1)])
 else:
     fit_dens=fitter2(base_spl,radiustofit,denstofit,weights=densweightstofit)
 derr=np.sqrt(np.diag(fitter2.fit_info['param_cov']))
-
-#pdb.set_trace()
 
 print(f'Sum: {masssum} +/- {propmasserr} Msun')
 print(f'Core radius: {edge} +/- {cntmbmajtoAU}')
@@ -446,8 +450,6 @@ plottexmax=np.nanmax(lookformax)+10
 maxtexindex=np.where(lookformax==np.nanmax(lookformax))
 maxtexerror=lookformax_err[maxtexindex]
 print(f'Max Tex: {np.max(lookformax)} +/- {float(maxtexerror)} K')
-
-pdb.set_trace()
 
 #copy_centrtopix=np.copy(centrtopix)*u.AU
 copy_centrtopix=np.copy(listordered_centrtopix)#np.linspace(0,r_phys.value,num=len(avgtexlist))*u.AU
@@ -633,7 +635,7 @@ if source == 'DSiv':
     ax1.set_xlabel('$r$ (AU)',fontsize=14)
     ax0.set_ylabel('T$_K$ (K)',fontsize=14)
     ax1.set_ylabel('Residuals',fontsize=10)
-    ax0.set_ylim(ymax=(max(avgtexlist)+30))
+    ax0.set_ylim(ymax=(max(upperfill)+30))
     ax0.legend()
     ax0.tick_params(direction='in')
     ax0.tick_params(axis='x',labelcolor='w')
@@ -657,7 +659,7 @@ elif source == 'DSVII':
     ax1.set_xlabel('$r$ (AU)',fontsize=14)
     ax0.set_ylabel('T$_K$ (K)',fontsize=14)
     ax1.set_ylabel('Residuals',fontsize=10)
-    ax0.set_ylim(ymax=(max(avgtexlist)+30))
+    ax0.set_ylim(ymax=(max(upperfill)+30))
     ax0.legend()
     ax0.tick_params(direction='in')
     ax0.tick_params(axis='x',labelcolor='w')
@@ -683,7 +685,7 @@ else:
     if source == 'SgrB2S':
         ax0.set_ylim(ymax=(max(avgtexlist)+30),ymin=100)
     else:
-        ax0.set_ylim(ymax=(max(avgtexlist)+30))
+        ax0.set_ylim(ymax=(max(upperfill)+30))
     ax0.legend()
     ax0.tick_params(direction='in')
     ax0.tick_params(axis='x',labelcolor='w')
