@@ -59,7 +59,7 @@ def powerlaw_profile(x,a,n):
 def round_to_1(x):
     return round(x, -int(math.floor(math.log10(abs(x)))))
     
-source='DSVIII'
+source='SgrB2S'
 fielddict={'SgrB2S':1,'DSi':10,'DSii':10,'DSiii':10,'DSiv':10,'DSv':10,'DSVI':2,'DSVII':3,'DSVIII':3,'DSIX':7}
 fnum=fielddict[source]
 print(f'Source: {source}')
@@ -158,7 +158,7 @@ print(f'Center p: {texmapdata[texpeakpix[0],texpeakpix[1]]}')
 
 #r=35 #for 15,000 AU
 #pixradius=math.ceil((0.08*u.pc/pixtophysicalsize).to(''))
-rdict={'SgrB2S':12000*u.AU,'DSi':6400*u.AU,'DSii':9000*u.AU,'DSiii':6000*u.AU,'DSv':4000*u.AU,'DSVII':6600*u.AU,'DSVIII':8000*u.AU,'DSIX':5000*u.AU}
+rdict={'SgrB2S':12000*u.AU,'DSi':6400*u.AU,'DSii':9000*u.AU,'DSiii':6000*u.AU,'DSv':4000*u.AU,'DSVII':6600*u.AU,'DSVIII':7000*u.AU,'DSIX':5000*u.AU}
 rdictkeys=rdict.keys()
 if source not in rdictkeys:
     r_phys=10000*u.AU
@@ -287,7 +287,16 @@ for bin in listordered_centrtopix:
         err_binnumberdensity=(np.sqrt(mu**-1*err_binrawdensity)**2).to('cm-3')
 
         mrcubed=((massinbin/mu).to(''))/((bin*u.AU).to('cm'))**3
+        '''
+        if len(temptex)==0:
+            pdb.set_trace()
+        else:
+        '''
         avgtex=np.average(temptex,weights=tempsnr)
+        
+        #if len(avgtexterr)==0:
+        #    avgtexerr=np.nan
+        #else:
         avgtexerr=np.sqrt(np.sum(np.square(temptexerr)))#np.average(temptexerr)
         #pdb.set_trace()
         avginvsig=np.average(tempinvsig)
@@ -299,7 +308,7 @@ for bin in listordered_centrtopix:
         else:
             tempmaxtex=np.nanmax(temptex)
             tempmintex=np.nanmin(temptex)
-
+        
         if avgtex<=150:#massinteriorsum >= 0.5*totalmass:
             if edge == None:
                 #if source == 'DSii' or source == 'DSVI':
@@ -411,7 +420,7 @@ base_spl=powerlaws.PowerLaw1D(amplitude=np.mean(radialdensitylist[1:]))
 
 if source=='DSIX':
     innerradius=9
-    outerradius=None
+    outerradius=len(listordered_centrtopix)-1#None
 
 elif source=='DSiv':
     innerradius=1
@@ -683,7 +692,7 @@ else:
     ax0.set_ylabel('T$_K$ (K)',fontsize=14)
     ax1.set_ylabel('Residuals',fontsize=10)
     if source == 'SgrB2S':
-        ax0.set_ylim(ymax=(max(avgtexlist)+30),ymin=100)
+        ax0.set_ylim(ymax=(max(upperfill)+30),ymin=100)
     else:
         ax0.set_ylim(ymax=(max(upperfill)+30))
     ax0.legend()
