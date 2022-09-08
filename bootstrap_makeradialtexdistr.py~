@@ -530,7 +530,7 @@ sourcenamesfortable={'SgrB2S':'SgrB2S','DSi':'DS1','DSii':'DS2','DSiii':'DS3','D
 
 densalpha=fit_dens.alpha.value
 errdensalpha=round_to_1(derr[2])
-onlydens=True
+onlydens=False
 plt.figure()
 if source == 'DSiv':
     plt.errorbar(listordered_centrtopix,radialdensitylist,yerr=err_radialdens,label='Data')
@@ -557,35 +557,32 @@ else:
     plt.show()
 
 densityslopepath='bootstrap_densityslopes.fits'
-
-if os.path.exists(densityslopepath):
-    dtable=QTable.read(densityslopepath)
-    if densalpha in dtable['density_alpha']:
-        print(f'alpha value {densalpha} already exists in table.')
-    else:
-        print(f'Appending alpha {densalpha} +/- {errdensalpha} to table.')
-        densalpha=[densalpha,errdensalpha]
-        preinsert=QTable(rows=[densalpha],names=['density_alpha','err_densityalpha'])
-        densstack=vstack([dtable,preinsert])
-        print('Appending complete.')
-        #pdb.set_trace()
-        print(f'Saving to {densityslopepath}')
-        densstack.write(densityslopepath,overwrite=True)
-        print('Done')
-else:
-    print('No density table found')
-    print('Creating density table')
-    densalpha=[densalpha,errdensalpha]
-    dtable=QTable(rows=[densalpha],names=['density_alpha','err_densityalpha'])
-    print('Table created')
-    print(f'Writing to {densityslopepath}')
-    dtable.write(densityslopepath)
-    print('Done')
-
 if onlydens:
-    sys.exit()
-else:
-    pass
+    if os.path.exists(densityslopepath):
+        dtable=QTable.read(densityslopepath)
+        if densalpha in dtable['density_alpha']:
+            print(f'alpha value {densalpha} already exists in table.')
+        else:
+            print(f'Appending alpha {densalpha} +/- {errdensalpha} to table.')
+            densalpha=[densalpha,errdensalpha]
+            preinsert=QTable(rows=[densalpha],names=['density_alpha','err_densityalpha'])
+            densstack=vstack([dtable,preinsert])
+            print('Appending complete.')
+            #pdb.set_trace()
+            print(f'Saving to {densityslopepath}')
+            densstack.write(densityslopepath,overwrite=True)
+            print('Done')
+        sys.exit()
+    else:
+        print('No density table found')
+        print('Creating density table')
+        densalpha=[densalpha,errdensalpha]
+        dtable=QTable(rows=[densalpha],names=['density_alpha','err_densityalpha'])
+        print('Table created')
+        print(f'Writing to {densityslopepath}')
+        dtable.write(densityslopepath)
+        print('Done')
+        sys.exit()
 
 #pdb.set_trace()
 

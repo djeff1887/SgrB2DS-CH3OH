@@ -1,0 +1,20 @@
+#!/bin/sh
+
+#SBATCH --job-name=DSVI_bootstrap    # Job name
+#SBATCH --qos=adamginsburg-b    #Allocation
+                            #
+#SBATCH --mail-type=ALL          # Mail events (NONE, BEGIN, END, FAIL, ALL)
+#SBATCH --mail-user=d.jeff@ufl.edu     # Where to send mail	
+#SBATCH --ntasks=1                    # Run on a single CPU
+#SBATCH --cpus-per-task=8         # Number of CPU cores per task
+#SBATCH --mem=1gb                     # Job memory request
+#SBATCH --time=2:00:00               # Time limit hrs:min:sec
+#SBATCH --output=DSVIbootstrap_%j.out   # Standard output and error log
+
+pwd; hostname; date
+ 
+echo "Running plot script on a single CPU core"
+ 
+/home/d.jeff/anaconda3/bin/ipython "/blue/adamginsburg/d.jeff/imaging_results/SgrB2DS-CH3OH/bootstrap_maketrotntoterrormaps.py"
+ 
+date

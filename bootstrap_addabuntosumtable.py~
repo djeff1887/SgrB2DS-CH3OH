@@ -4,7 +4,6 @@ import numpy as np
 import math
 import pdb
 from astropy.io import fits
-import sys
 
 dGC=8.34*u.kpc#per Meng et al. 2019 https://www.aanda.org/articles/aa/pdf/2019/10/aa35920-19.pdf
 
@@ -30,15 +29,15 @@ for core in source:
     centralpix=pixdict[core]
 
     abunmap=home+'bootstrap_ch3ohabundance_3sigma_ntotintercept_bolocamfeather_smoothedtobolocam.fits'
-    abunerrmap=home+'bootstrap_ch3ohabundance_error_ntotintercept_bolocamfeather_smoothedtobolocam.fits'
+    abunsnrmap=home+'bootstrap_ch3ohabundance_snr_ntotintercept_bolocamfeather_smoothedtobolocam.fits'
 
     abundfits=fits.open(abunmap)
     abundances=abundfits[0].data
-    err_abund=fits.getdata(abunerrmap)
-    if core == 'SgrB2S':
-        corerad=15000*u.AU#radii[i]
+    err_abund=fits.getdata(abunsnrmap)*abundances
+    if i!=9:
+        corerad=1500*u.AU
     else:
-        corerad=2000*u.AU
+        corerad=20000#radii[i]
     cellsize=(np.abs(abundfits[0].header['CDELT1']*u.deg)).to('arcsec')
     #pixperbeam=(cntmbeam.sr/((cellsize**2).to('sr'))).value
 
@@ -51,23 +50,16 @@ for core in source:
 
     abunsinradius=abundances[rr2<r]
     abunerrinradius=err_abund[rr2<r]
-    
-    if core == 'SgrB2S' or core == 'DSVI':
-        peakabundance=np.nanmax(abunsinradius)
-        peakloc=np.where(abundances==peakabundance)
-        erroronpeak=err_abund[int(peakloc[0]),int(peakloc[1])]
-    else:
-        peakabundance=abundances[centralpix[0],centralpix[1]]
-        erroronpeak=err_abund[centralpix[0],centralpix[1]]
 
-    abuns.append(peakabundance)
-    print(f'Abundance: {peakabundance}')
-    errabuns.append(erroronpeak)
-    print(f'Error: {erroronpeak}\n')
+    if i==0:
+        peakabundance=abundances[centralpix[0],centralpix[1]]
+    else:
+        peakabundance=np.nanmax(abunsinradius)
+    print(peakabundance)
     #pdb.set_trace()
     i+=1
 
-#sys.exit()#pdb.set_trace()
+pdb.set_trace()
 abuntable=QTable(data=[abuns],names=['X(CH3OH)'])
 errabuntable=QTable(data=[errabuns],names=['X(CH3OH) error'])
 
@@ -75,8 +67,7 @@ powerlawtable=QTable.read('bootstrap_powerlawtable.fits')
 
 compositetable=hstack([sumtable,powerlawtable,abuntable,errabuntable])
 
-compositepath='/blue/adamginsburg/d.jeff/imaging_results/SgrB2DS-CH3OH/bootstrap_t150_compositehotcoresummarytable.fits'
+compositepath='/blue/adamginsburg/d.jeff/imaging_results/SgrB2DS-CH3OH/t150_compositehotcoresummarytable.fits'
 
-print(f'Writing table to {compositepath}')
 compositetable.write(compositepath,overwrite=True)
 
