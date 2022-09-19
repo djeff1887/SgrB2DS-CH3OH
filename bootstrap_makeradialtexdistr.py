@@ -76,7 +76,7 @@ else:
 
 #notransmask=['DSv','DSVI','DSVII','DSVIII','DSIX']
 #if source in notransmask:
-texmap=home+"texmap_3sigma_allspw_withnans_weighted.fits"
+texmap=home+"bootstrap_texmap_3sigma_allspw_withnans_weighted.fits"
 #else:
 #texmap=home+"texmap_5transmask_3sigma_allspw_withnans_weighted.fits"
 
@@ -88,7 +88,7 @@ nh2map=home+'bootstrap_nh2map_3sigma_bolocamfeather_smoothedtobolocam.fits'
 nh2errormap=home+'bootstrap_nh2map_error_bolocamfeather_smoothedtobolocam.fits'
 lummap=home+'bootstrap_boltzmannlum_3sigma_bolocamfeather_smoothedtobolocam.fits'
 lumerrmap=home+'bootstrap_boltzmannlum_error_bolocamfeather_smoothedtobolocam.fits'
-ntotmap=home+'smoothed_ntot_to_bolocamfeathercont.fits'
+ntotmap=home+'bootstrap_smoothed_ntot_to_bolocamfeathercont_3sigma.fits'
 ntoterrmap=home+'bootstrap_smoothed_ntot_err.fits'
 h2massmap=home+'bootstrap_h2massmap_3sigma_bolocamfeather_smoothedtobolocam.fits'
 h2masserrmap=home+'bootstrap_h2massmap_error_bolocamfeather_smoothedtobolocam.fits'
@@ -158,7 +158,7 @@ print(f'Center p: {texmapdata[texpeakpix[0],texpeakpix[1]]}')
 
 #r=35 #for 15,000 AU
 #pixradius=math.ceil((0.08*u.pc/pixtophysicalsize).to(''))
-rdict={'SgrB2S':12000*u.AU,'DSi':6400*u.AU,'DSii':9000*u.AU,'DSiii':6000*u.AU,'DSv':4000*u.AU,'DSVII':6600*u.AU,'DSVIII':7000*u.AU,'DSIX':5000*u.AU}
+rdict={'SgrB2S':12000*u.AU,'DSi':6400*u.AU,'DSii':9000*u.AU,'DSiii':6000*u.AU,'DSiv':8500*u.AU,'DSv':4000*u.AU,'DSVII':6600*u.AU,'DSVIII':5700*u.AU,'DSIX':5000*u.AU}
 rdictkeys=rdict.keys()
 if source not in rdictkeys:
     r_phys=10000*u.AU
@@ -287,11 +287,12 @@ for bin in listordered_centrtopix:
         err_binnumberdensity=(np.sqrt(mu**-1*err_binrawdensity)**2).to('cm-3')
 
         mrcubed=((massinbin/mu).to(''))/((bin*u.AU).to('cm'))**3
-        '''
+        
         if len(temptex)==0:
+            print(f'Problem radius: {bin}')
             pdb.set_trace()
         else:
-        '''
+            pass
         avgtex=np.average(temptex,weights=tempsnr)
         
         #if len(avgtexterr)==0:
@@ -362,6 +363,7 @@ lumstosum=[]
 lumerrtoprop=[]
 nh2tomean=[]
 nh2errortomean=[]
+#pdb.set_trace()
 if source == 'SgrB2S':
     wcsobj=WCS(smooth_trotfits[0].header)
 
@@ -376,6 +378,10 @@ if source == 'SgrB2S':
     lumerrtoprop.append(pixmask.get_values(lumserr))
     nh2tomean.append(pixmask.get_values(nh2s))
     nh2errortomean.append(pixmask.get_values(nh2s_error))
+
+    premask_abuns=np.copy(abundinradius)
+    abundinradius=list(pixmask.get_values(abunds))
+    pdb.set_trace()
     #print(f'New error: {propmasserr}')
 else:
     for data2 in teststack:
@@ -452,7 +458,7 @@ else:
 derr=np.sqrt(np.diag(fitter2.fit_info['param_cov']))
 
 print(f'Sum: {masssum} +/- {propmasserr} Msun')
-print(f'Core radius: {edge} +/- {cntmbmajtoAU}')
+print(f'Core radius: {edge} +/- {cntmbmajtoAU/2}')
 print(f'Core luminosity: {lumsum} +/- {proplumerr} Lsun')
 print(f'Average H2 column in {edge} AU radius: {nh2mean} +/- {nh2errormean}')
 plottexmax=np.nanmax(lookformax)+10
@@ -530,7 +536,7 @@ sourcenamesfortable={'SgrB2S':'SgrB2S','DSi':'DS1','DSii':'DS2','DSiii':'DS3','D
 
 densalpha=fit_dens.alpha.value
 errdensalpha=round_to_1(derr[2])
-onlydens=True
+onlydens=False
 plt.figure()
 if source == 'DSiv':
     plt.errorbar(listordered_centrtopix,radialdensitylist,yerr=err_radialdens,label='Data')
@@ -551,12 +557,12 @@ else:
     plt.ylabel('$n$ (cm$^{-3}$)',fontsize=14)
     plt.legend()
 
-    densplotpath=figpath+'bootstrap_densityprofile_may3.png'
+    densplotpath=figpath+'bootstrap_densityprofile_may3_trotntotbootmasked.png'
     print(f'\nSaving to {densplotpath}')
     plt.savefig(densplotpath,overwrite=True)
     plt.show()
 
-densityslopepath='bootstrap_densityslopes.fits'
+densityslopepath='bootstrap_densityslopes_bootmasked.fits'
 
 if os.path.exists(densityslopepath):
     dtable=QTable.read(densityslopepath)
@@ -597,7 +603,7 @@ plt.ylabel('X(CH$_3$OH)',fontsize=14)
 plt.xlim(xmax=plottexmax)
 #plt.colorbar(pad=0,label='Luminosity (Lsun)')
 plt.colorbar(pad=0,label='N(H$_2$) (cm$^{-2}$)')#'N(CH$_3$OH) (cm$^{-2}$)')##
-figsavepath=figpath+f'texabundiag_bootstrap_r{r}px_rphys{int(pixtophysicalsize.value)}AU_smoothed.png'
+figsavepath=figpath+f'texabundiag_bootmasked_bootstrap_r{r}px_rphys{int(pixtophysicalsize.value)}AU_smoothed.png'
 plt.savefig(figsavepath,bbox_inches='tight',overwrite=True)
 plt.show()
 
@@ -607,7 +613,7 @@ plt.yscale('log')
 plt.xlabel('$r$ (AU)',fontsize=14)
 plt.ylabel('X(CH$_3$OH)',fontsize=14)
 plt.colorbar(pad=0,label='N(H$_2$) (cm$^{-2}$)')#'T$_K$ (K)')
-figsavepath=figpath+f'radialavgabundiag_bootstrap_r{r}px_rphys{int(pixtophysicalsize.value)}AU_smoothed.png'
+figsavepath=figpath+f'radialavgabundiag_bootmasked_bootstrap_r{r}px_rphys{int(pixtophysicalsize.value)}AU_smoothed.png'
 plt.savefig(figsavepath,bbox_inches='tight',overwrite=True)
 plt.show()
 
@@ -617,7 +623,7 @@ plt.yscale('log')
 plt.xlabel('$r$ (AU)',fontsize=14)
 plt.ylabel('N(H$_2$) (cm$^{-2}$)',fontsize=14)
 plt.colorbar(pad=0,label='T$_K$ (K)')#'T$_K$ (K)')
-figsavepath=figpath+f'radialavgnh2s_bootstrap_r{r}px_rphys{int(pixtophysicalsize.value)}AU_smoothed.png'
+figsavepath=figpath+f'radialavgnh2s_bootmasked_bootstrap_r{r}px_rphys{int(pixtophysicalsize.value)}AU_smoothed.png'
 plt.savefig(figsavepath,bbox_inches='tight',overwrite=True)
 plt.show()
 
@@ -652,7 +658,7 @@ if source == 'DSiv':
     ax0.tick_params(direction='in')
     ax0.tick_params(axis='x',labelcolor='w')
     ax1.tick_params(axis='x',top=True,direction='in')
-    figsavepath=figpath+f'radialavgtex_bootstrap_residuals_r{r}px_rphys{int(pixtophysicalsize.value)}AU_smoothed.png'
+    figsavepath=figpath+f'radialavgtex_bootmasked_bootstrap_residuals_r{r}px_rphys{int(pixtophysicalsize.value)}AU_smoothed.png'
 
     plt.tight_layout()
 
@@ -676,7 +682,7 @@ elif source == 'DSVII':
     ax0.tick_params(direction='in')
     ax0.tick_params(axis='x',labelcolor='w')
     ax1.tick_params(axis='x',top=True,direction='in')
-    figsavepath=figpath+f'radialavgtex_bootstrap_residuals_r{r}px_rphys{int(pixtophysicalsize.value)}AU_smoothed.png'
+    figsavepath=figpath+f'radialavgtex_bootmasked_bootstrap_residuals_r{r}px_rphys{int(pixtophysicalsize.value)}AU_smoothed.png'
 
     plt.tight_layout()
 
@@ -702,7 +708,7 @@ else:
     ax0.tick_params(direction='in')
     ax0.tick_params(axis='x',labelcolor='w')
     ax1.tick_params(axis='x',top=True,direction='in')
-    figsavepath=figpath+f'radialavgtex_bootstrap_residuals_r{r}px_rphys{int(pixtophysicalsize.value)}AU_smoothed.png'
+    figsavepath=figpath+f'radialavgtex_bootmasked_bootstrap_residuals_r{r}px_rphys{int(pixtophysicalsize.value)}AU_smoothed.png'
 
     plt.tight_layout()
 
@@ -724,7 +730,7 @@ plt.xscale('log')
 plt.colorbar(pad=0,label='T$_K$ (K)')
 plt.xlabel('N(H$_2$) (cm$^{-2}$)')
 plt.ylabel('N(CH$_3$OH) (cm$^{-2}$)')
-figsavepath=figpath+'nch3ohvsnh2_bootstrap_smoothed.png'
+figsavepath=figpath+'nch3ohvsnh2_bootmasked_bootstrap_smoothed.png'
 plt.savefig(figsavepath,overwrite=True)
 plt.show()
 
@@ -736,7 +742,7 @@ print(f'index initial guess: {lowerbound_initialguess[source]}')
 print(f'index error: {pcov[1,1]**0.5}')
 '''
 onlypowerlaw=False
-powerlawpath='/blue/adamginsburg/d.jeff/imaging_results/SgrB2DS-CH3OH/bootstrap_powerlawtable.fits'
+powerlawpath='/blue/adamginsburg/d.jeff/imaging_results/SgrB2DS-CH3OH/bootstrap_powerlawtable_bootmasked.fits'
 pwrlwprams=[(round(fit_pl.alpha_1.value,2)*u.dimensionless_unscaled),(round(perr[2],2)*u.dimensionless_unscaled),(round(fit_pl.alpha_2.value,2)*u.dimensionless_unscaled),(round(perr[3],2)*u.dimensionless_unscaled),(round(fit_pl.x_break.value)*u.AU),(round(perr[1])*u.AU)]
 powerlawparams=QTable(rows=[pwrlwprams],names=['alpha_1','alpha_1 error','alpha_2','alpha_2 error','x_break','x_break error'])
 
@@ -771,7 +777,7 @@ if onlypowerlaw:
 else:
     pass
 
-sumtablepath='bootstrap_hotcoresummarytable_postreprojsmooth_t150radius.fits'
+sumtablepath='bootstrap_hotcoresummarytable_postreprojsmooth_t150radius_bootmasked.fits'
 if os.path.exists(sumtablepath):
     print('\nUpdating summary table with new values')
     sumtable=QTable.read(sumtablepath)
@@ -782,7 +788,7 @@ if os.path.exists(sumtablepath):
         update=input('Overwrite? [y/n]\n')
         if update=='y':
               props=[sourcenamesfortable[source],(float(lookformax[maxtexindex])*u.K),(float(maxtexerror)*u.K),(nh2mean*u.cm**-2),(nh2errormean*u.cm**-2),
-                     (masssum*u.solMass),(propmasserr*u.solMass),(lumsum*u.solLum),(proplumerr*u.solLum),(edge*u.AU),(cntmbmajtoAU)]
+                     (masssum*u.solMass),(propmasserr*u.solMass),(lumsum*u.solLum),(proplumerr*u.solLum),(edge*u.AU),(cntmbmajtoAU/2)]
               sumtable[sourceindex]=tuple(props)
               print(f'{source} source properties updated.')
               print(f'\nSaving at {sumtablepath}')
@@ -794,7 +800,7 @@ if os.path.exists(sumtablepath):
     else:
         print(f'Adding new source {source} to summary table.')
         props=[sourcenamesfortable[source],(float(lookformax[maxtexindex])*u.K),(float(maxtexerror)*u.K),(nh2mean*u.cm**-2),(nh2errormean*u.cm**-2),
-               (masssum*u.solMass),(propmasserr*u.solMass),(lumsum*u.solLum),(proplumerr*u.solLum),(edge*u.AU),(cntmbmajtoAU)]
+               (masssum*u.solMass),(propmasserr*u.solMass),(lumsum*u.solLum),(proplumerr*u.solLum),(edge*u.AU),(cntmbmajtoAU/2)]
         tempqtable=QTable(rows=[props],names=['Source','T_max','T_max_error','N(H_2) avg)','N(H_2) error','H_2 Mass','H_2 Mass error','Luminosity','Luminosity_error','Radius','Radius_error'])
         outtable=vstack([sumtable,tempqtable])
         print(f'{source} source properties added to table.')
@@ -807,7 +813,7 @@ else:
     if 'y' == newsumtable:
         print(f'Creating new summary table with {source} data')
         props=[sourcenamesfortable[source],(float(lookformax[maxtexindex])*u.K),(float(maxtexerror)*u.K),(nh2mean*u.cm**-2),(nh2errormean*u.cm**-2),
-               (masssum*u.solMass),(propmasserr*u.solMass),(lumsum*u.solLum),(proplumerr*u.solLum),(edge*u.AU),(cntmbmajtoAU)]
+               (masssum*u.solMass),(propmasserr*u.solMass),(lumsum*u.solLum),(proplumerr*u.solLum),(edge*u.AU),(cntmbmajtoAU/2)]
         tempqtable=QTable(rows=[props],names=['Source','T_max','T_max_error','N(H_2) avg)','N(H_2) error','H_2 Mass','H_2 Mass error','Luminosity','Luminosity_error','Radius','Radius_error'])
         print(f'\nSaving at {sumtablepath}')
         outtable=tempqtable
