@@ -41,6 +41,7 @@ err_innercoremasses=np.array(innercoremasses)/eta150_snr
 
 innerradii=np.array([1837,1837,1837,1392,2299,2299,1394,289,289,2273,1584,1452,2044,2044,1642,612,612,1114,1005,770,770,780])*u.AU
 nins=(innercoremasses/((4/3)*np.pi*innerradii**3*mu)).to('cm-3')
+eta150_nins=((np.array(eta150_coremasses)*u.solMass)/((4/3)*np.pi*innerradii**3*mu)).to('cm-3')
 
 plindices=[np.inf,np.inf,0.34,0.48,0.96,0.27,0.14,0.21,0.25,0.31,0.56,1.38,1.48,0.41,0.56,0.23,0.29,0.43,0.59,0.38,0.45,0.59,0.45,0.54]
 wbsmm1radius=[5363]*u.AU
@@ -51,10 +52,17 @@ dindices=[2.22,1.79,1.39,2.25,2.23,2.4,2.12,2.25,1.99,0.83,0.77,1.83,2.14,1.9,2.
 err_dindices=[0.11,0.21,0.09,0.011,0.07,0.07,0.08,0.03,0.11,0.06,0.27,0.23,0.09,0.04,0.06,0.07,0.05,0.06,0.08,0.11,0.09,0.09]
 
 coremasses=[]
-for n,outer,inner,dindex in zip(nins,coreradii,innerradii,dindices):
+eta150_fullmasses=[]
+for n,e_n,outer,inner,dindex in zip(nins,eta150_nins,coreradii,innerradii,dindices):
     coremass=gieser_massprofile(n,outer,inner,dindex)
+    eta150mass=gieser_massprofile(e_n,outer,inner,dindex)
     coremasses.append(coremass.value)
+    eta150_fullmasses.append(eta150mass.value)
 err_coremasses=coremasses/eta150_snr
+
+percentdiff=np.abs((np.array(coremasses)-np.array(eta150_fullmasses))/(np.array(eta150_fullmasses)+np.array(coremasses)/2))#Doing percent difference with respect to the Gieser values, since we say "these values differ from the original values by XXX"
+avg_ratio=np.mean(percentdiff)
+print(f'Average percent difference between scaled and eta150 masses: {avg_ratio}')
 #pdb.set_trace()
 
 comptable=Table.read('bootstrap_t150_compositetransposedensitytable.fits')
@@ -74,6 +82,15 @@ dsradii=list(comptable[8])[1:]
 err_dsradii=np.array(list(comptable[9])[1:])/2
 dsdensindex=list(comptable[18])[1:]
 err_dsdens=list(comptable[19])[1:]
+
+meandsdensityindex=np.mean(dsdensindex)
+meancoredensityindex=np.mean(dindices)
+pdiff_dindex=np.abs(meandsdensityindex-meancoredensityindex)/np.mean([meandsdensityindex,meancoredensityindex])
+err_meancoredindex=np.mean(err_dindices)
+err_meandsdindex=np.mean(err_dsdens)
+print(f'Mean CORE density index: {meancoredensityindex} +/- {err_meancoredindex}')
+print(f'Mean DS density index: {meandsdensityindex} +/- {err_meandsdindex}')
+print(f'Difference between DS and CORE p indices: {pdiff_dindex}')
 
 wbfmt='o'
 w51fmt='x'

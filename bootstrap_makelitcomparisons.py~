@@ -57,7 +57,7 @@ for n,outer,inner,dindex in zip(nins,coreradii,innerradii,dindices):
 err_coremasses=coremasses/eta150_snr
 #pdb.set_trace()
 
-comptable=Table.read('t150_compositetransposedensitytable.fits')
+comptable=Table.read('bootstrap_t150_compositetransposedensitytable.fits')
 
 dsmasses=np.array(list(comptable[4])[1:])
 errormass=np.array(list(comptable[5])[1:])#list(comptable[5])[1:]

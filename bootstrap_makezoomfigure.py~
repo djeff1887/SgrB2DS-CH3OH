@@ -12,18 +12,18 @@ cm.set_bad('black')
 
 #sourcepath='/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/SgrB2S/z0_0002306756533745274_testbox2_5-6mhzwidth/'
 sgrb2dspath="/blue/adamginsburg/d.jeff/imaging_results/adamcleancontinuum/Sgr_B2_DS_B6_uid___A001_X1290_X46_continuum_merged_12M_robust0_selfcal4_finaliter.image.tt0.pbcor.fits"
-sgrb2stexmap="/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/SgrB2S/new_testingstdfixandontheflyrepstuff_K_OctReimage_restfreqfix_newvelmask_newpeakamp/bootstrap_texmap_3sigma_allspw_withnans_weighted.fits"
+sgrb2stexmap="/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/SgrB2S/new_testingstdfixandontheflyrepstuff_K_OctReimage_restfreqfix_newvelmask_newpeakamp/texmap_3sigma_allspw_withnans_weighted.fits"
 #sgrb2stexmap="/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/SgrB2S/z0_0002306756533745274_testbox2_5-6mhzwidth/texmap_3sigma_allspw_withnans_weighted.fits"
-sgrb2dsitexmap="/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSi/Kfield10originals_trial7_field10errors_newexclusion_matchslabwidthtorep/bootstrap_texmap_3sigma_allspw_withnans_weighted.fits"
+sgrb2dsitexmap="/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSi/Kfield10originals_trial7_field10errors_newexclusion_matchslabwidthtorep/texmap_3sigma_allspw_withnans_weighted.fits"
 #sgrb2dsitexmap="/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/DSi/z0_000186407_box1_5-6mhzwidth/texmap_3sigma_allspw_withnans_weighted.fits"
-sgrb2dsiitexmap="/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSii/Kfield10originals_noexclusions/bootstrap_texmap_3sigma_allspw_withnans_weighted.fits"
-sgrb2dsiiitexmap="/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSiii/Kfield10originals_noexclusions/bootstrap_texmap_3sigma_allspw_withnans_weighted.fits"
-sgrb2dsivtexmap="/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSiv/Kfield10originals_noexclusions/bootstrap_texmap_3sigma_allspw_withnans_weighted.fits"
-dsvtexmap="/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSv/Kfield10originals_noexclusions_include4-3_150K_trial2/bootstrap_texmap_3sigma_allspw_withnans_weighted.fits"
-ds6texmap="/blue/adamginsburg/d.jeff/SgrB2DSreorg/field2/CH3OH/DSVI/Kfield2originals_trial3_8_6-8_7excluded/bootstrap_texmap_3sigma_allspw_withnans_weighted.fits"
-ds7texmap="/blue/adamginsburg/d.jeff/SgrB2DSreorg/field3/CH3OH/DSVII/Kfield3originals_200K_trial1_noexclusions/bootstrap_texmap_3sigma_allspw_withnans_weighted.fits"
-ds8texmap="/blue/adamginsburg/d.jeff/SgrB2DSreorg/field3/CH3OH/DSVIII/Kfield3originals_175K_trial1_noexclusions/bootstrap_texmap_3sigma_allspw_withnans_weighted.fits"
-ds9texmap="/blue/adamginsburg/d.jeff/SgrB2DSreorg/field7/CH3OH/DSIX/Kfield7originals_150K_trial1_noexclusions/bootstrap_texmap_3sigma_allspw_withnans_weighted.fits"
+sgrb2dsiitexmap="/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSii/Kfield10originals_noexclusions/texmap_3sigma_allspw_withnans_weighted.fits"
+sgrb2dsiiitexmap="/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSiii/Kfield10originals_noexclusions/texmap_3sigma_allspw_withnans_weighted.fits"
+sgrb2dsivtexmap="/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSiv/Kfield10originals_noexclusions/texmap_3sigma_allspw_withnans_weighted.fits"
+dsvtexmap="/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSv/Kfield10originals_noexclusions_include4-3_150K_trial2/texmap_0transmask_3sigma_allspw_withnans_weighted.fits"
+ds6texmap="/blue/adamginsburg/d.jeff/SgrB2DSreorg/field2/CH3OH/DSVI/Kfield2originals_trial2_16_6-16_7excluded/texmap_3sigma_allspw_withnans_weighted.fits"
+ds7texmap="/blue/adamginsburg/d.jeff/SgrB2DSreorg/field3/CH3OH/DSVII/Kfield3originals_trial1_noexclusions/texmap_3sigma_allspw_withnans_weighted.fits"
+ds8texmap="/blue/adamginsburg/d.jeff/SgrB2DSreorg/field3/CH3OH/DSVIII/Kfield3originals_175K_trial1_noexclusions/texmap_3sigma_allspw_withnans_weighted.fits"
+ds9texmap="/blue/adamginsburg/d.jeff/SgrB2DSreorg/field7/CH3OH/DSIX/Kfield7originals_150K_trial1_noexclusions/texmap_3sigma_allspw_withnans_weighted.fits"
 
 sgrb2dshdu=fits.open(sgrb2dspath)[0]
 sgrb2dsdata=sgrb2dshdu.data.squeeze()

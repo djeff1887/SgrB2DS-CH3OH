@@ -186,7 +186,7 @@ yy,xx=np.indices(texmapdata.shape)
 rr=((xx-texpeakpix[1])**2+(yy-texpeakpix[0])**2)**0.5
 mask=rr<r
 
-yy2,xx2=np.indices(smooth_trot.shape)
+yy2,xx2=np.indices(smooth_trot.shape)# These are all for the abundances, since the abundance peak in SgrB2S isn't at the temperature peak
 rr2=((xx2-texpeakpix[1])**2+(yy2-texpeakpix[0])**2)**0.5
 S_rr=((xx2-sgrb2scentralpix[1])**2+(yy2-sgrb2scentralpix[0])**2)**0.5
 mask2=rr2<r
@@ -378,10 +378,25 @@ if source == 'SgrB2S':
     lumerrtoprop.append(pixmask.get_values(lumserr))
     nh2tomean.append(pixmask.get_values(nh2s))
     nh2errortomean.append(pixmask.get_values(nh2s_error))
-
+    nh2snrinradius=list(pixmask.get_values(nh2s/nh2s_error))
+    
+    rr2_sgrb2s=list((pixmask.get_values(rr2)*pixtophysicalsize).value)
+    '''
+    xx_sgrb2s=[]
+    yy_sgrb2s=[]
+    for why in yinradius:
+        for ex in xinradius:
+            if regions.PixCoord(why,ex) in pixreg:
+                xx_sgrb2s.append(ex)
+                yy_sgrb2s.append(why)
+            else:
+                pass
+    '''
     premask_abuns=np.copy(abundinradius)
     abundinradius=list(pixmask.get_values(abunds))
-    pdb.set_trace()
+    abundsnrinradius=list(pixmask.get_values(snr_abund))
+    trotsforabunds=list(pixmask.get_values(texmapdata.value))
+    #pdb.set_trace()
     #print(f'New error: {propmasserr}')
 else:
     for data2 in teststack:
@@ -594,38 +609,77 @@ else:
     pass
 
 #pdb.set_trace()
+if source == 'SgrB2S':
+    plt.figure()
+    plt.scatter(trotsforabunds,abundinradius,s=abundsnrinradius,c=nh2tomean,norm=mpl.colors.LogNorm())
+    plt.yscale('log')
+    plt.xlabel('$T_K$ (K)',fontsize=14)
+    plt.ylabel('X(CH$_3$OH)',fontsize=14)
+    plt.xlim(xmax=plottexmax)
+    #plt.colorbar(pad=0,label='Luminosity (Lsun)')
+    plt.colorbar(pad=0,label='N(H$_2$) (cm$^{-2}$)')#'N(CH$_3$OH) (cm$^{-2}$)')##
+    figsavepath=figpath+f'texabundiag_bootmasked_bootstrap_r{r}px_rphys{int(pixtophysicalsize.value)}AU_smoothed.png'
+    pdb.set_trace()
+    plt.savefig(figsavepath,bbox_inches='tight',overwrite=True)
+    plt.show()
 
-plt.figure()
-plt.scatter(texinradius,abundinradius,s=abundsnrinradius,c=nh2inradius,norm=mpl.colors.LogNorm())
-plt.yscale('log')
-plt.xlabel('$T_K$ (K)',fontsize=14)
-plt.ylabel('X(CH$_3$OH)',fontsize=14)
-plt.xlim(xmax=plottexmax)
-#plt.colorbar(pad=0,label='Luminosity (Lsun)')
-plt.colorbar(pad=0,label='N(H$_2$) (cm$^{-2}$)')#'N(CH$_3$OH) (cm$^{-2}$)')##
-figsavepath=figpath+f'texabundiag_bootmasked_bootstrap_r{r}px_rphys{int(pixtophysicalsize.value)}AU_smoothed.png'
-plt.savefig(figsavepath,bbox_inches='tight',overwrite=True)
-plt.show()
+    plt.figure()
+    plt.scatter(rr2_sgrb2s,abundinradius,s=abundsnrinradius,c=nh2tomean,norm=mpl.colors.LogNorm())
+    plt.yscale('log')
+    plt.xlabel('$r$ (AU)',fontsize=14)
+    plt.ylabel('X(CH$_3$OH)',fontsize=14)
+    plt.colorbar(pad=0,label='N(H$_2$) (cm$^{-2}$)')#'T$_K$ (K)')
+    figsavepath=figpath+f'radialavgabundiag_bootmasked_bootstrap_r{r}px_rphys{int(pixtophysicalsize.value)}AU_smoothed.png'
+    pdb.set_trace()
+    plt.savefig(figsavepath,bbox_inches='tight',overwrite=True)
+    plt.show()
 
-plt.figure()
-plt.scatter(centrtopix,abundinradius,s=abundsnrinradius,c=nh2inradius,norm=mpl.colors.LogNorm())
-plt.yscale('log')
-plt.xlabel('$r$ (AU)',fontsize=14)
-plt.ylabel('X(CH$_3$OH)',fontsize=14)
-plt.colorbar(pad=0,label='N(H$_2$) (cm$^{-2}$)')#'T$_K$ (K)')
-figsavepath=figpath+f'radialavgabundiag_bootmasked_bootstrap_r{r}px_rphys{int(pixtophysicalsize.value)}AU_smoothed.png'
-plt.savefig(figsavepath,bbox_inches='tight',overwrite=True)
-plt.show()
+    plt.figure()
+    plt.scatter(rr2_sgrb2s,nh2tomean,s=nh2snrinradius,c=texinradius,vmax=plottexmax,cmap='inferno')
+    plt.yscale('log')
+    plt.xlabel('$r$ (AU)',fontsize=14)
+    plt.ylabel('N(H$_2$) (cm$^{-2}$)',fontsize=14)
+    plt.colorbar(pad=0,label='T$_K$ (K)')#'T$_K$ (K)')
+    figsavepath=figpath+f'radialavgnh2s_bootmasked_bootstrap_r{r}px_rphys{int(pixtophysicalsize.value)}AU_smoothed.png'
+    pdb.set_trace()
+    plt.savefig(figsavepath,bbox_inches='tight',overwrite=True)
+    plt.show()
+else:
+    plt.figure()
+    plt.scatter(texinradius,abundinradius,s=abundsnrinradius,c=nh2inradius,norm=mpl.colors.LogNorm())
+    plt.yscale('log')
+    plt.xlabel('$T_K$ (K)',fontsize=14)
+    plt.ylabel('X(CH$_3$OH)',fontsize=14)
+    plt.xlim(xmax=plottexmax)
+    #plt.colorbar(pad=0,label='Luminosity (Lsun)')
+    plt.colorbar(pad=0,label='N(H$_2$) (cm$^{-2}$)')#'N(CH$_3$OH) (cm$^{-2}$)')##
+    figsavepath=figpath+f'texabundiag_bootmasked_bootstrap_r{r}px_rphys{int(pixtophysicalsize.value)}AU_smoothed.png'
+    plt.savefig(figsavepath,bbox_inches='tight',overwrite=True)
+    plt.show()
 
-plt.figure()
-plt.scatter(centrtopix,nh2inradius,s=nh2snrinradius,c=texinradius,vmax=plottexmax,cmap='inferno')
-plt.yscale('log')
-plt.xlabel('$r$ (AU)',fontsize=14)
-plt.ylabel('N(H$_2$) (cm$^{-2}$)',fontsize=14)
-plt.colorbar(pad=0,label='T$_K$ (K)')#'T$_K$ (K)')
-figsavepath=figpath+f'radialavgnh2s_bootmasked_bootstrap_r{r}px_rphys{int(pixtophysicalsize.value)}AU_smoothed.png'
-plt.savefig(figsavepath,bbox_inches='tight',overwrite=True)
-plt.show()
+    plt.figure()
+    plt.scatter(centrtopix,abundinradius,s=abundsnrinradius,c=nh2inradius,norm=mpl.colors.LogNorm())
+    plt.yscale('log')
+    plt.xlabel('$r$ (AU)',fontsize=14)
+    plt.ylabel('X(CH$_3$OH)',fontsize=14)
+    plt.colorbar(pad=0,label='N(H$_2$) (cm$^{-2}$)')#'T$_K$ (K)')
+    figsavepath=figpath+f'radialavgabundiag_bootmasked_bootstrap_r{r}px_rphys{int(pixtophysicalsize.value)}AU_smoothed.png'
+    plt.savefig(figsavepath,bbox_inches='tight',overwrite=True)
+    plt.show()
+    
+    plt.figure()
+    plt.scatter(centrtopix,nh2inradius,s=nh2snrinradius,c=texinradius,vmax=plottexmax,cmap='inferno')
+    plt.yscale('log')
+    plt.xlabel('$r$ (AU)',fontsize=14)
+    plt.ylabel('N(H$_2$) (cm$^{-2}$)',fontsize=14)
+    plt.colorbar(pad=0,label='T$_K$ (K)')#'T$_K$ (K)')
+    figsavepath=figpath+f'radialavgnh2s_bootmasked_bootstrap_r{r}px_rphys{int(pixtophysicalsize.value)}AU_smoothed.png'
+    plt.savefig(figsavepath,bbox_inches='tight',overwrite=True)
+    plt.show()
+
+
+
+
 
 fig=plt.figure()#figsize=(14,7))
 
