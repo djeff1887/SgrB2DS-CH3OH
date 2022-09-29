@@ -380,7 +380,7 @@ if source == 'SgrB2S':
     nh2errortomean.append(pixmask.get_values(nh2s_error))
     nh2snrinradius=list(pixmask.get_values(nh2s/nh2s_error))
     
-    rr2_sgrb2s=list((pixmask.get_values(rr2)*pixtophysicalsize).value)
+    rr2_sgrb2s=list((pixmask.get_values(rr)*pixtophysicalsize).value)
     '''
     xx_sgrb2s=[]
     yy_sgrb2s=[]
