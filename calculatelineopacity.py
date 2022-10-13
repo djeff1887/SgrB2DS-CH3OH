@@ -30,7 +30,7 @@ sigma_vel=5*u.km/u.s
 sigma_freq=velocitytofreq(sigma_vel,restfreq)
 freqrange=np.linspace(218.4*u.GHz,218.5*u.GHz,100)
 
-nupper_pix=N_u(restfreq,fourthreeaij,713*u.K*u.km*u.s**-1)#9.44e13*u.cm**-2
+nupper_pix=N_u(restfreq,fourthreeaij,666*u.K*u.km*u.s**-1)#9.44e13*u.cm**-2
 eupper43=45.45988*u.K
 eupperJ=(3/2)*k*eupper43
 degen=9.0

@@ -25,14 +25,16 @@ k=cnst.k_B
 h=cnst.h
 c=cnst.c
 sources=sourcedict.keys()
-alltablepaths=glob.glob('OpticalDepthTables/*.fits')
+alltablepaths=glob.glob('OpticalDepthTables/*4-3peak.fits')
 testT=[150,300,500]*u.K
 
 for tblpath in alltablepaths:
     s=tblpath.replace('OpticalDepthTables/','')
-    s=s.replace('.fits','')
+    s=s.replace('_4-3peak.fits','')
     qtable=QTable.read(tblpath)
-    opacities=[]
+    tau150=[]
+    tau300=[]
+    tau500=[]
     masternuppers=[]
     masterngs=[]
     for line in qtable:
@@ -46,25 +48,34 @@ for tblpath in alltablepaths:
         fwhm=line['Line Width']
         peaktb=(peakflux/fwhm).to('K')
         fwhm_Hz=velocitytofreq(fwhm,restfreq)
-
-        qrot=Q_rot_asym(testT[1])
+        
         nupper=N_u(restfreq,aij,peakflux)
         masternuppers.append(nupper.to('cm-2').value)
         masterngs.append(nupper.to('cm-2').value/degen)
-        ntot=lte_molecule.ntot_of_nupper(nupper,euj,peaktb,qrot,degen)
-        phi_nu=lineprofile(fwhm_Hz,restfreq,restfreq)
-
-        intertau=lte_molecule.line_tau(peaktb,ntot,qrot,degen,restfreq,euj,aij)
-        tau=(intertau*phi_nu).to('')
-        opacities.append(tau)
+        for t in testT:
+            qrot=Q_rot_asym(t)
+            ntot=lte_molecule.ntot_of_nupper(nupper,euj,peaktb,qrot,degen)
+            phi_nu=lineprofile(fwhm_Hz,restfreq,restfreq)
+            
+            intertau=lte_molecule.line_tau(peaktb,ntot,qrot,degen,restfreq,euj,aij)
+            tau=(intertau*phi_nu).to('')
+            if t == testT[0]:
+                tau150.append(tau)
+            elif t == testT[1]:
+                tau300.append(tau)
+            elif t == testT[2]:
+                tau500.append(tau)
 
     plt.figure()
-    plt.scatter(masterngs,opacities,c=qtable['EU(K)'].value)
+    plt.scatter(masterngs,tau150,c=qtable['EU(K)'].value,label='$Q_{rot}$=150 K')
+    plt.scatter(masterngs,tau300,c=qtable['EU(K)'].value,marker='*',label='$Q_{rot}$=300 K')
+    plt.scatter(masterngs,tau500,c=qtable['EU(K)'].value,marker='s',label='$Q_{rot}$=500 K')
     plt.xlabel(r'$N_{u}$ cm$^{-2}$')
     plt.ylabel(r'$\tau$')
-    plt.title(f'Qrot({testT[1]})')
+    plt.title(f'{s}, Qrot({testT[1]})')
     plt.xscale('log')
     plt.yscale('log')
+    plt.legend()
     plt.colorbar()
     plt.tight_layout()
     plt.show()
