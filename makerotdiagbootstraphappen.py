@@ -16,8 +16,11 @@ import matplotlib as mpl
 from scipy.optimize import curve_fit as cf
 from math import log10, floor
 from astropy.stats import bootstrap
+import astropy.stats
 
 mpl.interactive(True)
+plt.rcParams["figure.dpi"]=150
+plt.close('all')
 
 def Q_rot_asym(T):#Eq 58, (Magnum & Shirley 2015); sigma=1, defined in Table 1 of M&S 2015
     return np.sqrt(m*np.pi*((k*T)/(h*b_0))**3)
@@ -43,7 +46,7 @@ R_i=1
 f=1
 Tbg=2.7355*u.K
 
-source='SgrB2S'
+source='DSi'
 fielddict={'SgrB2S':1,'DSi':10,'DSii':10,'DSiii':10,'DSiv':10,'DSv':10,'DSVI':2,'DSVII':3,'DSVIII':3,'DSIX':7}
 fnum=fielddict[source]
 
@@ -96,8 +99,8 @@ for master in range(len(allmaster[:,0])):
     
 testzshape=len(mastereuks)
 
-ypix=61#int(input('y coord:'))
-xpix=64#int(input('x coord:'))
+ypix=36#37dsi#73#70#int(input('y coord:'))61
+xpix=40#41dsi#54#55#int(input('x coord:'))64
 pixel=(ypix,xpix)
 pixellist=list([pixel])
 
@@ -167,7 +170,7 @@ for px in pixellist:
         for nug,euk,weight,var in zip(np.log10(nupperstofit),eukstofit,errstofit,log10variances):
             bslist.append((nug,euk,weight,var))
         
-        bootresult=bootstrap(np.array(bslist),1000)
+        bootresult=bootstrap(np.array(bslist),10000)
         
         bootlines=[]
         bootTrots=[]
@@ -178,11 +181,14 @@ for px in pixellist:
         for line in bootlines:
             tempbootTrot=-np.log10(np.e)/(line.slope)
             tempbootNtot=qrot_partfunc*10**(line.intercept)
-            bootTrots.append(tempbootTrot)
-            bootInts.append(tempbootNtot)
+            if line.slope >= 0:#tempbootTrot >= 1000 or tempbootTrot <= 0:
+                continue
+            else:
+                bootTrots.append(tempbootTrot)
+                bootInts.append(tempbootNtot)
         
-        bootTstd=np.std(bootTrots)
-        bootNstd=np.std(bootInts)
+        bootTstd=astropy.stats.mad_std(bootTrots)
+        bootNstd=astropy.stats.mad_std(bootInts)
         
 
         #pdb.set_trace()
@@ -216,6 +222,7 @@ for px in pixellist:
         ntotmap[y,x]=obsNtot
         texerrormap[y,x]=dobsTrot.to('K').value
         
+        plt.figure(1)
         plt.clf()
         print('Begin plotting')
         tk='$T_{rot}$'
@@ -230,12 +237,29 @@ for px in pixellist:
         #plt.errorbar(eukstofit,np.log10(nupperstofit),yerr=log10nuerr,fmt='o')
         #plt.plot(linemod_euks,fit_lin(linemod_euks),label=(f'obsTex: {round(obsTrot, 4)} $\pm$ {round(dobsTrot.value, 2)*u.K}\nobsNtot: {round(obsNtot.value,3)/u.cm**2}'))
         for linmod in bootlines:
-            plt.plot(linemod_euks,linmod(linemod_euks),color='black',ls='--',alpha=0.01,zorder=0)
+            plt.plot(linemod_euks,linmod(linemod_euks),color='black',alpha=0.005,zorder=0)
         #plt.scatter(excludedeuks,np.log10(excludednuppers),marker='v',color='red')
         #plt.title(f'field{fnum} {source} pixel ({y},{x}) CH$_3$OH Rotational Diagram')
         plt.xlabel(r'E$_u$ (K)')
         plt.ylabel(r'log$_{10}$(N$_u$/g$_u$)')
         plt.legend()
+        plt.savefig(rotdiagpath+f'bootstrap_{y}_{x}.png')
+        plt.show()
+        
+        plt.figure(2)
+        plt.clf()
+        plt.hist(bootTrots,bins=np.linspace(0,np.max(bootTrots),100))
+        plt.axvline(obsTrot,color='red',label=r'Observed $T_{rot}$')
+        plt.axvline(np.median(bootTrots),color='cyan',label=r'Median $T_{rot}$')
+        plt.axvline(np.mean(bootTrots),color='yellow',label=r'Mean $T_{rot}$')
+        plt.axvline(np.percentile(bootTrots,16),color='orange',ls='--',label=r'1$\sigma$ interval')
+        plt.axvline(np.percentile(bootTrots,84),color='orange',ls='--')
+        plt.plot([np.mean(bootTrots)-bootTstd,np.mean(bootTrots)+bootTstd],[0,0])
+        plt.xlabel(r'$T_{rot}$ (K)')
+        plt.ylabel('Number of fits')
+        plt.legend()
+        plt.xlim(xmin=0,xmax=750)
+        plt.savefig(rotdiagpath+f'trothist_bootstrap_{y}_{x}.png')
         plt.show()
         print('Done.')
     continue

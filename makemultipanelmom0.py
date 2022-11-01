@@ -19,10 +19,12 @@ from astropy.wcs import WCS
 import matplotlib.gridspec as gridspec
 import os
 from utilities import *
+from mpl_toolkits.axes_grid1 import make_axes_locatable
+from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 
 mpl.interactive(True)
 
-source='DSii'
+source='DSiv'
 print(f'Source: {source}\n')
 fields={'SgrB2S':1,'DSi':10,'DSii':10,'DSiii':10,'DSiv':10}
 romannums={'DSi':'DSI','DSii':'DSii'}
@@ -101,7 +103,7 @@ gs1 = gridspec.GridSpec(numrows, numcols)
 gs1.update(wspace=0.025, hspace=0.05)
 
 brightestline={'SgrB2S':600,'DSi':450,'DSii':0,'DSiii':0,'DSiv':0,'DSv':0,'DSVI':0,'DSVII':0,'DSVIII':0}
-sourcewspace={'SgrB2S':-0.75,'DSi':-0.75,'DSii':0}
+sourcewspace={'SgrB2S':-0.75,'DSi':-0.75,'DSii':0,'DSiii':0,'DSiv':0}
 for row in np.arange(numrows):
     for col in np.arange(numcols):
         transition=sortedmom0[(col+(row*(numcols-1)))]
@@ -121,8 +123,15 @@ for row in np.arange(numrows):
             ax[row,col].tick_params(direction='in')
         #if row == (numrows-1) and col == (numcols-1):
 
-cax=plt.axes([0.78, 0.11, 0.05, 0.77])
-plt.colorbar(mappable=im,shrink=5,cax=cax,label=r'$I_{\nu}$ (K km s$^{-1}$)')              
+heights={'SgrB2S':'625%','DSi':'425%','DSiv':'250%'}
+if source in heights:
+    strheight=heights[source]
+else:
+    strheight='225%'
+lowercorner=ax[(numrows-1),(numcols-1)]
+axins=inset_axes(lowercorner,width='5%',height=strheight,loc='lower left', bbox_to_anchor=(1.05,-0.1,1,1),bbox_transform=lowercorner.transAxes,borderpad=0)#div=make_axes_locatable(ax[(numrows-1),(numcols-1)])
+#cax=div.append_axes("right",size='10%',pad=0.1)#plt.axes([0.78, 0.11, 0.05, 0.77])
+plt.colorbar(mappable=im,cax=axins,label=r'$I_{\nu}$ (K km s$^{-1}$)')#shrink=5             
 fig.subplots_adjust(wspace=sourcewspace[source],hspace=0)
 #plt.savefig(savefigpath,dpi=150)
 #gs1.tight_layout(fig,pad=1)

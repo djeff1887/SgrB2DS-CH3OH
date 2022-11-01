@@ -40,7 +40,7 @@ def make_scalebar(ax, left_side, length, color='black', linestyle='-', label='',
     ax.axis(axlims)
     return lines,txt
 set=4
-colordict={0:('trot','inferno','texmap_3sigma_allspw_withnans_weighted.fits'),1:('mom0','bone',"CH3OH~5_1-4_2E1vt0_masked.fits"),2:('nupper','Blues_r'),3:('detections','CMRmap',"ch3ohdetections5_3sigma_allspw_withnans_weighted.fits"),4:('abundance','viridis','ch3ohabundance_3sigma_ntotintercept_bolocamfeather_20ujytest.fits')}
+colordict={0:('trot','inferno','texmap_3sigma_allspw_withnans_weighted.fits'),1:('mom0','bone',"CH3OH~5_1-4_2E1vt0_masked.fits"),2:('nupper','Blues_r'),3:('detections','CMRmap',"ch3ohdetections5_3sigma_allspw_withnans_weighted.fits"),4:('abundance','viridis','ch3ohabundance_3sigma_ntotintercept_bolocamfeather_smoothedtobolocam.fits')}
 mode=colordict[set][0]
 color=colordict[set][1]
 pathsuffix=colordict[set][2]
@@ -49,7 +49,7 @@ print(f'Mode: {mode}')
 cm= copy.copy(mpl.cm.get_cmap(color))#mom0 bone, temperature inferno, nupper Blues_r, detections CMRmap, abundance cividis
 cm.set_bad('black')
 dGC=8.34*u.kpc#per Meng et al. 2019 https://www.aanda.org/articles/aa/pdf/2019/10/aa35920-19.pdf
-source='DSIX'
+source='DSi'
 print(f'Source: {source}\n')
 fields={'SgrB2S':1,'DSi':10,'DSii':10,'DSiii':10,'DSiv':10,'DSv':10,'DSVI':2,'DSVII':3,'DSVIII':3,'DSIX':7}
 fnum=fields[source]
@@ -103,7 +103,7 @@ for y in range(cntrshape[0]):
             pass
 assert upperntot not in cntrhdu.data, 'Unphysical values in Ntot image'
 '''
-cntrrms=np.nanstd(cntrhdu.data)
+cntrrms=0.0002#mjy, np.nanstd(cntrhdu.data)
 cntrlist=cntrrms*np.array([3,6,8,16,32])
 
 cntrdata=np.squeeze(cntrhdu.data)
@@ -122,17 +122,22 @@ plt.rcParams['figure.dpi'] = 150
 ra=ax.coords[0]
 dec=ax.coords[1]
 if mode == 'trot':
-    vmaxdict={'SgrB2S':520,'DSi':320,'DSii':225,'DSiii':300,'DSiv':313,'DSv':281,'DSVI':378,'DSVII':250,'DSVIII':225,'DSIX':''}
+    vmaxdict={'SgrB2S':520,'DSi':320,'DSii':225,'DSiii':300,'DSiv':313,'DSv':281,'DSVI':378,'DSVII':250,'DSVIII':225,'DSIX':223}
     img=ax.imshow(np.squeeze(hdu.data),vmax=vmaxdict[source],vmin=25,interpolation=None, cmap=cm)#, norm=mpl.colors.LogNorm())#vmaxcntm=0.005, vmaxdsi=300 (no min value),vmaxsgrb2s=605 tmin=10 (try no min value), ntotmax=6.26e17, dsintotmax=2.21e17
 elif mode == 'abundance':
-    img=ax.imshow(np.squeeze(hdu.data),interpolation=None, cmap=cm, norm=mpl.colors.LogNorm())#(vmax=5e-5,vmin=1e-7))
+    abundadjust={'DSiii':1e-9,'DSiv':1e-9,'DSVI':1e-8,'DSVII':1e-8,'DSVIII':1e-8,'DSIX':1e-8}
+    if source in abundadjust.keys():
+        minfix=abundadjust[source]
+        img=ax.imshow(np.squeeze(hdu.data),interpolation=None, vmin=minfix,cmap=cm, norm=mpl.colors.LogNorm())#(vmax=5e-5,vmin=1e-7))
+    else:
+         img=ax.imshow(np.squeeze(hdu.data),interpolation=None, cmap=cm, norm=mpl.colors.LogNorm())#(vmax=5e-5,vmin=1e-7))
 else:
     img=ax.imshow(np.squeeze(hdu.data),interpolation=None, cmap=cm)
 lims=ax.axis()
 if mode == 'detections':
-    ax.contour(cntrdata, levels=cntrlist, colors='black',transform=ax.get_transform(cntrwcs),linewidths=0.5)
+    ax.contour(cntrdata, levels=cntrlist, colors='black',transform=ax.get_transform(cntrwcs),linewidths=0.5,zorder=1)
 else:
-    ax.contour(cntrdata, levels=cntrlist, colors='white',transform=ax.get_transform(cntrwcs),linewidths=0.5)#, alpha=0.5)#ax.contour(data=hdu.data)#, colors='black')#binary/Greys are other good cmaps
+    ax.contour(cntrdata, levels=cntrlist, colors='white',transform=ax.get_transform(cntrwcs),linewidths=0.5,zorder=1)#, alpha=0.5)#ax.contour(data=hdu.data)#, colors='black')#binary/Greys are other good cmaps
 #ax.contour(cntrdata,levels=(-1*cntrlist),colors='white',linestyles='dashed')#YlGn is alt for both
 
 scaledict={'SgrB2S':5000*u.AU,'DSi':5000*u.AU,'DSii':2000*u.AU,'DSiii':2000*u.AU,'DSiv':2000*u.AU,'DSv':2000*u.AU,'DSVI':5000*u.AU,'DSVII':5000*u.AU,'DSVIII':5000*u.AU,'DSIX':5000*u.AU}

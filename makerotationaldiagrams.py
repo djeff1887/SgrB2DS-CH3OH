@@ -183,7 +183,7 @@ for px in pixellist:
             b_unc = covmat[1,1]**0.5
             #m_unccf=pcov[0,0]**0.5
             #b_unccf=pcov[1,1]**0.5
-            
+            pdb.set_trace()
             dobsTrot=np.abs(m_unc/fit_lin.slope)*obsTrot*u.K#(eukstofit[0]*u.K)/(np.log(nupperstofit[0]/masterdegens[0])-np.log(obsNtot/qrot_partfunc))**2#*nuperrors[0]
             dobsNtot=np.sqrt((qrot_partfunc*10**(fit_lin.intercept)*np.log(10)*b_unc)**2)*u.cm**-2#np.sqrt((qrot_partfunc*10**(np.log10(nugsmap[0,y,x])+fit_lin.slope*eukstofit[0])*np.log(10)*eukstofit[0]*m_unc)**2+(qrot_partfunc*10**(np.log10(nugsmap[0,y,x])+fit_lin.slope*eukstofit[0])*(1/(nugsmap[0,y,x]*np.log(10)))*nuperrors[0])**2)*u.cm**-2
             print(f'dobsNtot: {dobsNtot.to("cm-2")}')
@@ -283,10 +283,10 @@ for px in pixellist:
             cm2='cm$^{-2}$'
             #strdobsntot=str(dobsNtot.value)[0]
             val_dntot=round_to_1(dobsNtot.value/(1*10**int(np.log10(obsNtot.value))))
-            val_ntot=round((obsNtot.value/(1*10**int(np.log10(obsNtot.value)))),(len(str(round(snr.value)))-1))
+            val_ntot=round(np.log10(obsNtot.value),(len(str(round(snr.value)))-1))#round((obsNtot.value/(1*10**int(np.log10(obsNtot.value)))),(len(str(round(snr.value)))-1))
 
             plt.errorbar(eukstofit,np.log10(nupperstofit),yerr=log10nuerr,fmt='o')
-            plt.plot(linemod_euks,fit_lin(linemod_euks),label=(f'{tk}: {int(round(obsTrot, 0))} $\pm$ {int(round(dobsTrot.value,0))} K\n{ntot}: {val_ntot} $\pm$ {val_dntot} '))
+            plt.plot(linemod_euks,fit_lin(linemod_euks),label=(f'{tk}: {round(obsTrot, 2)} $\pm$ {round(dobsTrot.value,2)} K\n{ntot}: {val_ntot} $\pm$ {val_dntot} '))
             #plt.scatter(excludedeuks,np.log10(excludednuppers),marker='v',color='red')
             #plt.title(f'field{fnum} {source} pixel ({y},{x}) CH$_3$OH Rotational Diagram')
             plt.xlabel(r'$E_u$ (K)',fontsize=14)
