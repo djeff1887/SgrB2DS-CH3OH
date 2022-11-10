@@ -27,7 +27,7 @@ Splatalogue.QUERY_URL= 'https://splatalogue.online/c_export.php'
 print('Cube-->Core-->Tex start\n')
 print('Begin Jy/beam-to-K and region subcube conversion\n')
 
-source='DSX'
+source='DSVI'
 print(f'Source: {source}\n')
 fields={'SgrB2S':1,'DSi':10,'DSii':10,'DSiii':10,'DSiv':10,'DSv':10,'DSVI':2,'DSVII':3,'DSVIII':3,'DSIX':7,'DSX':7,'DSXI':8}
 fnum=fields[source]
@@ -48,11 +48,11 @@ region=sourceregs[source]#'fk5; box(266.8316387, -28.3971867, 0.0010556, 0.00105
 #box(266.8335363, -28.3963159, 0.0006389, 0.0006389)' #DSii
 #/iii
 #box(266.8315833, -28.3971867, 0.0006528, 0.0006528)' #DSi-small
-outpath_base=f'/blue/adamginsburg/d.jeff/SgrB2DSminicubes/{source}/'
+outpath_base=f'/orange/adamginsburg/sgrb2/2017.1.00114.S/desmond/SgrB2DSminicubes/{source}/'
 outstatpath_end={1:'OctReimage_K/',10:'field10originals_K/',2:'field2originals_K/',3:'field3originals_K/',7:'field7originals_K/',8:'field8originals_K/'}
 outpath=outpath_base+outstatpath_end[fnum]#f'/blue/adamginsburg/d.jeff/SgrB2DSminicubes/{source}/field10originals/'
 #outpath=f'/blue/adamginsburg/d.jeff/SgrB2DSminicubes/{source}/OctReimage_K/'#imaging_results/DSii_iiibox1/'
-statfixpath_base='/blue/adamginsburg/d.jeff/SgrB2DSstatcontfix/'
+statfixpath_base='/orange/adamginsburg/sgrb2/2017.1.00114.S/desmond/SgrB2DSstatcontfix/'
 statfixpath=statfixpath_base+outstatpath_end[fnum]#f'/blue/adamginsburg/d.jeff/SgrB2DSstatcontfix/OctReimage_K/'
 
 regionparams=[float(val) for val in region[9:(len(region)-1)].split(', ')]
@@ -501,7 +501,6 @@ def linelooplte(line_list,line_width,iterations,quantum_numbers):
                 sigma1hdul.writeto(moment0filename,overwrite=True)
                 print(f'Saved to {moment0filename}')
                 kkmsstdarray=maskslabmom0
-                pass
             else:
                 print('Commence moment0 procedure\n')
                 #cubemask=BooleanArrayMask(mask=cubemaskarray,wcs=slab.wcs)
@@ -521,7 +520,10 @@ def linelooplte(line_list,line_width,iterations,quantum_numbers):
                 print('Unmasked moment0 computing...\n')
                 slabmom0=oldstyleslab.moment0()
                 print('Masked moment0 computing...\n')
-                maskslabmom0=maskedslab.moment0()
+
+                contmom0=reprojcont_K*slabfwhm#continuum sanity check
+
+                maskslabmom0=maskedslab.moment0()+contmom0
                 #momend=time.time()-momstart
                 #print(f'{quantum_numbers[i]} elapsed time: {time.strftime("%H:%M:%S", time.gmtime(momend))}')
                 print('\nComputing masking residuals')
@@ -629,7 +631,9 @@ stdhome=stdhomedict[fnum]
 
 #cubemaskarray=maskeddatacube.get_mask_array()
 
-sourcelocs={'SgrB2S':'new_testingstdfixandontheflyrepstuff_K_OctReimage_restfreqfix_newvelmask_newpeakamp/','DSi':'/Kfield10originals_trial7_field10errors_newexclusion_matchslabwidthtorep/','DSii':'/Kfield10originals_noexclusions/','DSiii':'/Kfield10originals_noexclusions/','DSiv':'/Kfield10originals_noexclusions/','DSv':f'/Kfield10originals_noexclusions_include4-3_{int(testT.value)}K_trial2/','DSVI':'/Kfield2originals_trial3_8_6-8_7excluded/','DSVII':f'/Kfield3originals_{int(testT.value)}K_trial1_noexclusions/','DSVIII':f'/Kfield3originals_{int(testT.value)}K_trial1_noexclusions/','DSIX':f'/Kfield7originals_{int(testT.value)}K_trial1_noexclusions/','DSX':f'/Kfield7originals_{int(testT.value)}K_trial1_noexclusions/'}
+sourcelocs={'SgrB2S':'/nov2022continuumsanitycheck/','DSi':'/nov2022continuumsanitycheck/','DSii':'/nov2022continuumsanitycheck/','DSiii':'/nov2022continuumsanitycheck/','DSiv':'/Kfield10originals_noexclusions/','DSv':f'/Kfield10originals_noexclusions_include4-3_{int(testT.value)}K_trial2/','DSVI':'/nov2022continuumsanitycheck/','DSVII':f'/Kfield3originals_{int(testT.value)}K_trial1_noexclusions/','DSVIII':f'/Kfield3originals_{int(testT.value)}K_trial1_noexclusions/','DSIX':f'/Kfield7originals_{int(testT.value)}K_trial1_noexclusions/','DSX':f'/Kfield7originals_{int(testT.value)}K_trial1_noexclusions/'}#'/Kfield10originals_trial7_field10errors_newexclusion_matchslabwidthtorep/'
+
+origsourcelocs={'SgrB2S':'/new_testingstdfixandontheflyrepstuff_K_OctReimage_restfreqfix_newvelmask_newpeakamp/','DSi':'/Kfield10originals_trial7_field10errors_newexclusion_matchslabwidthtorep/','DSii':'/Kfield10originals_noexclusions/','DSiii':'/Kfield10originals_noexclusions/','DSiv':'/Kfield10originals_noexclusions/','DSv':f'/Kfield10originals_noexclusions_include4-3_{int(testT.value)}K_trial2/','DSVI':'/Kfield2originals_trial3_8_6-8_7excluded/','DSVII':f'/Kfield3originals_{int(testT.value)}K_trial1_noexclusions/','DSVIII':f'/Kfield3originals_{int(testT.value)}K_trial1_noexclusions/','DSIX':f'/Kfield7originals_{int(testT.value)}K_trial1_noexclusions/','DSX':f'/Kfield7originals_{int(testT.value)}K_trial1_noexclusions/'}#
 
 representativelines={'SgrB2S':'4_2-3_1vt=0','DSi':'8_1-7_0vt=0','DSii':'8_1-7_0vt=0','DSiii':'10_2--9_3-vt=0','DSiv':'20_1-20_0vt=0','DSv':'8_1-7_0vt=0','DSVI':'8_1-7_0vt=0','DSVII':'8_1-7_0vt=0','DSVIII':'8_1-7_0vt=0','DSIX':'8_1-7_0vt=0','DSX':'8_1-7_0vt=0'}
 representativelws={'SgrB2S':(10*u.km/u.s),'DSi':(3*u.km/u.s),'DSii':(3*u.km/u.s),'DSiii':(3*u.km/u.s),'DSiv':(4*u.km/u.s),'DSv':(4*u.km/u.s),'DSVI':(3*u.km/u.s),'DSVII':(2.5*u.km/u.s),'DSVIII':(2.5*u.km/u.s),'DSIX':(5*u.km/u.s),'DSX':(4*u.km/u.s)}#{'SgrB2S':8*u.MHz,'DSi':3.6*u.MHz}#11MHz for ~10 km/s
@@ -646,6 +650,10 @@ figpath=sourcepath+'figures/'
 overleafpath="/blue/adamginsburg/d.jeff/repos/CH3OHTemps/figures/"
 
 picklepath=sourcepath+'ch3ohlinesdict.obj'
+
+origsourcepath=f'/blue/adamginsburg/d.jeff/SgrB2DSreorg/field{fnum}/CH3OH/{source}/'+origsourcelocs[source]
+contpath=origsourcepath+'reprojectedcontinuum.fits'
+
 
 if os.path.isdir(slabpath):
     print(f'Source path directory tree {sourcepath} already exists.\n')
@@ -740,6 +748,12 @@ for imgnum in range(len(datacubes)):
     stdcellsize=(np.abs(stdimage[0].header['CDELT1']*u.deg)).to('arcsec')
     stdcutoutsize=round(((float(regiondims)*u.deg)/stdcellsize).to('').value)#43:52 selects the region size set by the region variables in the cube>core section of the code
     stddata=stdimage[0].data*u.K
+
+    reprojcontfits=fits.open(contpath)
+    reprojcont=reprojcontfits[0].data*u.Jy
+    reprojcontrestfreq=225*u.GHz#manual addition 11/9/2022, wiggle room w/i GHz
+    cntmbeam=radio_beam.Beam.from_fits_header(reprojcontfits[0].header)
+    reprojcont_K=reprojcont.to('K',cntmbeam.jtok_equiv(reprojcontrestfreq))
     
     print('Acquiring cube rest frequency and computing target pixel coordinates')
     spwrestfreq=header['RESTFRQ']*u.Hz
