@@ -59,12 +59,12 @@ def powerlaw_profile(x,a,n):
 def round_to_1(x):
     return round(x, -int(math.floor(math.log10(abs(x)))))
     
-source='SgrB2S'
+source='DSiv'
 fielddict={'SgrB2S':1,'DSi':10,'DSii':10,'DSiii':10,'DSiv':10,'DSv':10,'DSVI':2,'DSVII':3,'DSVIII':3,'DSIX':7}
 fnum=fielddict[source]
 print(f'Source: {source}')
 base=f'/blue/adamginsburg/d.jeff/SgrB2DSreorg/field{fnum}/CH3OH/{source}/'
-homedict={'SgrB2S':"new_testingstdfixandontheflyrepstuff_K_OctReimage_restfreqfix_newvelmask_newpeakamp/",'DSi':"Kfield10originals_trial7_field10errors_newexclusion_matchslabwidthtorep/",'DSii':"Kfield10originals_noexclusions/",'DSiii':"Kfield10originals_noexclusions/",'DSiv':"Kfield10originals_noexclusions/",'DSv':"Kfield10originals_noexclusions_include4-3_150K_trial2/",'DSVI':"Kfield2originals_trial3_8_6-8_7excluded/",'DSVII':'Kfield3originals_200K_trial1_noexclusions/','DSVIII':'Kfield3originals_175K_trial1_noexclusions/','DSIX':'Kfield7originals_150K_trial1_noexclusions/'}#base+'field10originals_z0_000186431_5-6mhzwidth_stdfixes/'
+homedict={'SgrB2S':'/nov2022continuumsanitycheck/','DSi':'/nov2022continuumsanitycheck/','DSii':'/nov2022continuumsanitycheck/','DSiii':'/nov2022continuumsanitycheck/','DSiv':'/nov2022contniuumsanitycheck/','DSv':f'/nov2022contniuumsanitycheck/','DSVI':'/nov2022continuumsanitycheck/','DSVII':f'/nov2022contniuumsanitycheck/','DSVIII':f'/nov2022contniuumsanitycheck/','DSIX':f'/nov2022contniuumsanitycheck/'}#{'SgrB2S':"new_testingstdfixandontheflyrepstuff_K_OctReimage_restfreqfix_newvelmask_newpeakamp/",'DSi':"Kfield10originals_trial7_field10errors_newexclusion_matchslabwidthtorep/",'DSii':"Kfield10originals_noexclusions/",'DSiii':"Kfield10originals_noexclusions/",'DSiv':"Kfield10originals_noexclusions/",'DSv':"Kfield10originals_noexclusions_include4-3_150K_trial2/",'DSVI':"Kfield2originals_trial3_8_6-8_7excluded/",'DSVII':'Kfield3originals_200K_trial1_noexclusions/','DSVIII':'Kfield3originals_175K_trial1_noexclusions/','DSIX':'Kfield7originals_150K_trial1_noexclusions/'}#base+'field10originals_z0_000186431_5-6mhzwidth_stdfixes/'
 home=base+homedict[source]
 fighome=f'/blue/adamginsburg/d.jeff/repos/CH3OHTemps/figures/{source}/'
 figpath=fighome+homedict[source]
@@ -158,7 +158,7 @@ print(f'Center p: {texmapdata[texpeakpix[0],texpeakpix[1]]}')
 
 #r=35 #for 15,000 AU
 #pixradius=math.ceil((0.08*u.pc/pixtophysicalsize).to(''))
-rdict={'SgrB2S':12000*u.AU,'DSi':6400*u.AU,'DSii':9000*u.AU,'DSiii':6000*u.AU,'DSiv':8500*u.AU,'DSv':4000*u.AU,'DSVII':6600*u.AU,'DSVIII':5700*u.AU,'DSIX':5000*u.AU}
+rdict={'SgrB2S':12000*u.AU,'DSi':7500*u.AU,'DSii':9000*u.AU,'DSiii':6000*u.AU,'DSiv':8500*u.AU,'DSv':4000*u.AU,'DSVII':6600*u.AU,'DSVIII':5700*u.AU,'DSIX':5000*u.AU}#6400
 rdictkeys=rdict.keys()
 if source not in rdictkeys:
     r_phys=10000*u.AU
@@ -237,6 +237,7 @@ totalmass=np.nansum(teststack[:,1])
 sanitycheckmass=0
 edge=None
 localminmass=False
+trad=180
 
 for bin in listordered_centrtopix:
     tempmass=[]
@@ -334,24 +335,11 @@ for bin in listordered_centrtopix:
         err_radialdens.append(err_binnumberdensity.value)
     #pdb.set_trace()
 
-if localminmass == True:
-    if source == 'DSii':
-        truemin=np.nanmin(avglist)
-    if source == 'DSVI':
-        rad50percent=6199.150667632434
-        rad50index=listordered_centrtopix.index(rad50percent)
-        truemin=np.nanmin(avglist[:rad50index])
-    massderivative=list(np.diff(avglist))
-    mass2ndderiv=list(np.diff(massderivative))
+if edge == None:#for hot sources where T never falls below 150 K
+    mintemp=np.nanmin(avgtexlist)
+    pix_mintemp=np.where(avgtexlist==mintemp)[0]
+    edge=listordered_centrtopix[pix_mintemp[0]]
 
-    for diff,val in zip(massderivative,mass2ndderiv):
-        massatindex=avglist[mass2ndderiv.index(val)]
-        if massatindex==truemin:#diff >= 0 and val < 0 and mass2ndderiv.index(val) > 1:
-            index=mass2ndderiv.index(val)
-            edge=listordered_centrtopix[index]
-            break
-else:
-    pass
 #pdb.set_trace()
 fillwidth=np.copy(avgtexerrlist)#[x/2 for x in avgtexerrlist]
 upperfill=radialmaxtex#list( map(add,avgtexlist,fillwidth))#radialmaxtex
@@ -572,12 +560,12 @@ else:
     plt.ylabel('$n$ (cm$^{-3}$)',fontsize=14)
     plt.legend()
 
-    densplotpath=figpath+'bootstrap_densityprofile_may3_trotntotbootmasked.png'
+    densplotpath=figpath+'contsanitycheck_densityprofile_trotntotbootmasked.png'
     print(f'\nSaving to {densplotpath}')
     plt.savefig(densplotpath,overwrite=True)
     plt.show()
 
-densityslopepath='bootstrap_densityslopes_bootmasked.fits'
+densityslopepath='contsanitycheck_densityslopes_bootmasked.fits'
 
 if os.path.exists(densityslopepath):
     dtable=QTable.read(densityslopepath)
@@ -618,7 +606,7 @@ if source == 'SgrB2S':
     plt.xlim(xmax=plottexmax)
     #plt.colorbar(pad=0,label='Luminosity (Lsun)')
     plt.colorbar(pad=0,label='N(H$_2$) (cm$^{-2}$)')#'N(CH$_3$OH) (cm$^{-2}$)')##
-    figsavepath=figpath+f'texabundiag_bootmasked_bootstrap_r{r}px_rphys{int(pixtophysicalsize.value)}AU_smoothed.png'
+    figsavepath=figpath+f'texabundiag_contsanitycheck_r{r}px_rphys{int(pixtophysicalsize.value)}AU_smoothed.png'
     pdb.set_trace()
     plt.savefig(figsavepath,bbox_inches='tight',overwrite=True)
     plt.show()
@@ -629,7 +617,7 @@ if source == 'SgrB2S':
     plt.xlabel('$r$ (AU)',fontsize=14)
     plt.ylabel('X(CH$_3$OH)',fontsize=14)
     plt.colorbar(pad=0,label='N(H$_2$) (cm$^{-2}$)')#'T$_K$ (K)')
-    figsavepath=figpath+f'radialavgabundiag_bootmasked_bootstrap_r{r}px_rphys{int(pixtophysicalsize.value)}AU_smoothed.png'
+    figsavepath=figpath+f'radialavgabundiag_contsanitycheck_r{r}px_rphys{int(pixtophysicalsize.value)}AU_smoothed.png'
     pdb.set_trace()
     plt.savefig(figsavepath,bbox_inches='tight',overwrite=True)
     plt.show()
@@ -640,7 +628,7 @@ if source == 'SgrB2S':
     plt.xlabel('$r$ (AU)',fontsize=14)
     plt.ylabel('N(H$_2$) (cm$^{-2}$)',fontsize=14)
     plt.colorbar(pad=0,label='T$_K$ (K)')#'T$_K$ (K)')
-    figsavepath=figpath+f'radialavgnh2s_bootmasked_bootstrap_r{r}px_rphys{int(pixtophysicalsize.value)}AU_smoothed.png'
+    figsavepath=figpath+f'radialavgnh2s_contsanitycheck_r{r}px_rphys{int(pixtophysicalsize.value)}AU_smoothed.png'
     pdb.set_trace()
     plt.savefig(figsavepath,bbox_inches='tight',overwrite=True)
     plt.show()
@@ -653,7 +641,7 @@ else:
     plt.xlim(xmax=plottexmax)
     #plt.colorbar(pad=0,label='Luminosity (Lsun)')
     plt.colorbar(pad=0,label='N(H$_2$) (cm$^{-2}$)')#'N(CH$_3$OH) (cm$^{-2}$)')##
-    figsavepath=figpath+f'texabundiag_bootmasked_bootstrap_r{r}px_rphys{int(pixtophysicalsize.value)}AU_smoothed.png'
+    figsavepath=figpath+f'texabundiag_contsanitycheck_r{r}px_rphys{int(pixtophysicalsize.value)}AU_smoothed.png'
     plt.savefig(figsavepath,bbox_inches='tight',overwrite=True)
     plt.show()
 
@@ -663,7 +651,7 @@ else:
     plt.xlabel('$r$ (AU)',fontsize=14)
     plt.ylabel('X(CH$_3$OH)',fontsize=14)
     plt.colorbar(pad=0,label='N(H$_2$) (cm$^{-2}$)')#'T$_K$ (K)')
-    figsavepath=figpath+f'radialavgabundiag_bootmasked_bootstrap_r{r}px_rphys{int(pixtophysicalsize.value)}AU_smoothed.png'
+    figsavepath=figpath+f'radialavgabundiag_contsanitycheck_r{r}px_rphys{int(pixtophysicalsize.value)}AU_smoothed.png'
     plt.savefig(figsavepath,bbox_inches='tight',overwrite=True)
     plt.show()
     
@@ -673,7 +661,7 @@ else:
     plt.xlabel('$r$ (AU)',fontsize=14)
     plt.ylabel('N(H$_2$) (cm$^{-2}$)',fontsize=14)
     plt.colorbar(pad=0,label='T$_K$ (K)')#'T$_K$ (K)')
-    figsavepath=figpath+f'radialavgnh2s_bootmasked_bootstrap_r{r}px_rphys{int(pixtophysicalsize.value)}AU_smoothed.png'
+    figsavepath=figpath+f'radialavgnh2s_contsanitycheck_r{r}px_rphys{int(pixtophysicalsize.value)}AU_smoothed.png'
     plt.savefig(figsavepath,bbox_inches='tight',overwrite=True)
     plt.show()
 
@@ -712,7 +700,7 @@ if source == 'DSiv':
     ax0.tick_params(direction='in')
     ax0.tick_params(axis='x',labelcolor='w')
     ax1.tick_params(axis='x',top=True,direction='in')
-    figsavepath=figpath+f'radialavgtex_bootmasked_bootstrap_residuals_r{r}px_rphys{int(pixtophysicalsize.value)}AU_smoothed.png'
+    figsavepath=figpath+f'radialavgtex_contsanitycheck_r{r}px_rphys{int(pixtophysicalsize.value)}AU_smoothed.png'
 
     plt.tight_layout()
 
@@ -736,7 +724,7 @@ elif source == 'DSVII':
     ax0.tick_params(direction='in')
     ax0.tick_params(axis='x',labelcolor='w')
     ax1.tick_params(axis='x',top=True,direction='in')
-    figsavepath=figpath+f'radialavgtex_bootmasked_bootstrap_residuals_r{r}px_rphys{int(pixtophysicalsize.value)}AU_smoothed.png'
+    figsavepath=figpath+f'radialavgtex_contsanitycheck_r{r}px_rphys{int(pixtophysicalsize.value)}AU_smoothed.png'
 
     plt.tight_layout()
 
@@ -762,7 +750,7 @@ else:
     ax0.tick_params(direction='in')
     ax0.tick_params(axis='x',labelcolor='w')
     ax1.tick_params(axis='x',top=True,direction='in')
-    figsavepath=figpath+f'radialavgtex_bootmasked_bootstrap_residuals_r{r}px_rphys{int(pixtophysicalsize.value)}AU_smoothed.png'
+    figsavepath=figpath+f'radialavgtex_contsanitycheck_r{r}px_rphys{int(pixtophysicalsize.value)}AU_smoothed.png'
 
     plt.tight_layout()
 
@@ -784,7 +772,7 @@ plt.xscale('log')
 plt.colorbar(pad=0,label='T$_K$ (K)')
 plt.xlabel('N(H$_2$) (cm$^{-2}$)')
 plt.ylabel('N(CH$_3$OH) (cm$^{-2}$)')
-figsavepath=figpath+'nch3ohvsnh2_bootmasked_bootstrap_smoothed.png'
+figsavepath=figpath+'nch3ohvsnh2_contsanitycheck_smoothed.png'
 plt.savefig(figsavepath,overwrite=True)
 plt.show()
 
@@ -796,7 +784,7 @@ print(f'index initial guess: {lowerbound_initialguess[source]}')
 print(f'index error: {pcov[1,1]**0.5}')
 '''
 onlypowerlaw=False
-powerlawpath='/blue/adamginsburg/d.jeff/imaging_results/SgrB2DS-CH3OH/bootstrap_powerlawtable_bootmasked.fits'
+powerlawpath='/blue/adamginsburg/d.jeff/imaging_results/SgrB2DS-CH3OH/contsanitycheck_powerlawtable_bootmasked.fits'
 pwrlwprams=[(round(fit_pl.alpha_1.value,2)*u.dimensionless_unscaled),(round(perr[2],2)*u.dimensionless_unscaled),(round(fit_pl.alpha_2.value,2)*u.dimensionless_unscaled),(round(perr[3],2)*u.dimensionless_unscaled),(round(fit_pl.x_break.value)*u.AU),(round(perr[1])*u.AU)]
 powerlawparams=QTable(rows=[pwrlwprams],names=['alpha_1','alpha_1 error','alpha_2','alpha_2 error','x_break','x_break error'])
 
@@ -831,7 +819,7 @@ if onlypowerlaw:
 else:
     pass
 
-sumtablepath='bootstrap_hotcoresummarytable_postreprojsmooth_t150radius_bootmasked.fits'
+sumtablepath=f'contsanitycheck_hotcoresummarytable_postreprojsmooth_t{trad}radius_bootmasked.fits'
 if os.path.exists(sumtablepath):
     print('\nUpdating summary table with new values')
     sumtable=QTable.read(sumtablepath)
