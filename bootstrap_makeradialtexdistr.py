@@ -59,7 +59,7 @@ def powerlaw_profile(x,a,n):
 def round_to_1(x):
     return round(x, -int(math.floor(math.log10(abs(x)))))
     
-source='DSiv'
+source='DSIX'
 fielddict={'SgrB2S':1,'DSi':10,'DSii':10,'DSiii':10,'DSiv':10,'DSv':10,'DSVI':2,'DSVII':3,'DSVIII':3,'DSIX':7}
 fnum=fielddict[source]
 print(f'Source: {source}')
@@ -158,7 +158,7 @@ print(f'Center p: {texmapdata[texpeakpix[0],texpeakpix[1]]}')
 
 #r=35 #for 15,000 AU
 #pixradius=math.ceil((0.08*u.pc/pixtophysicalsize).to(''))
-rdict={'SgrB2S':12000*u.AU,'DSi':7500*u.AU,'DSii':9000*u.AU,'DSiii':6000*u.AU,'DSiv':8500*u.AU,'DSv':4000*u.AU,'DSVII':6600*u.AU,'DSVIII':5700*u.AU,'DSIX':5000*u.AU}#6400
+rdict={'SgrB2S':12000*u.AU,'DSi':7500*u.AU,'DSii':8700*u.AU,'DSiii':6000*u.AU,'DSiv':8000*u.AU,'DSv':3500*u.AU,'DSVII':6000*u.AU,'DSVIII':5700*u.AU,'DSIX':5000*u.AU}#1-6400,4-8500,5-4000,7-6600
 rdictkeys=rdict.keys()
 if source not in rdictkeys:
     r_phys=10000*u.AU
@@ -404,7 +404,7 @@ proplumerr=np.sqrt(np.nansum(np.square(lumerrtoprop)))*np.sqrt(pixperbeam)#np.su
 nh2mean=np.nanmean(nh2tomean)
 nh2errormean=np.nanmean(nh2errortomean)
 
-powerlaw_normpairs={'SgrB2S':(275,3500),'DSi':(210,3500),'DSii':(130,5000),'DSiii':(150,3000),'DSiv':(150,4500),'DSv':(160,2000),'DSVI':(130,4000),'DSVII':(75,4000),'DSVIII':(75,5000),'DSIX':(160,2500)}
+powerlaw_normpairs={'SgrB2S':(275,3500),'DSi':(210,3500),'DSii':(130,5000),'DSiii':(150,3000),'DSiv':(150,4500),'DSv':(160,2000),'DSVI':(130,4000),'DSVII':(200,2000),'DSVIII':(75,5000),'DSIX':(160,2500)}#7-75,4000
 powerlawpair=powerlaw_normpairs[source]
 fiducial_index=0.75
 fiducial_norm=powerlawpair[0]*(powerlawpair[1]/pixtophysicalsize)**fiducial_index
@@ -542,9 +542,9 @@ errdensalpha=round_to_1(derr[2])
 onlydens=False
 plt.figure()
 if source == 'DSiv':
-    plt.errorbar(listordered_centrtopix,radialdensitylist,yerr=err_radialdens,label='Data')
+    plt.errorbar(listordered_centrtopix,radialdensitylist,yerr=err_radialdens,label='Data',fmt='o')
     plt.plot(listordered_centrtopix,fit_dens(listordered_centrtopix),label=f'$p$={round(densalpha,(len(str(errdensalpha))-2))} \u00B1 {errdensalpha}',zorder=5)
-    plt.axvline(edge,ls='--',label='$R_{150}$',color='black')
+    plt.axvline(edge,ls='--',label='$R_{core}$',color='black')
     plt.yscale('log')
     plt.xlabel('$r$ (AU)',fontsize=14)
     plt.ylabel('$n$ (cm$^{-3}$)',fontsize=14)
@@ -552,9 +552,9 @@ if source == 'DSiv':
     plt.show()
 
 else:
-    plt.errorbar(listordered_centrtopix,radialdensitylist,yerr=err_radialdens,label='Data')
+    plt.errorbar(listordered_centrtopix,radialdensitylist,yerr=err_radialdens,label='Data',fmt='o')
     plt.plot(listordered_centrtopix,fit_dens(listordered_centrtopix),label=f'$p$={round(densalpha,(len(str(errdensalpha))-2))} \u00B1 {errdensalpha}',zorder=5)
-    plt.axvline(edge,ls='--',label='$R_{150}$',color='black')
+    plt.axvline(edge,ls='--',label='$R_{core}$',color='black')
     plt.yscale('log')
     plt.xlabel('$r$ (AU)',fontsize=14)
     plt.ylabel('$n$ (cm$^{-3}$)',fontsize=14)
@@ -599,9 +599,9 @@ else:
 #pdb.set_trace()
 if source == 'SgrB2S':
     plt.figure()
-    plt.scatter(trotsforabunds,abundinradius,s=abundsnrinradius,c=nh2tomean,norm=mpl.colors.LogNorm())
+    plt.scatter(trotsforabunds,abundinradius,s=5,c=nh2tomean,norm=mpl.colors.LogNorm())
     plt.yscale('log')
-    plt.xlabel('$T_K$ (K)',fontsize=14)
+    plt.xlabel('$T_{rot}$ (K)',fontsize=14)
     plt.ylabel('X(CH$_3$OH)',fontsize=14)
     plt.xlim(xmax=plottexmax)
     #plt.colorbar(pad=0,label='Luminosity (Lsun)')
@@ -612,7 +612,7 @@ if source == 'SgrB2S':
     plt.show()
 
     plt.figure()
-    plt.scatter(rr2_sgrb2s,abundinradius,s=abundsnrinradius,c=nh2tomean,norm=mpl.colors.LogNorm())
+    plt.scatter(rr2_sgrb2s,abundinradius,s=5,c=nh2tomean,norm=mpl.colors.LogNorm())
     plt.yscale('log')
     plt.xlabel('$r$ (AU)',fontsize=14)
     plt.ylabel('X(CH$_3$OH)',fontsize=14)
@@ -623,20 +623,20 @@ if source == 'SgrB2S':
     plt.show()
 
     plt.figure()
-    plt.scatter(rr2_sgrb2s,nh2tomean,s=nh2snrinradius,c=texinradius,vmax=plottexmax,cmap='inferno')
+    plt.scatter(rr2_sgrb2s,nh2tomean,s=5,c=texinradius,vmax=plottexmax,cmap='inferno')
     plt.yscale('log')
     plt.xlabel('$r$ (AU)',fontsize=14)
     plt.ylabel('N(H$_2$) (cm$^{-2}$)',fontsize=14)
-    plt.colorbar(pad=0,label='T$_K$ (K)')#'T$_K$ (K)')
+    plt.colorbar(pad=0,label='T$_{rot}$ (K)')#'T$_K$ (K)')
     figsavepath=figpath+f'radialavgnh2s_contsanitycheck_r{r}px_rphys{int(pixtophysicalsize.value)}AU_smoothed.png'
     pdb.set_trace()
     plt.savefig(figsavepath,bbox_inches='tight',overwrite=True)
     plt.show()
 else:
     plt.figure()
-    plt.scatter(texinradius,abundinradius,s=abundsnrinradius,c=nh2inradius,norm=mpl.colors.LogNorm())
+    plt.scatter(texinradius,abundinradius,s=5,c=nh2inradius,norm=mpl.colors.LogNorm())
     plt.yscale('log')
-    plt.xlabel('$T_K$ (K)',fontsize=14)
+    plt.xlabel('$T_{rot}$ (K)',fontsize=14)
     plt.ylabel('X(CH$_3$OH)',fontsize=14)
     plt.xlim(xmax=plottexmax)
     #plt.colorbar(pad=0,label='Luminosity (Lsun)')
@@ -646,7 +646,7 @@ else:
     plt.show()
 
     plt.figure()
-    plt.scatter(centrtopix,abundinradius,s=abundsnrinradius,c=nh2inradius,norm=mpl.colors.LogNorm())
+    plt.scatter(centrtopix,abundinradius,s=5,c=nh2inradius,norm=mpl.colors.LogNorm())
     plt.yscale('log')
     plt.xlabel('$r$ (AU)',fontsize=14)
     plt.ylabel('X(CH$_3$OH)',fontsize=14)
@@ -656,11 +656,11 @@ else:
     plt.show()
     
     plt.figure()
-    plt.scatter(centrtopix,nh2inradius,s=nh2snrinradius,c=texinradius,vmax=plottexmax,cmap='inferno')
+    plt.scatter(centrtopix,nh2inradius,s=5,c=texinradius,vmax=plottexmax,cmap='inferno')
     plt.yscale('log')
     plt.xlabel('$r$ (AU)',fontsize=14)
     plt.ylabel('N(H$_2$) (cm$^{-2}$)',fontsize=14)
-    plt.colorbar(pad=0,label='T$_K$ (K)')#'T$_K$ (K)')
+    plt.colorbar(pad=0,label='T$_{rot}$ (K)')#'T$_K$ (K)')
     figsavepath=figpath+f'radialavgnh2s_contsanitycheck_r{r}px_rphys{int(pixtophysicalsize.value)}AU_smoothed.png'
     plt.savefig(figsavepath,bbox_inches='tight',overwrite=True)
     plt.show()
@@ -693,7 +693,7 @@ if source == 'DSiv':
     ax0.plot(copy_centrtopix,fittedtex,color='orange',label=f'$\\alpha$={round(popt[1],2)} \u00B1 {round(pcov[1,1]**0.5,2)}',zorder=1)
     ax0.plot(copy_centrtopix,fit_pl(copy_centrtopix),color='red',ls='-',zorder=2,label=f'$\\alpha_1$={round(fit_pl.alpha_1.value,2)} \u00B1 {round(perr[2],2)}\n$\\alpha_2$={round(fit_pl.alpha_2.value,2)} \u00B1 {round(perr[3],2)}\n$r_{{break}}$={round(fit_pl.x_break.value)} \u00B1 {round(perr[1])}')#[1:] for ds7
     ax1.set_xlabel('$r$ (AU)',fontsize=14)
-    ax0.set_ylabel('T$_K$ (K)',fontsize=14)
+    ax0.set_ylabel('T$_{rot}$ (K)',fontsize=14)
     ax1.set_ylabel('Residuals',fontsize=10)
     ax0.set_ylim(ymax=(max(upperfill)+30))
     ax0.legend()
@@ -717,7 +717,7 @@ elif source == 'DSVII':
     ax0.plot(copy_centrtopix,fittedtex,color='orange',label=f'$\\alpha$={round(popt[1],2)} \u00B1 {round(pcov[1,1]**0.5,2)}',zorder=1)
     ax0.plot(copy_centrtopix[1:],fit_pl(copy_centrtopix)[1:],color='red',ls='-',zorder=2,label=f'$\\alpha_1$={round(fit_pl.alpha_1.value,2)} \u00B1 {round(perr[2],2)}\n$\\alpha_2$={round(fit_pl.alpha_2.value,2)} \u00B1 {round(perr[3],2)}\n$r_{{break}}$={round(fit_pl.x_break.value)} \u00B1 {round(perr[1])}')#[1:] for ds7
     ax1.set_xlabel('$r$ (AU)',fontsize=14)
-    ax0.set_ylabel('T$_K$ (K)',fontsize=14)
+    ax0.set_ylabel('T$_{rot}$ (K)',fontsize=14)
     ax1.set_ylabel('Residuals',fontsize=10)
     ax0.set_ylim(ymax=(max(upperfill)+30))
     ax0.legend()
@@ -740,7 +740,7 @@ else:
     ax0.plot(copy_centrtopix,fittedtex,color='orange',label=f'$\\alpha$={round(popt[1],2)} \u00B1 {round(pcov[1,1]**0.5,2)}',zorder=1)
     ax0.plot(copy_centrtopix,fit_pl(copy_centrtopix),color='red',ls='-',zorder=2,label=f'$\\alpha_1$={round(fit_pl.alpha_1.value,2)} \u00B1 {round(perr[2],2)}\n$\\alpha_2$={round(fit_pl.alpha_2.value,2)} \u00B1 {round(perr[3],2)}\n$r_{{break}}$={round(fit_pl.x_break.value)} \u00B1 {round(perr[1])}')#[1:] for ds7
     ax1.set_xlabel('$r$ (AU)',fontsize=14)
-    ax0.set_ylabel('T$_K$ (K)',fontsize=14)
+    ax0.set_ylabel('T$_{rot}$ (K)',fontsize=14)
     ax1.set_ylabel('Residuals',fontsize=10)
     if source == 'SgrB2S':
         ax0.set_ylim(ymax=(max(upperfill)+30),ymin=100)
@@ -759,7 +759,7 @@ else:
     plt.show()
 
 plt.figure()
-plt.scatter(nh2inradius,ntotsinradius,s=snrsinradius,c=texinradius,cmap='inferno')
+plt.scatter(nh2inradius,ntotsinradius,s=5,c=texinradius,cmap='inferno')
 '''
 x=[min(nh2inradius),max(nh2inradius)]
 y1=(9.5e-8*np.array(x))
@@ -769,7 +769,7 @@ plt.plot(x,np.transpose([y1,y2,y3]))
 '''
 plt.yscale('log')
 plt.xscale('log')
-plt.colorbar(pad=0,label='T$_K$ (K)')
+plt.colorbar(pad=0,label='T$_{rot}$ (K)')
 plt.xlabel('N(H$_2$) (cm$^{-2}$)')
 plt.ylabel('N(CH$_3$OH) (cm$^{-2}$)')
 figsavepath=figpath+'nch3ohvsnh2_contsanitycheck_smoothed.png'
