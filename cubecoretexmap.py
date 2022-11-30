@@ -631,13 +631,13 @@ stdhome=stdhomedict[fnum]
 
 #cubemaskarray=maskeddatacube.get_mask_array()
 
-sourcelocs={'SgrB2S':'/nov2022continuumsanitycheck_centeronlinepeak/','DSi':'/nov2022continuumsanitycheck/','DSii':'/nov2022continuumsanitycheck/','DSiii':'/nov2022continuumsanitycheck/','DSiv':'/nov2022contniuumsanitycheck/','DSv':f'/nov2022contniuumsanitycheck_ntot1e15/','DSVI':'/nov2022continuumsanitycheck/','DSVII':f'/nov2022contniuumsanitycheck/','DSVIII':f'/nov2022contniuumsanitycheck/','DSIX':f'/nov2022contniuumsanitycheck/','DSX':f'/Kfield7originals_{int(testT.value)}K_trial1_noexclusions/'}#'/Kfield10originals_trial7_field10errors_newexclusion_matchslabwidthtorep/'
+sourcelocs={'SgrB2S':'/nov2022continuumsanitycheck_limitvt1lines_centeronlinepeak_repline20-20/','DSi':'/nov2022continuumsanitycheck/','DSii':'/nov2022continuumsanitycheck/','DSiii':'/nov2022continuumsanitycheck/','DSiv':'/nov2022contniuumsanitycheck/','DSv':f'/nov2022contniuumsanitycheck_ntot1e15/','DSVI':'/nov2022continuumsanitycheck/','DSVII':f'/nov2022contniuumsanitycheck/','DSVIII':f'/nov2022contniuumsanitycheck/','DSIX':f'/nov2022contniuumsanitycheck/','DSX':f'/Kfield7originals_{int(testT.value)}K_trial1_noexclusions/'}#'/Kfield10originals_trial7_field10errors_newexclusion_matchslabwidthtorep/'
 
 origsourcelocs={'SgrB2S':'/new_testingstdfixandontheflyrepstuff_K_OctReimage_restfreqfix_newvelmask_newpeakamp/','DSi':'/Kfield10originals_trial7_field10errors_newexclusion_matchslabwidthtorep/','DSii':'/Kfield10originals_noexclusions/','DSiii':'/Kfield10originals_noexclusions/','DSiv':'/Kfield10originals_noexclusions/','DSv':f'/Kfield10originals_noexclusions_include4-3_{int(testT.value)}K_trial2/','DSVI':'/Kfield2originals_trial3_8_6-8_7excluded/','DSVII':f'/Kfield3originals_{int(testT.value)}K_trial1_noexclusions/','DSVIII':f'/Kfield3originals_{int(testT.value)}K_trial1_noexclusions/','DSIX':f'/Kfield7originals_{int(testT.value)}K_trial1_noexclusions/','DSX':f'/Kfield7originals_{int(testT.value)}K_trial1_noexclusions/'}#
 
-representativelines={'SgrB2S':'4_2-3_1vt=0','DSi':'8_1-7_0vt=0','DSii':'8_1-7_0vt=0','DSiii':'10_2--9_3-vt=0','DSiv':'20_1-20_0vt=0','DSv':'8_1-7_0vt=0','DSVI':'8_1-7_0vt=0','DSVII':'8_1-7_0vt=0','DSVIII':'8_1-7_0vt=0','DSIX':'8_1-7_0vt=0','DSX':'8_1-7_0vt=0'}
+representativelines={'SgrB2S':'20_1-20_0vt=0','DSi':'8_1-7_0vt=0','DSii':'8_1-7_0vt=0','DSiii':'10_2--9_3-vt=0','DSiv':'20_1-20_0vt=0','DSv':'8_1-7_0vt=0','DSVI':'8_1-7_0vt=0','DSVII':'8_1-7_0vt=0','DSVIII':'8_1-7_0vt=0','DSIX':'8_1-7_0vt=0','DSX':'8_1-7_0vt=0'}#oldS 4_2-3_1vt=0
 representativelws={'SgrB2S':(10*u.km/u.s),'DSi':(3*u.km/u.s),'DSii':(3*u.km/u.s),'DSiii':(3*u.km/u.s),'DSiv':(4*u.km/u.s),'DSv':(4*u.km/u.s),'DSVI':(3*u.km/u.s),'DSVII':(2.5*u.km/u.s),'DSVIII':(2.5*u.km/u.s),'DSIX':(5*u.km/u.s),'DSX':(4*u.km/u.s)}#{'SgrB2S':8*u.MHz,'DSi':3.6*u.MHz}#11MHz for ~10 km/s
-representativecubes={'SgrB2S':1,'DSi':1,'DSii':1,'DSiii':2,'DSiv':0,'DSv':1,'DSVI':1,'DSVII':1,'DSVIII':1,'DSIX':1,'DSX':1}#spwnumber
+representativecubes={'SgrB2S':0,'DSi':1,'DSii':1,'DSiii':2,'DSiv':0,'DSv':1,'DSVI':1,'DSVII':1,'DSVIII':1,'DSIX':1,'DSX':1}#spwnumber
 
 sourcepath=f'/blue/adamginsburg/d.jeff/SgrB2DSreorg/field{fnum}/CH3OH/{source}/'+sourcelocs[source]
 nupperpath=sourcepath+'nuppers/'
@@ -708,8 +708,8 @@ masterfluxes=[]
 masterbeams=[]
 masterstddevs=[]
 
-excludedlines={'SgrB2S':['7_6-7_7E1vt1','14_6-14_7E1vt1','11_6-11_7E1vt1'],'DSi':['11_6-11_7E1vt1','25_3-24_4E1vt0','14_6-14_7E1vt1','7_6-7_7E1vt1','13_3--14_4-vt2','13_3+-14_4+vt2','15_6-15_7E1vt1'],'DSii':'','DSiii':'','DSiv':'','DSv':'','DSVI':["6_1--7_2-vt1",'14_6-14_7E1vt1','10_6-10_7E1vt1','9_6-9_7E1vt1','11_6-11_7E1vt1','13_6-13_7E1vt1','12_6-12_7E1vt1','13_3--14_4-vt2','13_3+-14_4+vt2','7_6-7_7E1vt1','16_6-16_7E1vt1','8_6-8_7E1vt1'],'DSVII':'','DSVIII':'','DSIX':'','DSX':''}
-restfreq_representativeline={'SgrB2S':218.44006300*u.GHz,'DSi':220.07856100*u.GHz,'DSii':220.07856100*u.GHz,'DSiii':231.28111000*u.GHz,'DSiv':217.88650400*u.GHz,'DSv':220.07856100*u.GHz,'DSVI':220.07856100*u.GHz,'DSVII':220.07856100*u.GHz,'DSVIII':220.07856100*u.GHz,'DSIX':220.07856100*u.GHz,'DSX':220.07856100*u.GHz}#All taken from Splatalogue
+excludedlines={'SgrB2S':['7_6-7_7E1vt1','14_6-14_7E1vt1','11_6-11_7E1vt1','15_6-15_7E1vt1','9_6-9_7E1vt1','13_6-13_7E1vt1','12_6-12_7E1vt1','8_6-8_7E1vt1'],'DSi':['11_6-11_7E1vt1','25_3-24_4E1vt0','14_6-14_7E1vt1','7_6-7_7E1vt1','13_3--14_4-vt2','13_3+-14_4+vt2','15_6-15_7E1vt1'],'DSii':'','DSiii':'','DSiv':'','DSv':'','DSVI':["6_1--7_2-vt1",'14_6-14_7E1vt1','10_6-10_7E1vt1','9_6-9_7E1vt1','11_6-11_7E1vt1','13_6-13_7E1vt1','12_6-12_7E1vt1','13_3--14_4-vt2','13_3+-14_4+vt2','7_6-7_7E1vt1','16_6-16_7E1vt1','8_6-8_7E1vt1'],'DSVII':'','DSVIII':'','DSIX':'','DSX':''}
+restfreq_representativeline={'SgrB2S':217.88650400*u.GHz,'DSi':220.07856100*u.GHz,'DSii':220.07856100*u.GHz,'DSiii':231.28111000*u.GHz,'DSiv':217.88650400*u.GHz,'DSv':220.07856100*u.GHz,'DSVI':220.07856100*u.GHz,'DSVII':220.07856100*u.GHz,'DSVIII':220.07856100*u.GHz,'DSIX':220.07856100*u.GHz,'DSX':220.07856100*u.GHz}#All taken from Splatalogue;  oldS 218.44006300
 representative_filename_base=sourcepath+representativelines[source]+'repline_'
 rep_mom1=representative_filename_base+'mom1.fits'
 rep_fwhm=representative_filename_base+'fwhm.fits'
