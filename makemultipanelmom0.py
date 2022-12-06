@@ -24,7 +24,7 @@ from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 
 mpl.interactive(True)
 
-source='DSIX'
+source='SgrB2S'
 print(f'Source: {source}\n')
 fields={'SgrB2S':1,'DSi':10,'DSii':10,'DSiii':10,'DSiv':10,'DSv':10,'DSVI':2,'DSVII':3,'DSVIII':3,'DSIX':7}
 romannums={'DSi':'DSI','DSii':'DSii'}
@@ -33,9 +33,9 @@ fnum=fields[source]
 immode='mom0'
 colormap={'mom0':'bone_r','tex':'inferno','numtrans':'CMRmap','nupper':'Blues_r'}
 cm = copy.copy(mpl.cm.get_cmap(colormap[immode]))#mom0 bone, temperature inferno, nupper Blues_r, detections CMRmap
-cm.set_bad('black')
+cm.set_bad('white')
 
-sourcelocs={'SgrB2S':'new_testingstdfixandontheflyrepstuff_K_OctReimage_restfreqfix_newvelmask_newpeakamp/','DSi':'Kfield10originals_trial7_field10errors_newexclusion_matchslabwidthtorep/','DSii':'Kfield10originals_noexclusions/','DSiii':'Kfield10originals_noexclusions/','DSiv':'Kfield10originals_noexclusions/','DSv':f'Kfield10originals_noexclusions_include4-3_150K_trial2/','DSVI':'Kfield2originals_trial3_8_6-8_7excluded/','DSVII':f'Kfield3originals_trial1_noexclusions/','DSVIII':f'Kfield3originals_175K_trial1_noexclusions/','DSIX':'Kfield7originals_150K_trial1_noexclusions/'}
+sourcelocs={'SgrB2S':'/nov2022continuumsanitycheck_limitvt1lines_centeronlinepeak_repline20-20/','DSi':'/nov2022continuumsanitycheck/','DSii':'/nov2022continuumsanitycheck/','DSiii':'/nov2022continuumsanitycheck/','DSiv':'/nov2022contniuumsanitycheck/','DSv':f'/nov2022contniuumsanitycheck/','DSVI':'/nov2022continuumsanitycheck/','DSVII':f'/nov2022contniuumsanitycheck/','DSVIII':f'/nov2022contniuumsanitycheck/','DSIX':f'/nov2022contniuumsanitycheck/'}#{'SgrB2S':'new_testingstdfixandontheflyrepstuff_K_OctReimage_restfreqfix_newvelmask_newpeakamp/','DSi':'Kfield10originals_trial7_field10errors_newexclusion_matchslabwidthtorep/','DSii':'Kfield10originals_noexclusions/','DSiii':'Kfield10originals_noexclusions/','DSiv':'Kfield10originals_noexclusions/','DSv':f'Kfield10originals_noexclusions_include4-3_150K_trial2/','DSVI':'Kfield2originals_trial3_8_6-8_7excluded/','DSVII':f'Kfield3originals_trial1_noexclusions/','DSVIII':f'Kfield3originals_175K_trial1_noexclusions/','DSIX':'Kfield7originals_150K_trial1_noexclusions/'}
 
 sourcepath=f'/blue/adamginsburg/d.jeff/SgrB2DSreorg/field{fnum}/CH3OH/{source}/'+sourcelocs[source]
 mom0path=sourcepath+'mom0/*_masked.fits'
@@ -52,7 +52,7 @@ else:
     print(f'Making figure directory {savefighome}')
     os.makedirs(savefighome)
     
-savefigpath=savefighome+f'firstmulti{immode}fig.png'
+savefigpath=savefighome+f'contfix_multi{immode}fig.png'
 
 mom0images=glob.glob(mom0path)
 
@@ -61,11 +61,12 @@ samplewcs=WCS(samplefits[0])
 
 mastereuks=[]
 masterqns=[]
-excludedlines={'SgrB2S':['7_6-7_7E1vt1','14_6-14_7E1vt1','11_6-11_7E1vt1'],'DSi':['11_6-11_7E1vt1','25_3-24_4E1vt0','14_6-14_7E1vt1','7_6-7_7E1vt1','13_3--14_4-vt2','13_3+-14_4+vt2','15_6-15_7E1vt1'],'DSii':'','DSiii':'','DSiv':'','DSv':'','DSVI':["6_1--7_2-vt1",'14_6-14_7E1vt1','10_6-10_7E1vt1','9_6-9_7E1vt1','11_6-11_7E1vt1','13_6-13_7E1vt1','12_6-12_7E1vt1','13_3--14_4-vt2','13_3+-14_4+vt2','7_6-7_7E1vt1','16_6-16_7E1vt1','8_6-8_7E1vt1'],'DSVII':'','DSVIII':''}
+excludedlines={'SgrB2S':['7_6-7_7E1vt1','14_6-14_7E1vt1','11_6-11_7E1vt1','15_6-15_7E1vt1','9_6-9_7E1vt1','13_6-13_7E1vt1','12_6-12_7E1vt1','8_6-8_7E1vt1'],'DSi':['11_6-11_7E1vt1','25_3-24_4E1vt0','14_6-14_7E1vt1','7_6-7_7E1vt1','13_3--14_4-vt2','13_3+-14_4+vt2','15_6-15_7E1vt1'],'DSii':'','DSiii':'','DSiv':'','DSv':'','DSVI':["6_1--7_2-vt1",'14_6-14_7E1vt1','10_6-10_7E1vt1','9_6-9_7E1vt1','11_6-11_7E1vt1','13_6-13_7E1vt1','12_6-12_7E1vt1','13_3--14_4-vt2','13_3+-14_4+vt2','7_6-7_7E1vt1','16_6-16_7E1vt1','8_6-8_7E1vt1'],'DSVII':'','DSVIII':'','DSIX':'','DSX':''}
 masterlist=np.genfromtxt(sourcepath+'mastereuksqnsfreqsdegens.txt',dtype=str)
 for master in range(len(masterlist[:,0])):
     mastereuks.append(float(masterlist[master,0]))
-    masterqns.append(masterlist[master,1])
+    if masterlist[master,1] not in excludedlines[source]:
+        masterqns.append(masterlist[master,1])
 mastereuks.sort()
 
 sortedqns=[]
@@ -99,6 +100,8 @@ mintb=np.nanmin(sortedmom0)
 brightestline=sortedmom0str[brightestimage]
 firstpanel=True
 
+imgdims=np.shape(sortedmom0[0])
+
 #gs1 = gridspec.GridSpec(numrows, numcols)
 #gs1.update(wspace=0.025, hspace=0.05)
 
@@ -122,6 +125,7 @@ for row in np.arange(numrows):
                 ax[row,col].tick_params(direction='in')
                 ax[row,col].set_xticks([])
                 ax[row,col].set_yticks([])
+                ax[row,col].annotate(f'{sortedqns[col+(row*(numcols-1))]}',xy=(0,0),xytext=((imgdims[0]/20),(imgdims[1]/1.2)),fontsize=8)
                 firstpanel=False
             else:
                 ax[row,col].imshow(transition,vmax=fmax,vmin=fmin,origin='lower',cmap=cm)
@@ -130,9 +134,10 @@ for row in np.arange(numrows):
                 ax[row,col].tick_params(direction='in')
                 ax[row,col].set_xticks([])
                 ax[row,col].set_yticks([])
+                ax[row,col].annotate(f'{sortedqns[col+(row*(numcols-1))]}',xy=(0,0),xytext=((imgdims[0]/20),(imgdims[1]/1.2)),fontsize=8)
                 #if row == (numrows-1) and col == (numcols-1):
 
-heights={'SgrB2S':'625%','DSi':'425%','DSiv':'225%','DSVI':'325%','DSVII':'195%','DSVIII':'240%'}
+heights={'SgrB2S':'425%','DSi':'425%','DSiv':'225%','DSVI':'325%','DSVII':'195%','DSVIII':'240%'}
 if source in heights:
     strheight=heights[source]
 else:
@@ -150,6 +155,6 @@ for ax in fig.get_axes():
     ax.spines.left.set_visible(ss.is_first_col())
     ax.spines.right.set_visible(ss.is_last_col())
 '''
-#plt.savefig(savefigpath,dpi=150)
+plt.savefig(savefigpath,dpi=150)
 #gs1.tight_layout(fig,pad=1)
 plt.show()

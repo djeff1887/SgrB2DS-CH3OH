@@ -59,12 +59,12 @@ def powerlaw_profile(x,a,n):
 def round_to_1(x):
     return round(x, -int(math.floor(math.log10(abs(x)))))
     
-source='DSIX'
+source='SgrB2S'
 fielddict={'SgrB2S':1,'DSi':10,'DSii':10,'DSiii':10,'DSiv':10,'DSv':10,'DSVI':2,'DSVII':3,'DSVIII':3,'DSIX':7}
 fnum=fielddict[source]
 print(f'Source: {source}')
 base=f'/blue/adamginsburg/d.jeff/SgrB2DSreorg/field{fnum}/CH3OH/{source}/'
-homedict={'SgrB2S':'/nov2022continuumsanitycheck/','DSi':'/nov2022continuumsanitycheck/','DSii':'/nov2022continuumsanitycheck/','DSiii':'/nov2022continuumsanitycheck/','DSiv':'/nov2022contniuumsanitycheck/','DSv':f'/nov2022contniuumsanitycheck/','DSVI':'/nov2022continuumsanitycheck/','DSVII':f'/nov2022contniuumsanitycheck/','DSVIII':f'/nov2022contniuumsanitycheck/','DSIX':f'/nov2022contniuumsanitycheck/'}#{'SgrB2S':"new_testingstdfixandontheflyrepstuff_K_OctReimage_restfreqfix_newvelmask_newpeakamp/",'DSi':"Kfield10originals_trial7_field10errors_newexclusion_matchslabwidthtorep/",'DSii':"Kfield10originals_noexclusions/",'DSiii':"Kfield10originals_noexclusions/",'DSiv':"Kfield10originals_noexclusions/",'DSv':"Kfield10originals_noexclusions_include4-3_150K_trial2/",'DSVI':"Kfield2originals_trial3_8_6-8_7excluded/",'DSVII':'Kfield3originals_200K_trial1_noexclusions/','DSVIII':'Kfield3originals_175K_trial1_noexclusions/','DSIX':'Kfield7originals_150K_trial1_noexclusions/'}#base+'field10originals_z0_000186431_5-6mhzwidth_stdfixes/'
+homedict={'SgrB2S':'/nov2022continuumsanitycheck_limitvt1lines_centeronlinepeak_repline20-20/','DSi':'/nov2022continuumsanitycheck/','DSii':'/nov2022continuumsanitycheck/','DSiii':'/nov2022continuumsanitycheck/','DSiv':'/nov2022contniuumsanitycheck/','DSv':f'/nov2022contniuumsanitycheck/','DSVI':'/nov2022continuumsanitycheck/','DSVII':f'/nov2022contniuumsanitycheck/','DSVIII':f'/nov2022contniuumsanitycheck/','DSIX':f'/nov2022contniuumsanitycheck/'}#{'SgrB2S':"new_testingstdfixandontheflyrepstuff_K_OctReimage_restfreqfix_newvelmask_newpeakamp/",'DSi':"Kfield10originals_trial7_field10errors_newexclusion_matchslabwidthtorep/",'DSii':"Kfield10originals_noexclusions/",'DSiii':"Kfield10originals_noexclusions/",'DSiv':"Kfield10originals_noexclusions/",'DSv':"Kfield10originals_noexclusions_include4-3_150K_trial2/",'DSVI':"Kfield2originals_trial3_8_6-8_7excluded/",'DSVII':'Kfield3originals_200K_trial1_noexclusions/','DSVIII':'Kfield3originals_175K_trial1_noexclusions/','DSIX':'Kfield7originals_150K_trial1_noexclusions/'}#base+'field10originals_z0_000186431_5-6mhzwidth_stdfixes/'
 home=base+homedict[source]
 fighome=f'/blue/adamginsburg/d.jeff/repos/CH3OHTemps/figures/{source}/'
 figpath=fighome+homedict[source]
@@ -142,7 +142,7 @@ beamarea_phys=trotbeam.beam_projected_area(dGC)#np.pi*bmajtophyssize*bmintophyss
 cntmbmaj=cntmbeam.major#3.629587176773e-05*u.deg
 cntmbmajtoAU=(np.tan(cntmbmaj)*dGC).to('AU')
 
-pixdict={'SgrB2S':(73,54),'DSi':(36,42),'DSii':(22,24),'DSiii':(24,24),'DSiv':(32,31),'DSv':(19,19),'DSVI':(62,62),'DSVII':(75,75),'DSVIII':(50,50),'DSIX':(34,35)}#y,x; DSiii was 24,24
+pixdict={'SgrB2S':(69,58),'DSi':(36,42),'DSii':(22,24),'DSiii':(24,24),'DSiv':(32,31),'DSv':(19,19),'DSVI':(62,62),'DSVII':(75,75),'DSVIII':(50,50),'DSIX':(34,35)}#y,x; DSiii was 24,24;S was 73,54
 sgrb2scentralpix=(66,70)
 #SgrB2S tpeak is 73,54
 #nh2dict={'DSiii':(27,27)}
@@ -158,7 +158,7 @@ print(f'Center p: {texmapdata[texpeakpix[0],texpeakpix[1]]}')
 
 #r=35 #for 15,000 AU
 #pixradius=math.ceil((0.08*u.pc/pixtophysicalsize).to(''))
-rdict={'SgrB2S':12000*u.AU,'DSi':7500*u.AU,'DSii':8700*u.AU,'DSiii':6000*u.AU,'DSiv':8000*u.AU,'DSv':3500*u.AU,'DSVII':6000*u.AU,'DSVIII':5700*u.AU,'DSIX':5000*u.AU}#1-6400,4-8500,5-4000,7-6600
+rdict={'SgrB2S':5500*u.AU,'DSi':7500*u.AU,'DSii':8700*u.AU,'DSiii':6000*u.AU,'DSiv':8000*u.AU,'DSv':3500*u.AU,'DSVII':6000*u.AU,'DSVIII':5700*u.AU,'DSIX':5000*u.AU}#1-6400,4-8500,5-4000,7-6600,S-12000
 rdictkeys=rdict.keys()
 if source not in rdictkeys:
     r_phys=10000*u.AU
@@ -211,7 +211,7 @@ masserrinradius=h2masserr[rr2<r].value#(nh2s_error[rr<r]*mu*beamarea_phys).to('s
 S_massinradius=h2mass[S_rr<r].value
 S_masserrinradius=h2masserr[S_rr<r].value
 
-#pdb.set_trace()
+pdb.set_trace()
 
 lookformax=texmapdata[rr<10**0.5].value
 lookformax_err=texerrdata[rr<10**0.5].value
@@ -259,14 +259,14 @@ for bin in listordered_centrtopix:
                 tempmass.append(data[1])
                 tempmasssnr.append(data[1]/data[8])
                 tempmasserr.append(data[8])
-                if np.isnan(data[6]):
-                    pass
-                else:
-                    truesnr=data[2]*5
-                    temptex.append(data[6])
-                    temptexerr.append(data[6]/truesnr)
-                    tempinvsig.append(truesnr/data[6])
-                    tempsnr.append(truesnr)
+                if np.isnan(data[6])==False:
+                    if np.isinf(data[2])==False:
+                        truesnr=data[2]*5
+                        temptex.append(data[6])
+                        temptexerr.append(data[6]/truesnr)
+                        tempinvsig.append(truesnr/data[6])
+                        tempsnr.append(truesnr)
+                    
         if bin >= data[0]:
             massesinterior.append(data[1])
             masserrinterior.append(data[8])
@@ -295,7 +295,8 @@ for bin in listordered_centrtopix:
         else:
             pass
         avgtex=np.average(temptex,weights=tempsnr)
-        
+        #if np.isnan(avgtex):
+        #    pdb.set_trace()
         #if len(avgtexterr)==0:
         #    avgtexerr=np.nan
         #else:
@@ -352,7 +353,7 @@ lumerrtoprop=[]
 nh2tomean=[]
 nh2errortomean=[]
 #pdb.set_trace()
-if source == 'SgrB2S':
+if source == 'SgrB2S':#Selects masses,luminosities, nh2s, distances, and temperatures for use in radial plot
     wcsobj=WCS(smooth_trotfits[0].header)
 
     regs = regions.Regions.read('/blue/adamginsburg/d.jeff/imaging_results/regfiles/roughsgrb2smassregion_ignoresHIIregion.reg')
@@ -364,11 +365,13 @@ if source == 'SgrB2S':
     massestosum.append(pixmask.get_values(h2mass))#sgrb2smass=np.nansum(pixmask.get_values(h2massmap))
     lumstosum.append(pixmask.get_values(lums))
     lumerrtoprop.append(pixmask.get_values(lumserr))
-    nh2tomean.append(pixmask.get_values(nh2s))
+    nh2tomean.append(pixmask.get_values(nh2s.value))
     nh2errortomean.append(pixmask.get_values(nh2s_error))
     nh2snrinradius=list(pixmask.get_values(nh2s/nh2s_error))
+    premask_tex=np.copy(texinradius)
+    texinradius=list(pixmask.get_values(texmapdata.value))
     
-    rr2_sgrb2s=list((pixmask.get_values(rr)*pixtophysicalsize).value)
+    rr2_sgrb2s=list(pixmask.get_values(rr2*pixtophysicalsize).value)#rr2 and not rr here?
     '''
     xx_sgrb2s=[]
     yy_sgrb2s=[]
@@ -488,53 +491,7 @@ for dist in copy_centrtopix:
 #pdb.set_trace()
     
 plt.rcParams["figure.dpi"]=150
-'''
-ax=plt.subplot(111)
 
-vmaxdict={'DSi':1e-5}
-plt.scatter(centrtopix,texinradius,s=snrsinradius,c=abundinradius,cmap='Greens',alpha=0.7)#,norm=mpl.colors.LogNorm())
-plt.plot(copy_centrtopix,lineartex,color='yellow',label=r'r$^{-1}$')
-plt.plot(copy_centrtopix,quadrtex,color='green',label=r'r$^{-2}$')
-plt.plot(copy_centrtopix,sublinhalftex,color='purple',label=r'r$^{-0.5}$')
-ax.set_xlabel('$d$ (AU)',fontsize=14)
-ax.set_ylabel('$T_K$ (K)',fontsize=14)
-ax.tick_params(size=14)
-plt.tight_layout()
-plt.colorbar(pad=0)
-plt.legend()
-
-savefigpath=home+f'figures/radialtexdiag_r{r}px_rphys{int(pixtophysicalsize.value)}AU_linear_quad_sqrt.png'
-#plt.savefig(savefigpath,overwrite=True)
-plt.show()
-
-plt.close()
-'''
-'''
-ax=plt.subplot(111)
-plt.scatter(centrtopix,texinradius,s=snrsinradius,c=abundinradius,norm=mpl.colors.LogNorm(),cmap='viridis')#,alpha=0.7)
-
-plt.plot(copy_centrtopix,sublinhalftex,color='red',label=r'r$^{-0.5}$')
-plt.plot(copy_centrtopix,sublinmidtex,color='pink',label=r'r$^{-0.75}$')
-plt.plot(copy_centrtopix,lineartex,color='orange',label=r'r$^{-1}$')
-plt.plot(copy_centrtopix,quadrtex,color='yellow',label=r'r$^{-1.25}$')
-
-
-
-ax.set_xlabel('$r$ (AU)',fontsize=14)
-ax.set_ylabel('$T_K$ (K)',fontsize=14)
-plt.ylim(ymax=plottexmax,ymin=(np.nanmin(texinradius)-10))
-ax.tick_params(size=14)
-plt.tight_layout()
-plt.colorbar(pad=0,label='X(CH$_3$OH)')
-plt.legend(loc=1)
-
-savefigpath=home+f'figures/radialtexdiag_r{r}px_rphys{int(pixtophysicalsize.value)}AU_interceptabundances.png'#home+f'figures/radialtexdiag_r{r}px_rphys{int(pixtophysicalsize.value)}AU_lognorm_linear_quad_sqrt_interceptabundances.png'
-figsavepath=figpath+f'radialtexdiag_r{r}px_rphys{int(pixtophysicalsize.value)}AU_lognorm_linear_quad_sqrt_interceptabundances_bolocamfeather.png'
-#plt.savefig(savefigpath,overwrite=True)
-plt.savefig(figsavepath,bbox_inches='tight',overwrite=True)
-
-plt.show()
-'''
 sourcenamesfortable={'SgrB2S':'SgrB2S','DSi':'DS1','DSii':'DS2','DSiii':'DS3','DSiv':'DS4','DSv':'DS5','DSVI':'DS6','DSVII':'DS7','DSVIII':'DS8','DSIX':'DS9'}
 
 densalpha=fit_dens.alpha.value
@@ -600,14 +557,14 @@ else:
 if source == 'SgrB2S':
     plt.figure()
     plt.scatter(trotsforabunds,abundinradius,s=5,c=nh2tomean,norm=mpl.colors.LogNorm())
-    plt.yscale('log')
+    #plt.yscale('log')
     plt.xlabel('$T_{rot}$ (K)',fontsize=14)
     plt.ylabel('X(CH$_3$OH)',fontsize=14)
     plt.xlim(xmax=plottexmax)
     #plt.colorbar(pad=0,label='Luminosity (Lsun)')
     plt.colorbar(pad=0,label='N(H$_2$) (cm$^{-2}$)')#'N(CH$_3$OH) (cm$^{-2}$)')##
     figsavepath=figpath+f'texabundiag_contsanitycheck_r{r}px_rphys{int(pixtophysicalsize.value)}AU_smoothed.png'
-    pdb.set_trace()
+    #pdb.set_trace()
     plt.savefig(figsavepath,bbox_inches='tight',overwrite=True)
     plt.show()
 
@@ -618,7 +575,7 @@ if source == 'SgrB2S':
     plt.ylabel('X(CH$_3$OH)',fontsize=14)
     plt.colorbar(pad=0,label='N(H$_2$) (cm$^{-2}$)')#'T$_K$ (K)')
     figsavepath=figpath+f'radialavgabundiag_contsanitycheck_r{r}px_rphys{int(pixtophysicalsize.value)}AU_smoothed.png'
-    pdb.set_trace()
+    #pdb.set_trace()
     plt.savefig(figsavepath,bbox_inches='tight',overwrite=True)
     plt.show()
 
@@ -629,7 +586,7 @@ if source == 'SgrB2S':
     plt.ylabel('N(H$_2$) (cm$^{-2}$)',fontsize=14)
     plt.colorbar(pad=0,label='T$_{rot}$ (K)')#'T$_K$ (K)')
     figsavepath=figpath+f'radialavgnh2s_contsanitycheck_r{r}px_rphys{int(pixtophysicalsize.value)}AU_smoothed.png'
-    pdb.set_trace()
+    #pdb.set_trace()
     plt.savefig(figsavepath,bbox_inches='tight',overwrite=True)
     plt.show()
 else:
@@ -757,24 +714,43 @@ else:
     plt.savefig(figsavepath,overwrite=True)
 
     plt.show()
+if source=='SgrB2S':
+    plt.figure()
+    plt.scatter(nh2inradius,ntotsinradius,s=5,c=premask_tex,cmap='inferno')
+    '''
+    x=[min(nh2inradius),max(nh2inradius)]
+    y1=(9.5e-8*np.array(x))
+    y2=(1.5e-7*np.array(x))
+    y3=(5e-8*np.array(x))
+    plt.plot(x,np.transpose([y1,y2,y3]))
+    '''
+    plt.yscale('log')
+    plt.xscale('log')
+    plt.colorbar(pad=0,label='T$_{rot}$ (K)')
+    plt.xlabel('N(H$_2$) (cm$^{-2}$)')
+    plt.ylabel('N(CH$_3$OH) (cm$^{-2}$)')
+    figsavepath=figpath+'nch3ohvsnh2_contsanitycheck_smoothed.png'
+    plt.savefig(figsavepath,overwrite=True)
+    plt.show()
 
-plt.figure()
-plt.scatter(nh2inradius,ntotsinradius,s=5,c=texinradius,cmap='inferno')
-'''
-x=[min(nh2inradius),max(nh2inradius)]
-y1=(9.5e-8*np.array(x))
-y2=(1.5e-7*np.array(x))
-y3=(5e-8*np.array(x))
-plt.plot(x,np.transpose([y1,y2,y3]))
-'''
-plt.yscale('log')
-plt.xscale('log')
-plt.colorbar(pad=0,label='T$_{rot}$ (K)')
-plt.xlabel('N(H$_2$) (cm$^{-2}$)')
-plt.ylabel('N(CH$_3$OH) (cm$^{-2}$)')
-figsavepath=figpath+'nch3ohvsnh2_contsanitycheck_smoothed.png'
-plt.savefig(figsavepath,overwrite=True)
-plt.show()
+else:
+    plt.figure()
+    plt.scatter(nh2inradius,ntotsinradius,s=5,c=texinradius,cmap='inferno')
+    '''
+    x=[min(nh2inradius),max(nh2inradius)]
+    y1=(9.5e-8*np.array(x))
+    y2=(1.5e-7*np.array(x))
+    y3=(5e-8*np.array(x))
+    plt.plot(x,np.transpose([y1,y2,y3]))
+    '''
+    plt.yscale('log')
+    plt.xscale('log')
+    plt.colorbar(pad=0,label='T$_{rot}$ (K)')
+    plt.xlabel('N(H$_2$) (cm$^{-2}$)')
+    plt.ylabel('N(CH$_3$OH) (cm$^{-2}$)')
+    figsavepath=figpath+'nch3ohvsnh2_contsanitycheck_smoothed.png'
+    plt.savefig(figsavepath,overwrite=True)
+    plt.show()
 
 '''
 print(f'Norm initial guess: {fiducial_norm}')

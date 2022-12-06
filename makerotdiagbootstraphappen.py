@@ -46,14 +46,14 @@ R_i=1
 f=1
 Tbg=2.7355*u.K
 
-source='DSi'
+source='SgrB2S'
 fielddict={'SgrB2S':1,'DSi':10,'DSii':10,'DSiii':10,'DSiv':10,'DSv':10,'DSVI':2,'DSVII':3,'DSVIII':3,'DSIX':7}
 fnum=fielddict[source]
 
 origsourcedict={'SgrB2S':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/SgrB2S/new_testingstdfixandontheflyrepstuff_K_OctReimage_restfreqfix_newvelmask_newpeakamp/",'DSi':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSi/Kfield10originals_trial7_field10errors_newexclusion_matchslabwidthtorep/",'DSii':'/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSii/field10originals_noexclusions/','DSiii':'/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSiii/Kfield10originals_noexclusions/','DSiv':'/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSiv/Kfield10originals_noexclusions/','DSv':'/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSv/Kfield10originals_noexclusions_include4-3_trial1/','DSVI':'/blue/adamginsburg/d.jeff/SgrB2DSreorg/field2/CH3OH/DSVI/Kfield2originals_trial2_16_6-16_7excluded/','DSVII':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field3/CH3OH/DSVII/Kfield3originals_trial1_noexclusions/",'DSVIII':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field3/CH3OH/DSVIII/Kfield3originals_175K_trial1_noexclusions/",'DSIX':'/blue/adamginsburg/d.jeff/SgrB2DSreorg/field7/CH3OH/DSIX/Kfield7originals_150K_trial1_noexclusions/'}
-sourcedict={'SgrB2S':'/new_testingstdfixandontheflyrepstuff_K_OctReimage_restfreqfix_newvelmask_newpeakamp/','DSi':'/Kfield10originals_trial7_field10errors_newexclusion_matchslabwidthtorep/','DSii':'/Kfield10originals_noexclusions/','DSiii':'/Kfield10originals_noexclusions/','DSiv':'/Kfield10originals_noexclusions/','DSv':f'/Kfield10originals_noexclusions_include4-3_150K_trial2/','DSVI':'/Kfield2originals_trial3_8_6-8_7excluded/','DSVII':'/Kfield3originals_200K_trial1_noexclusions/','DSVIII':'/Kfield3originals_175K_trial1_noexclusions/','DSIX':f'/Kfield7originals_150K_trial1_noexclusions/'}
-origsourcepath=origsourcedict[source]
+sourcedict={'SgrB2S':'/nov2022continuumsanitycheck/','DSi':'/nov2022continuumsanitycheck/','DSii':'/nov2022continuumsanitycheck/','DSiii':'/nov2022continuumsanitycheck/','DSiv':'/nov2022contniuumsanitycheck/','DSv':f'/nov2022contniuumsanitycheck/','DSVI':'/nov2022continuumsanitycheck/','DSVII':f'/nov2022contniuumsanitycheck/','DSVIII':f'/nov2022contniuumsanitycheck/','DSIX':f'/nov2022contniuumsanitycheck/'}#{'SgrB2S':'/new_testingstdfixandontheflyrepstuff_K_OctReimage_restfreqfix_newvelmask_newpeakamp/','DSi':'/Kfield10originals_trial7_field10errors_newexclusion_matchslabwidthtorep/','DSii':'/Kfield10originals_noexclusions/','DSiii':'/Kfield10originals_noexclusions/','DSiv':'/Kfield10originals_noexclusions/','DSv':f'/Kfield10originals_noexclusions_include4-3_150K_trial2/','DSVI':'/Kfield2originals_trial3_8_6-8_7excluded/','DSVII':'/Kfield3originals_200K_trial1_noexclusions/','DSVIII':'/Kfield3originals_175K_trial1_noexclusions/','DSIX':f'/Kfield7originals_150K_trial1_noexclusions/'}
 sourcepath=sourcedict[source]
+origsourcepath=f'/blue/adamginsburg/d.jeff/SgrB2DSreorg/field{fnum}/CH3OH/{source}/{sourcepath}'#origsourcedict[source]
 
 savefigbase=f'/blue/adamginsburg/d.jeff/repos/CH3OHTemps/figures/{source}'
 savefighome=savefigbase+sourcepath
@@ -99,8 +99,8 @@ for master in range(len(allmaster[:,0])):
     
 testzshape=len(mastereuks)
 
-ypix=36#37dsi#73#70#int(input('y coord:'))61
-xpix=40#41dsi#54#55#int(input('x coord:'))64
+ypix=61#69#36dsi#73#70#int(input('y coord:'))61
+xpix=64#58#40dsi#54#55#int(input('x coord:'))64
 pixel=(ypix,xpix)
 pixellist=list([pixel])
 
@@ -237,13 +237,13 @@ for px in pixellist:
         #plt.errorbar(eukstofit,np.log10(nupperstofit),yerr=log10nuerr,fmt='o')
         #plt.plot(linemod_euks,fit_lin(linemod_euks),label=(f'obsTex: {round(obsTrot, 4)} $\pm$ {round(dobsTrot.value, 2)*u.K}\nobsNtot: {round(obsNtot.value,3)/u.cm**2}'))
         for linmod in bootlines:
-            plt.plot(linemod_euks,linmod(linemod_euks),color='black',alpha=0.005,zorder=0)
+            plt.plot(linemod_euks,linmod(linemod_euks),color='black',alpha=0.002,zorder=0)
         #plt.scatter(excludedeuks,np.log10(excludednuppers),marker='v',color='red')
         #plt.title(f'field{fnum} {source} pixel ({y},{x}) CH$_3$OH Rotational Diagram')
         plt.xlabel(r'E$_u$ (K)')
         plt.ylabel(r'log$_{10}$(N$_u$/g$_u$)')
         plt.legend()
-        plt.savefig(rotdiagpath+f'bootstrap_{y}_{x}.png')
+        plt.savefig(rotdiagpath+f'contfix_bootstrap_{y}_{x}.png')
         plt.show()
         
         plt.figure(2)
@@ -259,7 +259,7 @@ for px in pixellist:
         plt.ylabel('Number of fits')
         plt.legend()
         plt.xlim(xmin=0,xmax=750)
-        plt.savefig(rotdiagpath+f'trothist_bootstrap_{y}_{x}.png')
+        plt.savefig(rotdiagpath+f'contfix_trothist_bootstrap_{y}_{x}.png')
         plt.show()
         print('Done.')
     continue

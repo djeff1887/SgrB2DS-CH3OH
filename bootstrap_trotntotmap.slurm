@@ -1,6 +1,6 @@
 #!/bin/sh
 
-#SBATCH --job-name=SgrB2S_lifesupport    # Job name
+#SBATCH --job-name=SgrB2S_limitvt1    # Job name
 #SBATCH --qos=adamginsburg-b    #Allocation
                             #
 #SBATCH --mail-type=ALL          # Mail events (NONE, BEGIN, END, FAIL, ALL)
@@ -9,7 +9,7 @@
 #SBATCH --cpus-per-task=8         # Number of CPU cores per task
 #SBATCH --mem=1gb                     # Job memory request
 #SBATCH --time=8:00:00               # Time limit hrs:min:sec
-#SBATCH --output=SgrB2S_lifesupport_%j.out   # Standard output and error log
+#SBATCH --output=SgrB2S_limitvt1_%j.out   # Standard output and error log
 
 pwd; hostname; date
  
