@@ -114,6 +114,30 @@ smooth_trotfits=fits.open(smoothedtrotmap)
 smooth_trot=smooth_trotfits[0].data*u.K
 smooth_trot_err=fits.getdata(smoothedtroterrmap)*u.K
 
+if source == 'SgrB2S':
+    wcsobj=WCS(smooth_trotfits[0].header)
+
+    regs = regions.Regions.read('/blue/adamginsburg/d.jeff/imaging_results/regfiles/roughsgrb2smassregion_ignoresHIIregion.reg')
+    pixreg = regs[0].to_pixel(wcsobj)
+    pixmask = pixreg.to_mask()
+    
+    texmapdata=pixmask.cutout(texmapdata,fill_value=np.nan)
+    texerrdata=pixmask.cutout(texerrdata,fill_value=np.nan)
+    snrs=np.squeeze(texmapdata/texerrdata)
+    abunds=pixmask.cutout(abunds,fill_value=np.nan)
+    snr_abund=pixmask.cutout(snr_abund,fill_value=np.nan)
+    nh2s=pixmask.cutout(nh2s,fill_value=np.nan)
+    nh2s_error=pixmask.cutout(nh2s_error,fill_value=np.nan)
+    lums=pixmask.cutout(lums,fill_value=np.nan)
+    lumserr=pixmask.cutout(lumserr,fill_value=np.nan)
+    ntots=pixmask.cutout(ntots,fill_value=np.nan)
+    ntoterr=pixmask.cutout(ntoterr,fill_value=np.nan)
+    h2mass=pixmask.cutout(h2mass,fill_value=np.nan)
+    h2masserr=pixmask.cutout(h2masserr,fill_value=np.nan)
+    smooth_trot=pixmask.cutout(smooth_trot,fill_value=np.nan)
+    smooth_trot_err=pixmask.cutout(smooth_trot_err,fill_value=np.nan)
+    
+
 dGC=8.34*u.kpc#per Meng et al. 2019 https://www.aanda.org/articles/aa/pdf/2019/10/aa35920-19.pdf
 
 cntmbeam=radio_beam.Beam.from_fits_header(smooth_trotfits[0].header)
@@ -142,8 +166,8 @@ beamarea_phys=trotbeam.beam_projected_area(dGC)#np.pi*bmajtophyssize*bmintophyss
 cntmbmaj=cntmbeam.major#3.629587176773e-05*u.deg
 cntmbmajtoAU=(np.tan(cntmbmaj)*dGC).to('AU')
 
-pixdict={'SgrB2S':(69,58),'DSi':(36,42),'DSii':(22,24),'DSiii':(24,24),'DSiv':(32,31),'DSv':(19,19),'DSVI':(62,62),'DSVII':(75,75),'DSVIII':(50,50),'DSIX':(34,35)}#y,x; DSiii was 24,24;S was 73,54
-sgrb2scentralpix=(66,70)
+pixdict={'SgrB2S':(26,14),'DSi':(36,42),'DSii':(22,24),'DSiii':(24,24),'DSiv':(32,31),'DSv':(19,19),'DSVI':(62,62),'DSVII':(75,75),'DSVIII':(50,50),'DSIX':(34,35)}#y,x; DSiii was 24,24;S was 73,54 - contfix S was 69,58
+sgrb2scentralpix=(25,25)#contfix pix, prefinal was (66,70)
 #SgrB2S tpeak is 73,54
 #nh2dict={'DSiii':(27,27)}
 #ntotdict={'SgrB2S':(63,71)'}
@@ -158,7 +182,7 @@ print(f'Center p: {texmapdata[texpeakpix[0],texpeakpix[1]]}')
 
 #r=35 #for 15,000 AU
 #pixradius=math.ceil((0.08*u.pc/pixtophysicalsize).to(''))
-rdict={'SgrB2S':5500*u.AU,'DSi':7500*u.AU,'DSii':8700*u.AU,'DSiii':6000*u.AU,'DSiv':8000*u.AU,'DSv':3500*u.AU,'DSVII':6000*u.AU,'DSVIII':5700*u.AU,'DSIX':5000*u.AU}#1-6400,4-8500,5-4000,7-6600,S-12000
+rdict={'SgrB2S':10000*u.AU,'DSi':7500*u.AU,'DSii':8700*u.AU,'DSiii':6000*u.AU,'DSiv':8000*u.AU,'DSv':3500*u.AU,'DSVII':6000*u.AU,'DSVIII':5700*u.AU,'DSIX':5000*u.AU}#1-6400,4-8500,5-4000,7-6600,S-12000
 rdictkeys=rdict.keys()
 if source not in rdictkeys:
     r_phys=10000*u.AU
@@ -188,7 +212,7 @@ mask=rr<r
 
 yy2,xx2=np.indices(smooth_trot.shape)# These are all for the abundances, since the abundance peak in SgrB2S isn't at the temperature peak
 rr2=((xx2-texpeakpix[1])**2+(yy2-texpeakpix[0])**2)**0.5
-S_rr=((xx2-sgrb2scentralpix[1])**2+(yy2-sgrb2scentralpix[0])**2)**0.5
+S_rr=((xx2-sgrb2scentralpix[1])**2+(yy2-sgrb2scentralpix[0])**2)**0.5# I may need to try using this on the abundance vs radius plot instead of the rr2
 mask2=rr2<r
 S_mask=S_rr<r
 
