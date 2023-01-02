@@ -14,6 +14,9 @@ from astropy.modeling import models, fitting#Fittable1DModel, Parameter, fitting
 from utilities import *#Q_rot_asym,mulu,vradio,t_rad,nupper_estimated,opticaldepth,qngrabber
 import matplotlib as mpl
 #from cubecoretexmap import t_rad,nupper_estimated,opticaldepth
+import pdb
+from pyspeckit.spectrum.models import lte_molecule
+
 Splatalogue.QUERY_URL= 'https://splatalogue.online/c_export.php'
 
 mpl.interactive(True)
@@ -21,9 +24,12 @@ mpl.interactive(True)
 plt.close('all')
 linelist='JPL'
 
+def lineprofile(sigma,nu_0,nu):
+    return (1/(np.sqrt(2*np.pi)*sigma))*np.exp(-(nu-nu_0)**2/(2*sigma**2))
+
 '''Collect constants for N_tot and N_upper calculations'''
 
-source='DSi'
+source='DSVI'
 sourceisnew=True
 
 c=cnst.c*u.m/u.s
@@ -36,7 +42,7 @@ c_0=23769.70*u.MHz
 m=b_0**2/(a_0*c_0)
 Tbg=2.7355*u.K
 
-trotdict={'SgrB2S':300*u.K,'DSi':300*u.K,'DSii':150*u.K,'DSiii':150*u.K,'DSiv':150*u.K,'DSv':100*u.K,'DSVI':300*u.K,'DSVII':200*u.K}
+trotdict={'SgrB2S':300*u.K,'DSi':300*u.K,'DSii':150*u.K,'DSiii':150*u.K,'DSiv':150*u.K,'DSv':100*u.K,'DSVI':300*u.K,'DSVII':200*u.K,'DSVIII':215*u.K,'DSIX':150*u.K}
 testT=trotdict[source]
 qrot_partfunc=Q_rot_asym(testT).to('')
 
@@ -45,7 +51,7 @@ R_i=1
 kappa=((2*b_0)-a_0-c_0)/(a_0-c_0)
 f=1
 
-dopplershifts={'SgrB2S':0.000234806,'DSi':0.000186431,'DSii':0.00015954965399894244,'DSiii':0.00017500261911843952,'DSiv':0.00018225233186845314,'DSv':0.0001838576164010067,'DSVI':0.0001661613132158407,'DSVII':0.00016320118280935546}#:0.000190713}/old doppler S: 0.0002306756533745274/0.00015954965399894244/0.00016236367659115043
+dopplershifts={'SgrB2S':0.000234806,'DSi':0.000186431,'DSii':0.00015954965399894244,'DSiii':0.00017500261911843952,'DSiv':0.00018225233186845314,'DSv':0.0001838576164010067,'DSVI':0.0001661613132158407,'DSVII':0.00016320118280935546,'DSVIII':0.0001662062062062062,'DSIX':0.00015453732389175085}#:0.000190713}/old doppler S: 0.0002306756533745274/0.00015954965399894244/0.00016236367659115043
 
 z=dopplershifts[source]
 z_vel=z*c
@@ -53,15 +59,21 @@ z_vel=z*c
 sourcelocs={'SgrB2S':'/blue/adamginsburg/d.jeff/SgrB2DSminicubes/SgrB2S/OctReimage_K/*.fits','DSi':"/blue/adamginsburg/d.jeff/SgrB2DSminicubes/DSi/field10originals_K/*.fits",'DSiii':"/blue/adamginsburg/d.jeff/SgrB2DSminicubes/DSiii/field10originals/*.fits",'DSiv':"/blue/adamginsburg/d.jeff/SgrB2DSminicubes/DSiv/field10originals_K/*.fits",'DSv':"/blue/adamginsburg/d.jeff/SgrB2DSminicubes/DSv/field10originals_K/*.fits",'DSVI':"/blue/adamginsburg/d.jeff/SgrB2DSminicubes/DSVI/field2originals_K/*.fits"}
 dopplershiftimg={'SgrB2S':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/SgrB2S/new_testingstdfixandontheflyrepstuff_K_OctReimage_restfreqfix_newvelmask_newpeakamp/4_2-3_1vt=0repline_mom1.fits",'DSi':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSi/Kfield10originals_trial5carryover_field10errors/8_1-7_0vt=0repline_mom1.fits",'DSii':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSii/field10originals_noexclusions/mom1/CH3OH~8_0-7_1E1vt0.fits",'DSiii':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSiii/field10originals_noexclusions/mom1/CH3OH~10_2--9_3-vt0.fits"}
 
-sourcelocs={'SgrB2S': r'C:/Users/desmond/Dropbox/Research/SgrB2DS/Spectra/files/SgrB2S/OctReimage_K','DSi':r'C:/Users/desmond/Dropbox/Research/SgrB2DS/Spectra/files/DSi/field10originals_K','DSii':r'C:/Users/desmond/Dropbox/Research/SgrB2DS/Spectra/files/DSii/field10originals_K','DSiii':r'C:/Users/desmond/Dropbox/Research/SgrB2DS/Spectra/files/DSiii/field10originals_K','DSiv':r'C:/Users/desmond/Dropbox/Research/SgrB2DS/Spectra/files/DSiv/field10originals_K','DSv':r'C:/Users/desmond/Dropbox/Research/SgrB2DS/Spectra/files/DSv/field10originals_K','DSVI':r'C:/Users/desmond/Dropbox/Research/SgrB2DS/Spectra/files/DSVI/field2originals_K','DSVII':r'C:/Users/desmond/Dropbox/Research/SgrB2DS/Spectra/files/DSVII/field3originals_K'}
+sourcelocs={'SgrB2S': r'C:/Users/desmond/Dropbox/Research/SgrB2DS/Spectra/files/SgrB2S/OctReimage_K','DSi':r'C:/Users/desmond/Dropbox/Research/SgrB2DS/Spectra/files/DSi/field10originals_K','DSii':r'C:/Users/desmond/Dropbox/Research/SgrB2DS/Spectra/files/DSii/field10originals_K','DSiii':r'C:/Users/desmond/Dropbox/Research/SgrB2DS/Spectra/files/DSiii/field10originals_K','DSiv':r'C:/Users/desmond/Dropbox/Research/SgrB2DS/Spectra/files/DSiv/field10originals_K','DSv':r'C:/Users/desmond/Dropbox/Research/SgrB2DS/Spectra/files/DSv/field10originals_K','DSVI':r'C:/Users/desmond/Dropbox/Research/SgrB2DS/Spectra/files/DSVI/field2originals_K','DSVII':r'C:/Users/desmond/Dropbox/Research/SgrB2DS/Spectra/files/DSVII/field3originals_K','DSIX':r'C:/Users/desmond/Dropbox/Research/SgrB2DS/Spectra/files/DSIX/field7originals_K'}
 
-texlocs={'SgrB2S':r'C:/Users/desmond/Dropbox/Research/SgrB2DS/Sources/SgrB2S/new_testingstdfixandontheflyrepstuff_K_OctReimage_restfreqfix_newvelmask_newpeakamp/','DSi':r'C:/Users/desmond/Dropbox/Research/SgrB2DS/Sources/DS1/Kfield10originals_trial7_field10errors_newexclusion_matchslabwidthtorep/','DSii':r'C:/Users/desmond/Dropbox/Research/SgrB2DS/Sources/DSii/Kfield10originals_noexclusions/','DSiii':r'C:/Users/desmond/Dropbox/Research/SgrB2DS/Sources/DSiii/Kfield10originals_noexclusions/','DSiv':r'C:/Users/desmond/Dropbox/Research/SgrB2DS/Sources/DSiv/Kfield10originals_noexclusions/','DSv':r'C:/Users/desmond/Dropbox/Research/SgrB2DS/Sources/DSv/Kfield10originals_noexclusions/','DSVI':r'C:/Users/desmond/Dropbox/Research/SgrB2DS/Sources/DS6/DSVI/Kfield2originals_trial2_16_6-16_7excluded/','DSVII':r'C:/Users/desmond/Dropbox/Research/SgrB2DS/Sources/DS7/Kfield3originals_trial1_noexclusions/'}
+texlocs={'SgrB2S':r'C:/Users/desmond/Dropbox/Research/SgrB2DS/Sources/SgrB2S/new_testingstdfixandontheflyrepstuff_K_OctReimage_restfreqfix_newvelmask_newpeakamp/','DSi':r'C:/Users/desmond/Dropbox/Research/SgrB2DS/Sources/DS1/Kfield10originals_trial7_field10errors_newexclusion_matchslabwidthtorep/','DSii':r'C:/Users/desmond/Dropbox/Research/SgrB2DS/Sources/DS2/Kfield10originals_noexclusions/','DSiii':r'C:/Users/desmond/Dropbox/Research/SgrB2DS/Sources/DSiii/Kfield10originals_noexclusions/','DSiv':r'C:/Users/desmond/Dropbox/Research/SgrB2DS/Sources/DSiv/Kfield10originals_noexclusions/','DSv':r'C:/Users/desmond/Dropbox/Research/SgrB2DS/Sources/DS5/Kfield10originals_noexclusions_include4-3_150K_trial2/','DSVI':r'C:/Users/desmond/Dropbox/Research/SgrB2DS/Sources/DS6/DSVI/Kfield2originals_trial2_16_6-16_7excluded/','DSVII':r'C:/Users/desmond/Dropbox/Research/SgrB2DS/Sources/DS7/Kfield3originals_trial1_noexclusions/','DSIX':r'C:/Users/desmond/Dropbox/Research/SgrB2DS/Sources/DS9/Kfield7originals_150K_trial1_noexclusions/'}
 
-texmappath=texlocs[source]+'texmap_5transmask_3sigma_allspw_withnans_weighted.fits'
+arabicswitch={'DSiii':'DS3','DSiv':'DS4','DSv':'DS5'}
+
+if source in arabicswitch.keys():
+    texlocs[source]=texlocs[source].replace(source,arabicswitch[source])
+    texmappath=texlocs[source]+'texmap_3sigma_allspw_withnans_weighted.fits'
+else:
+    texmappath=texlocs[source]+'texmap_3sigma_allspw_withnans_weighted.fits'
 
 texmapdata=fits.getdata(texmappath)*u.K
 
-pixdict={'SgrB2S':(61,64),'DSi':(36,42),'DSii':(22,24),'DSiii':(24,24),'DSiv':(32,31),'DSv':(19,19),'DSVI':(62,62),'DSVII':(75,75)}
+pixdict={'SgrB2S':(70,59),'DSi':(36,42),'DSii':(22,24),'DSiii':(24,24),'DSiv':(32,31),'DSv':(19,19),'DSVI':(62,62),'DSVII':(75,75),'DSIX':(34,35)}#61,64
 
 targetpix=pixdict[source]
 
@@ -100,29 +112,33 @@ print('Spectra and stds are sequential order')
 #imgnum=0
 testline=0
 
-linewidth=3*u.km/u.s#2.5 km/s is ideal for DSVI
+linewidth=2.5*u.km/u.s#2.5 km/s is ideal for DSVI
 print(f'Absolute model line width: {linewidth}\n')
 
 
-specieslist=[' CH3OH ',' CH3OCHO ',' HOONO ',' HNCO ',' DCN ',' H2CO ',' C2H5OH ',' CH3CHO ',' CH3COOH ',' CH3NH2 ', ' CH3OCH3 ', ' HC3N ',' NH2CHO ', ' NH2CN ',' NH2D ',' SO2 ',' SO ',' t-HCOOH ',' a-H2CCHOH ',' s-H2CCHOH ',' H2CCNH ',' CH3CH2CHO ',' HCCCHO ',' SiS ',' CH2DOH ',' C(18)O ',' HDO ',' CH2CHCN ',' CH3CH2CN ',' c-H2COCH2 ', ' c-HCCCH ',' CCS ',' CH2NH ',"Ethylene Glycol",' cis-CH2OHCHO ','Acetone', ' CH3CN ',' CH2CHCN ']
+specieslist=[' CH3OH ',' CH3OCHO ',' HOONO ',' HNCO ',' DCN ',' H2CO ',' C2H5OH ',' CH3CHO ',' CH3COOH ',' CH3NH2 ', ' CH3OCH3 ', ' HC3N ',' NH2CHO ', ' NH2CN ',' NH2D ',' SO2 ',' SO ',' t-HCOOH ',' a-H2CCHOH ',' s-H2CCHOH ',' H2CCNH ',' CH3CH2CHO ',' HCCCHO ',' SiS ',' CH2DOH ',' C(18)O ',' HDO ',' CH2CHCN ',' CH3CH2CN ',' c-H2COCH2 ', ' c-HCCCH ',' CCS ',' CH2NH ',"Ethylene Glycol",' cis-CH2OHCHO ','Acetone', ' CH3CN ',' CH2CHCN ',' CH3O13CHO ', ' SiO ', ' OCS ', 'N2D+', ' CH3C(15)N ',' CH3CCH ',' CH3SH ',' 13CS ', ' H2S ', ' SO ',' CH3(18)OH ', ' 13CH3OH ']
 
-molnum=len(specieslist)-32#37
-
-maskcolumnissuemols=['OCS', 'SiO','C(18)O']
+molnum=specieslist.index(' CH3COOH ')#42
 
 print(f'Species: {specieslist[molnum]}')
 
-testntot=3e10*u.cm**-2
+testntot=1e14*u.cm**-2
 
-sgrb2scolumns={' CH3OH ':5e16*u.cm**-2,' CH3OCHO ':1e15*u.cm**-2,' HOONO ':1e15*u.cm**-2,' HNCO ':1e15*u.cm**-2,' DCN ':1e14*u.cm**-2,' H2CO ':1e16*u.cm**-2,' C2H5OH ':3e15*u.cm**-2, ' CH3CHO ':1e14*u.cm**-2,' CH3COOH ':1e14*u.cm**-2, ' CH3NH2 ':1e15*u.cm**-2, ' CH3OCH3 ':1e14*u.cm**-2,' HC3N ':1e14*u.cm**-2, ' NH2CHO ':1e12*u.cm**-2,' NH2CN ':1e14*u.cm**-2, ' NH2D ':1e15*u.cm**-2, ' SO2 ':2e15*u.cm**-2, ' SO ':1.25e12*u.cm**-2, ' t-HCOOH ':5e14*u.cm**-2,' SiS ':1e14*u.cm**-2,' C(18)O ':1e18*u.cm**-2, ' c-HCCCH ':2.5e15*u.cm**-2, 'Acetone':6e13*u.cm**-2}
+sgrb2scolumns={' CH3OH ':2e17*u.cm**-2,' CH3OCHO ':7e15*u.cm**-2,' HOONO ':5e15*u.cm**-2,' HNCO ':1e15*u.cm**-2,' DCN ':1e14*u.cm**-2,' H2CO ':1e16*u.cm**-2,' C2H5OH ':3e15*u.cm**-2, ' CH3CHO ':1e14*u.cm**-2,' CH3COOH ':1e14*u.cm**-2, ' CH3NH2 ':1e15*u.cm**-2, ' CH3OCH3 ':1e14*u.cm**-2,' HC3N ':1e14*u.cm**-2, ' NH2CHO ':1e12*u.cm**-2,' NH2CN ':1e14*u.cm**-2, ' NH2D ':1e15*u.cm**-2, ' SO2 ':2e15*u.cm**-2, ' SO ':1.25e12*u.cm**-2, ' t-HCOOH ':5e14*u.cm**-2,' SiS ':1e14*u.cm**-2,' C(18)O ':1e18*u.cm**-2, ' c-HCCCH ':2.5e15*u.cm**-2, 'Acetone':6e13*u.cm**-2, ' OCS ':0.9e16*u.cm**-2, ' SiO ':1e14*u.cm**-2,' CH3C(15)N ':3e13*u.cm**-2, ' 13CS ':8e14*u.cm**-2, ' CH3(18)OH ':2e14*u.cm**-2, ' 13CH3OH ':5e15*u.cm**-2}
 
-dsicolumns={' CH3OH ':1e16*u.cm**-2,' CH3OCHO ':3e14*u.cm**-2,' HOONO ':1e15*u.cm**-2,' HNCO ':0.7e15*u.cm**-2,' DCN ':1e14*u.cm**-2,' H2CO ':1e16*u.cm**-2,' C2H5OH ':3e15*u.cm**-2, ' CH3CHO ':2e14*u.cm**-2,' CH3COOH ':0.7e14*u.cm**-2, ' CH3NH2 ':1e15*u.cm**-2, ' CH3OCH3 ':6e13*u.cm**-2,' HC3N ':1e14*u.cm**-2, ' NH2CHO ':1e12*u.cm**-2,' NH2CN ':0.8e14*u.cm**-2, ' NH2D ':1e15*u.cm**-2, ' SO2 ':8e14*u.cm**-2, ' SO ':7e11*u.cm**-2, ' t-HCOOH ':5e14*u.cm**-2,' SiS ':5e13*u.cm**-2,' C(18)O ':5e17*u.cm**-2,' CH2DOH ':5e15*u.cm**-2, ' CH2NH ':1e13*u.cm**-2,"Ethylene Glycol":1e13*u.cm**-2,'Acetone':0.25e13*u.cm**-2}
+dsicolumns={' CH3OH ':1e17*u.cm**-2,' CH3OCHO ':3e14*u.cm**-2,' HOONO ':1e15*u.cm**-2,' HNCO ':0.7e15*u.cm**-2,' DCN ':1e14*u.cm**-2,' H2CO ':1e16*u.cm**-2,' C2H5OH ':3e15*u.cm**-2, ' CH3CHO ':2e14*u.cm**-2,' CH3COOH ':0.7e14*u.cm**-2, ' CH3NH2 ':1e15*u.cm**-2, ' CH3OCH3 ':6e13*u.cm**-2,' HC3N ':1e14*u.cm**-2, ' NH2CHO ':1e12*u.cm**-2,' NH2CN ':0.8e14*u.cm**-2, ' NH2D ':1e15*u.cm**-2, ' SO2 ':8e14*u.cm**-2, ' SO ':7e11*u.cm**-2, ' t-HCOOH ':5e14*u.cm**-2,' SiS ':5e13*u.cm**-2,' C(18)O ':5e17*u.cm**-2,' CH2DOH ':5e15*u.cm**-2, ' CH2NH ':1e13*u.cm**-2,"Ethylene Glycol":1e13*u.cm**-2,'Acetone':0.25e13*u.cm**-2, ' SiO ':7e13*u.cm**-2, ' OCS ':5.25e15*u.cm**-2, ' 13CS ':5e14*u.cm**-2, ' 13CH3OH ':2e15*u.cm**-2}
 
-ds6columns={' CH3OH ':1e16*u.cm**-2,' CH3OCHO ':1e15*u.cm**-2,' HOONO ':1e15*u.cm**-2,' HNCO ':1e15*u.cm**-2,' DCN ':1e14*u.cm**-2,' H2CO ':1e16*u.cm**-2,' C2H5OH ':3e15*u.cm**-2, ' CH3CHO ':1e14*u.cm**-2,' CH3COOH ':1e14*u.cm**-2, ' CH3NH2 ':1e15*u.cm**-2, ' CH3OCH3 ':1e14*u.cm**-2,' HC3N ':1e14*u.cm**-2, ' NH2CHO ':1e12*u.cm**-2,' NH2CN ':1e14*u.cm**-2, ' NH2D ':1e15*u.cm**-2, ' SO2 ':1e15*u.cm**-2, ' SO ':6e11*u.cm**-2, ' t-HCOOH ':1e14*u.cm**-2,' SiS ':1e14*u.cm**-2}
+ds2columns={' CH3OH ':5e15*u.cm**-2,' CH3OCHO ':5e13*u.cm**-2,' HOONO ':1e15*u.cm**-2,' HNCO ':2.5e14*u.cm**-2,' DCN ':5e13*u.cm**-2,' H2CO ':1.75e15*u.cm**-2,' C2H5OH ':3e15*u.cm**-2, ' CH3CHO ':3e13*u.cm**-2,' CH3COOH ':1e14*u.cm**-2, ' CH3NH2 ':1e15*u.cm**-2, ' CH3OCH3 ':1e14*u.cm**-2,' HC3N ':5e13*u.cm**-2, ' NH2CHO ':1e12*u.cm**-2,' NH2CN ':1e13*u.cm**-2, ' NH2D ':1e15*u.cm**-2, ' SO2 ':2.5e14*u.cm**-2, ' SO ':4e11*u.cm**-2, ' t-HCOOH ':1e14*u.cm**-2,' SiS ':1e14*u.cm**-2, ' OCS ':2e15*u.cm**-2, ' SiO ':0.3e14*u.cm**-2,' 13CS ':1e14*u.cm**-2,' C(18)O ':3e17*u.cm**-2,' H2S ':2.5e16*u.cm**-2, ' CH3(18)OH ':1e14*u.cm**-2}
 
-ds7columns={' CH3OH ':1e16*u.cm**-2,' CH3OCHO ':1e15*u.cm**-2,' HOONO ':1e15*u.cm**-2,' HNCO ':1e15*u.cm**-2,' DCN ':1e14*u.cm**-2,' H2CO ':1e16*u.cm**-2,' C2H5OH ':3e15*u.cm**-2, ' CH3CHO ':1e14*u.cm**-2,' CH3COOH ':1e14*u.cm**-2, ' CH3NH2 ':1e15*u.cm**-2, ' CH3OCH3 ':1e14*u.cm**-2,' HC3N ':1e14*u.cm**-2, ' NH2CHO ':1e12*u.cm**-2,' NH2CN ':1e14*u.cm**-2, ' NH2D ':1e15*u.cm**-2, ' SO2 ':1e15*u.cm**-2, ' SO ':6e11*u.cm**-2, ' t-HCOOH ':1e14*u.cm**-2,' SiS ':1e14*u.cm**-2}
+ds5columns={' CH3OH ':1e15*u.cm**-2,' CH3OCHO ':1e15*u.cm**-2,' HOONO ':1e15*u.cm**-2,' HNCO ':1e15*u.cm**-2,' DCN ':1e14*u.cm**-2,' H2CO ':1.75e15*u.cm**-2,' C2H5OH ':3e15*u.cm**-2, ' CH3CHO ':1e14*u.cm**-2,' CH3COOH ':1e14*u.cm**-2, ' CH3NH2 ':1e15*u.cm**-2, ' CH3OCH3 ':1e13*u.cm**-2,' HC3N ':1e14*u.cm**-2, ' NH2CHO ':1e12*u.cm**-2,' NH2CN ':1e14*u.cm**-2, ' NH2D ':1e15*u.cm**-2, ' SO2 ':1e15*u.cm**-2, ' SO ':6e11*u.cm**-2, ' t-HCOOH ':1e14*u.cm**-2,' SiS ':1e14*u.cm**-2, ' OCS ':3e15*u.cm**-2, ' SiO ':0.3e14*u.cm**-2}
 
-sourcecolumns={'SgrB2S':sgrb2scolumns,'DSi':dsicolumns,'DSVI':ds6columns,'DSVII':ds7columns}
+ds6columns={' CH3OH ':1e17*u.cm**-2,' CH3OCHO ':5e15*u.cm**-2,' HOONO ':1e15*u.cm**-2,' HNCO ':1.3e16*u.cm**-2,' DCN ':3e15*u.cm**-2,' H2CO ':1e16*u.cm**-2,' C2H5OH ':5e16*u.cm**-2, ' CH3CHO ':3e15*u.cm**-2,' CH3COOH ':5e15*u.cm**-2, ' CH3NH2 ':1e15*u.cm**-2, ' CH3OCH3 ':1e14*u.cm**-2,' HC3N ':1e14*u.cm**-2, ' NH2CHO ':1e12*u.cm**-2,' NH2CN ':1e14*u.cm**-2, ' NH2D ':1e15*u.cm**-2, ' SO2 ':1e15*u.cm**-2, ' SO ':1e13*u.cm**-2, ' t-HCOOH ':1e14*u.cm**-2,' SiS ':1e14*u.cm**-2, ' SiO ':1e14*u.cm**-2, ' OCS ':3e15*u.cm**-2, ' 13CH3OH ':1e17*u.cm**-2}
+
+ds7columns={' CH3OH ':1e16*u.cm**-2,' CH3OCHO ':1e15*u.cm**-2,' HOONO ':1e15*u.cm**-2,' HNCO ':1e15*u.cm**-2,' DCN ':1e14*u.cm**-2,' H2CO ':1e16*u.cm**-2,' C2H5OH ':3e15*u.cm**-2, ' CH3CHO ':1e14*u.cm**-2,' CH3COOH ':1e14*u.cm**-2, ' CH3NH2 ':1e15*u.cm**-2, ' CH3OCH3 ':1e14*u.cm**-2,' HC3N ':1e14*u.cm**-2, ' NH2CHO ':1e12*u.cm**-2,' NH2CN ':1e14*u.cm**-2, ' NH2D ':1e15*u.cm**-2, ' SO2 ':1e15*u.cm**-2, ' SO ':6e11*u.cm**-2, ' t-HCOOH ':1e14*u.cm**-2,' SiS ':1e14*u.cm**-2, ' OCS ':3e15*u.cm**-2, ' SiO ':1e14*u.cm**-2}
+
+ds9columns={' CH3OH ':1e15*u.cm**-2,' CH3OCHO ':1e15*u.cm**-2,' HOONO ':1e15*u.cm**-2,' HNCO ':1e15*u.cm**-2,' DCN ':1e14*u.cm**-2,' H2CO ':1e16*u.cm**-2,' C2H5OH ':3e15*u.cm**-2, ' CH3CHO ':1e14*u.cm**-2,' CH3COOH ':1e14*u.cm**-2, ' CH3NH2 ':1e15*u.cm**-2, ' CH3OCH3 ':1e14*u.cm**-2,' HC3N ':1e14*u.cm**-2, ' NH2CHO ':1e12*u.cm**-2,' NH2CN ':1e14*u.cm**-2, ' NH2D ':1e15*u.cm**-2, ' SO2 ':1e15*u.cm**-2, ' SO ':6e11*u.cm**-2, ' t-HCOOH ':1e14*u.cm**-2,' SiS ':1e14*u.cm**-2, ' OCS ':3e15*u.cm**-2, ' SiO ':1e14*u.cm**-2}
+
+sourcecolumns={'SgrB2S':sgrb2scolumns,'DSi':dsicolumns, 'DSii':ds2columns,'DSv':ds5columns,'DSVI':ds6columns,'DSVII':ds7columns,'DSIX':ds9columns}
 
 columndict=sourcecolumns[source]
 if specieslist[molnum] in columndict:
@@ -130,7 +146,7 @@ if specieslist[molnum] in columndict:
 else:
     pass
 
-methntot=dsicolumns[' CH3OH ']
+methntot=columndict[' CH3OH ']
 for spectrum, img, stdimage in zip(spectra,images,stds):
     print('Getting ready - '+img)
     spec=np.genfromtxt(spectrum)
@@ -183,7 +199,7 @@ for spectrum, img, stdimage in zip(spectra,images,stds):
             
     '''Generate species table for contaminant search'''    
     species_table= Splatalogue.query_lines(freq_min, freq_max, chemical_name=specieslist[molnum], energy_max=1840, energy_type='eu_k', line_lists=['JPL','CDMS','SLAIM','ToyoMA','OSU','RFI','Lisa'], show_upper_degeneracy=True)
-    
+    #pdb.set_trace()
     if len(species_table['Chemical Name']) == 0:
         print(f'No transitions in {img}. Continue')
         continue
@@ -238,12 +254,15 @@ for spectrum, img, stdimage in zip(spectra,images,stds):
         restline=line*(1+z)
         
         est_nupper=nupper_estimated(testntot,deg,qrot_partfunc,euj,testT).to('cm-2')
-        est_tau=opticaldepth(aij,restline,testT,est_nupper,originallinewidth).to('')
+        modlinewidth=velocitytofreq(linewidth,line)
+        phi_nu=lineprofile(modlinewidth,restline,restline)
+        intertau=lte_molecule.line_tau(testT, testntot, qrot_partfunc, deg, restline, euj, aij) #opticaldepth(aij,restline,testT,est_nupper,modlinewidth).to('')
+        est_tau=(intertau*phi_nu).to('')
         print(f'Estimated tau: {"{:.3f}".format(est_tau)}')
         trad=t_rad(f,est_tau,restline,testT).to('K')
         if trad >= 3*error:
             print(f'Estimated brightness: {"{:.3f}".format(trad)}')
-            modlinewidth=velocitytofreq(linewidth,line)
+            #modlinewidth=velocitytofreq(linewidth,line)
             print(f'Model linewidth (Hz): {modlinewidth}')
             modelline=models.Gaussian1D(mean=line, stddev=modlinewidth, amplitude=trad)
             #modelgaus+=modelline
@@ -259,14 +278,16 @@ for spectrum, img, stdimage in zip(spectra,images,stds):
     for line,deg,euj,aij,qn in zip(mlines,mdegs,meujs,maijs,mqns):
         print(f'Transition: {qn} @ {line.to("GHz")}')
         restline=line*(1+z)
+        modlinewidth=velocitytofreq(linewidth,line)
+        phi_nu=lineprofile(modlinewidth,restline,restline)
         
         est_nupper=nupper_estimated(methntot,deg,qrot_partfunc,euj,testT).to('cm-2')
-        est_tau=opticaldepth(aij,restline,testT,est_nupper,originallinewidth).to('')
+        intertau=lte_molecule.line_tau(testT, methntot, qrot_partfunc, deg, restline, euj, aij)#opticaldepth(aij,restline,testT,est_nupper,originallinewidth).to('')
+        est_tau=(intertau*phi_nu).to('')
         print(f'Estimated tau: {"{:.3f}".format(est_tau)}')
         trad=t_rad(f,est_tau,restline,testT).to('K')
         if trad >= 3*error:
             print(f'Estimated brightness: {"{:.3f}".format(trad)}')
-            modlinewidth=velocitytofreq(linewidth,line)
             print(f'Model linewidth (Hz): {modlinewidth}')
             modelline=models.Gaussian1D(mean=line, stddev=modlinewidth, amplitude=trad)
             #modelgaus+=modelline

@@ -22,7 +22,7 @@ linelist='JPL'
 
 '''Collect constants for N_tot and N_upper calculations'''
 
-source='DSVIII'
+source='DSv'
 sourceisnew=True
 print(f'Source: {source}')
 
@@ -132,8 +132,8 @@ for spectrum, img in zip(spectra,images):
     else:
         pass
     
-    freq_min=freqs[0]*(1+z)#215*u.GHz
-    freq_max=freqs[(len(freqs)-1)]*(1+z)#235*u.GHz
+    freq_min=freqs[0]*(1+z)*u.GHz#215*u.GHz
+    freq_max=freqs[(len(freqs)-1)]*(1+z)*u.GHz#235*u.GHz
     
     assert freq_max > freq_min, 'Decreasing frequency axis'
     

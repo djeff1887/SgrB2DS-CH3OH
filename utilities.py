@@ -51,6 +51,9 @@ def N_u(nu,Aij,velocityintegrated_intensity_K,velint_intK_err):#(ntot,qrot,gu,eu
     
 def KtoJ(T):#Convert from excitation temperature (Kelvin) to energy (Joules)
     return (3/2)*k*T
+
+def JtoK(E):
+    return ((2/3)*E/k).to('K')
     
 def qngrabber(nums):
     temp=nums.split('(')
