@@ -26,7 +26,7 @@ def transpose_table(tab_before, id_col_name='Core'):#source: https://gist.github
 def round_to_1(x):
     return round(x, -int(floor(log10(abs(x))))) 
 
-sumtable=QTable.read('t150_compositetransposedensitytable.fits')
+sumtable=QTable.read('contsanitycheck_t180_compositedensitytable.fits')#'bootstrap_t150_compositetransposedensitytable.fits')
 sumtable_transpose=sumtable#transpose_table(sumtable)
 transtable=sumtable_transpose#Table.read('compositetable_transpose_preservesnrsforsgrb2s_wip.fits')
 tableclip=transtable
@@ -44,18 +44,23 @@ a2list=[]
 dindexlist=[]
 breaklist=[]
 
+pdb.set_trace()
+
 for key in tableclip.keys():
-    if key == 'Core':
+    if colnames:#key == 'Core':
+        colnamelist=['Core','$T_{peak}$ [K]','$R_{150}$ (AU)','$M_{core}$ [M$_{\odot}$]','$L$ [L$_{\odot}$]','X(\methanol)$_{peak}$ ($10^{-8}$)','$\\alpha_1$','$\\alpha_2$','$p$','$r_{break}$']
+        '''
         trotstrlist.append('$T_{peak}$ [K]')
         radiuslist.append('$R_{150}$ (AU)')
         massstrlist.append('$M_{core}$ [M$_{\odot}$]')
-        lumstrlist.append('$L$ L$_{\odot}$')
+        lumstrlist.append('$L$ [L$_{\odot}$]')
         abunstrlist.append('X(\methanol)$_{peak}$ ($10^{-8}$)')
         a1list.append('$\\alpha_1$')
         a2list.append('$\\alpha_2$')
         dindexlist.append('$p$')
         breaklist.append('$r_{break}$')
-    if key != 'Core':
+        '''
+    if key != 'Source':
         masserr=str(int(tableclip[key][5]))
         troterr=str(int(tableclip[key][1]))
         lumerr=tableclip[key][7]
@@ -108,7 +113,7 @@ for key in tableclip.keys():
         massstr=f'${mass}\pm{masserr}$'
         trotstr=f'${trot}\pm{troterr}$'
         lumstr=f'${lum}\pm{lumerr}$'
-        abunstr=f'${abun}\pm{abunerr}'
+        abunstr=f'${abun}\pm{abunerr}$'
         radstr=f'${rad}\pm{raderr}$'
         a1str=f'${alpha1}\pm{a1err}$'
         a2str=f'${alpha2}\pm{a2err}$'
@@ -124,8 +129,8 @@ for key in tableclip.keys():
         a2list.append(a2str)
         dindexlist.append(dstr)
         breaklist.append(breakstr)
-finaltable=Table(rows=[trotstrlist,radiuslist,massstrlist,lumstrlist,abunstrlist,a1list,a2list,breaklist,dindexlist],names=tableclip.keys())
+finaltable=Table(data=[trotstrlist,radiuslist,massstrlist,lumstrlist,abunstrlist,a1list,a2list,breaklist,dindexlist],names=tableclip.keys())
 
 print(finaltable)
 
-finaltable.write('t150_density_summarytable_latex.csv',overwrite=True)
+finaltable.write('bootstrap_t150_density_summarytable_latex.csv',overwrite=True)

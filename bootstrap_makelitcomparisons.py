@@ -51,6 +51,9 @@ coreradii=[5720,4767,3813,2926,4345,4345,2926,931,776,6097,4434,3880,4767,5720,5
 dindices=[2.22,1.79,1.39,2.25,2.23,2.4,2.12,2.25,1.99,0.83,0.77,1.83,2.14,1.9,2.07,1.67,1.31,2.25,2.03,1.76,1.66,1.94]
 err_dindices=[0.11,0.21,0.09,0.011,0.07,0.07,0.08,0.03,0.11,0.06,0.27,0.23,0.09,0.04,0.06,0.07,0.05,0.06,0.08,0.11,0.09,0.09]
 
+tindices=[0.34,0.48,0.96,0.27,0.14,0.21,0.25,0.31,0.56,1.35,1.48,0.41,0.56,0.23,0.29,0.43,0.59,0.38,0.45,0.59,0.45,0.54]
+err_tindices=[0.11,0.2,0.07,0.11,0.05,0.04,0.08,0.02,0.1,0.05,0.27,0.22,0.09,0.02,0.05,0.05,0.01,0.04,0.07,0.06,0.03,0.08]
+
 coremasses=[]
 eta150_fullmasses=[]
 for n,e_n,outer,inner,dindex in zip(nins,eta150_nins,coreradii,innerradii,dindices):
@@ -65,37 +68,54 @@ avg_ratio=np.mean(percentdiff)
 print(f'Average percent difference between scaled and eta150 masses: {avg_ratio}')
 #pdb.set_trace()
 
-comptable=Table.read('bootstrap_t150_compositetransposedensitytable.fits')
-
-dsmasses=np.array(list(comptable[4])[1:])
-errormass=np.array(list(comptable[5])[1:])#list(comptable[5])[1:]
-lums=list(comptable[6])[1:]
-errorlum=np.array(list(comptable[7])[1:])#list(comptable[7])[1:]
-temps=list(comptable[0])[1:]
-errortemps=list(comptable[1])[1:]
-abuns=np.array(list(comptable[16]))[1:]
+comptable=Table.read('contsanitycheck_t180_compositedensitytable.fits')
+dsmasses=np.array(comptable['H_2 Mass'])#list(comptable[4])[1:])
+errormass=np.array(comptable['H_2 Mass error'])#list(comptable[5])[1:])#list(comptable[5])[1:]
+lums=np.array(comptable['Luminosity'])#list(comptable[6])[1:]
+errorlum=np.array(comptable['Luminosity_error'])#list(comptable[7])[1:])#list(comptable[7])[1:]
+temps=np.array(comptable['T_max'])#list(comptable[0])[1:]
+errortemps=np.array(comptable['T_max_error'])#list(comptable[1])[1:]
+abuns=np.array(comptable['X(CH3OH)'])#list(comptable[16]))[1:]
 abuns=list(map(float,abuns))
-errorabun=np.array(list(comptable[17]))[1:]
+errorabun=np.array(comptable['X(CH3OH) error'])#list(comptable[17]))[1:]
 errorabun=list(map(float,errorabun))
-nh2s=list(comptable[2])[1:]
-dsradii=list(comptable[8])[1:]
-err_dsradii=np.array(list(comptable[9])[1:])/2
-dsdensindex=list(comptable[18])[1:]
-err_dsdens=list(comptable[19])[1:]
+nh2s=np.array(comptable['N(H_2) avg)'])#list(comptable[2])[1:]
+dsradii=np.array(comptable['Radius'])#list(comptable[8])[1:]
+err_dsradii=np.array(comptable['Radius_error'])#np.array(list(comptable[9])[1:])/2
+dsdensindex=np.array(comptable['density_alpha'])#list(comptable[18])[1:]
+err_dsdens=np.array(comptable['err_densityalpha'])#list(comptable[19])[1:]
+dstempindex=np.array(comptable['alpha_2'])
+dstempindex[3]=comptable['alpha_1'][3]
+dstempindex[8]=comptable['alpha_1'][8]
+err_dstempindices=np.array(comptable['alpha_2 error'])
+err_dstempindices[3]=comptable['alpha_1 error'][3]
+err_dstempindices[8]=comptable['alpha_1 error'][8]
 
+#pdb.set_trace()
 meandsdensityindex=np.mean(dsdensindex)
 meancoredensityindex=np.mean(dindices)
 pdiff_dindex=np.abs(meandsdensityindex-meancoredensityindex)/np.mean([meandsdensityindex,meancoredensityindex])
 err_meancoredindex=np.mean(err_dindices)
 err_meandsdindex=np.mean(err_dsdens)
+
+meandstempindex=np.mean(dstempindex)
+meancoretempindex=np.mean(tindices)
+pdiff_tindex=np.abs(meandstempindex-meancoretempindex)/np.mean([meandstempindex,meancoretempindex])
+err_meandstempindex=np.mean(err_dstempindices)
+err_meancoretempindex=np.mean(err_tindices)
 print(f'Mean CORE density index: {meancoredensityindex} +/- {err_meancoredindex}')
 print(f'Mean DS density index: {meandsdensityindex} +/- {err_meandsdindex}')
-print(f'Difference between DS and CORE p indices: {pdiff_dindex}')
+print(f'Difference between DS and CORE p indices: {pdiff_dindex*100}%\n')
 
+print(f'Mean CORE temperature index: {meancoretempindex} +/- {err_meancoretempindex}')
+print(f'Mean DS temperature index: {meandstempindex} +/- {err_meandstempindex}')
+print(f'Difference between DS and CORE p indices: {pdiff_tindex*100}%')
+#pdb.set_trace()
 wbfmt='o'
 w51fmt='x'
 corefmt='^'
 dsfmt='*'
+savefigpath='/blue/adamginsburg/d.jeff/repos/CH3OHTemps/figures/LitComparisons/'
 
 plt.rcParams['figure.dpi']=150
 fig=plt.figure()
@@ -108,6 +128,7 @@ plt.yscale('log')
 plt.ylabel('T$_{peak}$ (K)',fontsize=14)
 plt.xlabel('M$_{core}$ (M$_\odot$)',fontsize=14)
 plt.legend()
+plt.savefig(savefigpath+'contfix_tempvsmass.png',overwrite=True)
 plt.show()
 
 plt.figure()
@@ -118,8 +139,9 @@ plt.errorbar(dsmasses,dsradii,xerr=errormass,fmt=dsfmt,label='DS Hot Cores')
 plt.xscale('log')
 plt.yscale('log')
 plt.xlabel('M$_{core}$ (M$_\odot$)',fontsize=14)
-plt.ylabel('Radius (AU)',fontsize=14)
+plt.ylabel('$r$ (AU)',fontsize=14)
 plt.legend()
+plt.savefig(savefigpath+'contfix_radiusvsmass.png',overwrite=True)
 plt.show()
 
 plt.figure()
@@ -129,6 +151,7 @@ plt.xlabel('M$_{core}$ (M$_\odot$)',fontsize=14)
 plt.ylabel('$p$',fontsize=14)
 plt.xscale('log')
 plt.legend()
+plt.savefig(savefigpath+'contfix_densityindexvsmass.png',overwrite=True)
 plt.show()
 
 plt.figure()
@@ -137,13 +160,16 @@ plt.hist(dsdensindex,label='DS Hot Cores')
 plt.xlabel('$p$',fontsize=14)
 plt.ylabel('Counts',fontsize=14)
 plt.legend()
+plt.savefig(savefigpath+'contfix_densityindexhistogram.png',overwrite=True)
 plt.show()
 
 plt.figure()
-plt.scatter(coreradii,dindices,label='CORE Catalogue')
-plt.scatter(dsradii,dsdensindex,label='DS Hot Cores')
-plt.xlabel('radius')
+plt.errorbar(coreradii,dindices,label='CORE Catalogue')
+plt.errorbar(dsradii,dsdensindex,xerr=label='DS Hot Cores')
+plt.xlabel('$r$ (AU)')
 plt.ylabel('$p$')
+plt.legend()
+plt.savefig(savefigpath+'contfix_densityindexvsradius.png',overwrite=True)
 plt.show()
 
 plt.figure()
@@ -155,5 +181,24 @@ plt.xscale('log')
 plt.yscale('log')
 plt.xlabel('Radius (AU)',fontsize=14)
 plt.ylabel('T$_{peak}$ (K)',fontsize=14)
+plt.savefig(savefigpath+'contfix_tempvsradius.png',overwrite=True)
 plt.legend()
+
+plt.figure()
+plt.errorbar(coretrots.value,tindices,yerr=err_tindices,xerr=trotcore_errs.value,fmt=corefmt,label='CORE catalogue')
+plt.errorbar(temps,dstempindex,yerr=err_dstempindices,xerr=errortemps,fmt=dsfmt,label='DS Hot Cores')
+plt.xlabel('T$_{peak}$ (K)',fontsize=14)
+plt.ylabel('$q$')
+plt.legend()
+plt.savefig(savefigpath+'contfix_temperatureindexvstemp.png',overwrite=True)
+plt.show()
+
+plt.figure()
+plt.errorbar(temps,abuns,yerr=errorabun,xerr=errortemps,fmt=dsfmt,color='red')
+plt.xlabel('T$_{peak}$ (K)',fontsize=14)
+plt.ylabel('X(CH$_3$OH)$_{peak}$',fontsize=14)
+#plt.xscale('log')
+plt.yscale('log')
+#plt.legend()
+plt.savefig(savefigpath+'contfix_peakabundancevstemp.png',overwrite=True)
 plt.show()

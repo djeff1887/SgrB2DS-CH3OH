@@ -59,7 +59,7 @@ def powerlaw_profile(x,a,n):
 def round_to_1(x):
     return round(x, -int(math.floor(math.log10(abs(x)))))
     
-source='SgrB2S'
+source=os.getenv('SOURCE')#'SgrB2S'
 fielddict={'SgrB2S':1,'DSi':10,'DSii':10,'DSiii':10,'DSiv':10,'DSv':10,'DSVI':2,'DSVII':3,'DSVIII':3,'DSIX':7}
 fnum=fielddict[source]
 print(f'Source: {source}')
@@ -75,7 +75,7 @@ else:
     print(f'Figpath {figpath} already exists.')
 
 #notransmask=['DSv','DSVI','DSVII','DSVIII','DSIX']
-#if source in notransmask:
+#if source == 'SgrB2S':
 texmap=home+"bootstrap_texmap_3sigma_allspw_withnans_weighted.fits"
 #else:
 #texmap=home+"texmap_5transmask_3sigma_allspw_withnans_weighted.fits"
@@ -122,6 +122,10 @@ if source == 'SgrB2S':
     pixmask = pixreg.to_mask()
     
     texmapdata=pixmask.cutout(texmapdata,fill_value=np.nan)
+    '''
+    texmask=np.ma.masked_where(texmapdata > 1000, texmapdata)
+    texmapdata=texmask.filled()
+    '''
     texerrdata=pixmask.cutout(texerrdata,fill_value=np.nan)
     snrs=np.squeeze(texmapdata/texerrdata)
     abunds=pixmask.cutout(abunds,fill_value=np.nan)
@@ -220,6 +224,7 @@ centrtopix=(rr[mask]*pixtophysicalsize).value
 yinradius=rr[0]
 xinradius=rr[1]
 texinradius=texmapdata[rr<r].value
+texerrinradius=texerrdata[rr<r].value
 snrsinradius=snrs[rr<r]/5
 abundinradius=abunds[rr2<r]
 abundsnrinradius=snr_abund[rr2<r]
@@ -235,7 +240,7 @@ masserrinradius=h2masserr[rr2<r].value#(nh2s_error[rr<r]*mu*beamarea_phys).to('s
 S_massinradius=h2mass[S_rr<r].value
 S_masserrinradius=h2masserr[S_rr<r].value
 
-pdb.set_trace()
+#pdb.set_trace()
 
 lookformax=texmapdata[rr<10**0.5].value
 lookformax_err=texerrdata[rr<10**0.5].value
@@ -378,24 +383,24 @@ nh2tomean=[]
 nh2errortomean=[]
 #pdb.set_trace()
 if source == 'SgrB2S':#Selects masses,luminosities, nh2s, distances, and temperatures for use in radial plot
-    wcsobj=WCS(smooth_trotfits[0].header)
+    #wcsobj=WCS(smooth_trotfits[0].header)
 
-    regs = regions.Regions.read('/blue/adamginsburg/d.jeff/imaging_results/regfiles/roughsgrb2smassregion_ignoresHIIregion.reg')
-    pixreg = regs[0].to_pixel(wcsobj)
-    pixmask = pixreg.to_mask()
-    err_mdata = pixmask.cutout(h2masserr)
-    dat_mdata=pixmask.cutout(h2mass)
-    masserrtoprop.append(pixmask.get_values(h2masserr))#propmasserr=np.sqrt(np.nansum(np.square(pixmask.get_values(h2masserrmap))))
-    massestosum.append(pixmask.get_values(h2mass))#sgrb2smass=np.nansum(pixmask.get_values(h2massmap))
-    lumstosum.append(pixmask.get_values(lums))
-    lumerrtoprop.append(pixmask.get_values(lumserr))
-    nh2tomean.append(pixmask.get_values(nh2s.value))
-    nh2errortomean.append(pixmask.get_values(nh2s_error))
-    nh2snrinradius=list(pixmask.get_values(nh2s/nh2s_error))
-    premask_tex=np.copy(texinradius)
-    texinradius=list(pixmask.get_values(texmapdata.value))
+    #regs = regions.Regions.read('/blue/adamginsburg/d.jeff/imaging_results/regfiles/roughsgrb2smassregion_ignoresHIIregion.reg')
+    #pixreg = regs[0].to_pixel(wcsobj)
+    #pixmask = pixreg.to_mask()
+    #err_mdata = pixmask.cutout(h2masserr)
+    #dat_mdata=pixmask.cutout(h2mass)
+    #masserrtoprop.append(pixmask.get_values(h2masserr))#propmasserr=np.sqrt(np.nansum(np.square(pixmask.get_values(h2masserrmap))))
+    #massestosum.append(pixmask.get_values(h2mass))#sgrb2smass=np.nansum(pixmask.get_values(h2massmap))
+    #lumstosum.append(pixmask.get_values(lums))
+    #lumerrtoprop.append(pixmask.get_values(lumserr))
+    #nh2tomean.append(pixmask.get_values(nh2s.value))
+    #nh2errortomean.append(pixmask.get_values(nh2s_error))
+    #nh2snrinradius=list(pixmask.get_values(nh2s/nh2s_error))
+    #premask_tex=np.copy(texinradius)
+    #texinradius=list(pixmask.get_values(texmapdata.value))
     
-    rr2_sgrb2s=list(pixmask.get_values(rr2*pixtophysicalsize).value)#rr2 and not rr here?
+    rr2_sgrb2s=centrtopix#(rr2*pixtophysicalsize).value#list(pixmask.get_values(rr2*pixtophysicalsize).value)#rr2 and not rr here?
     '''
     xx_sgrb2s=[]
     yy_sgrb2s=[]
@@ -407,23 +412,42 @@ if source == 'SgrB2S':#Selects masses,luminosities, nh2s, distances, and tempera
             else:
                 pass
     '''
-    premask_abuns=np.copy(abundinradius)
-    abundinradius=list(pixmask.get_values(abunds))
-    abundsnrinradius=list(pixmask.get_values(snr_abund))
-    trotsforabunds=list(pixmask.get_values(texmapdata.value))
+    #premask_abuns=np.copy(abundinradius)
+    #abundinradius=list(pixmask.get_values(abunds))
+    #abundsnrinradius=list(pixmask.get_values(snr_abund))
+    trotsforabunds=texinradius#list(pixmask.get_values(texmapdata.value))
     #pdb.set_trace()
     #print(f'New error: {propmasserr}')
-else:
-    for data2 in teststack:
-        if data2[0] <= edge:
-            massestosum.append(data2[1])
-            masserrtoprop.append(data2[8])
-            lumstosum.append(data2[3])
-            lumerrtoprop.append(data2[7])
-            nh2tomean.append(data2[4])
-            nh2errortomean.append(data2[5])
-        else:
-            break
+#else:
+
+onlytexabund=True
+
+if onlytexabund:
+    if source == 'SgrB2S':
+        np.savetxt(f'contfix_{source}_abuns.txt',abundinradius)
+        np.savetxt(f'contfix_{source}_errabuns.txt',(np.array(abundinradius)/np.array(abundsnrinradius)))
+        np.savetxt(f'contfix_{source}_tex.txt',trotsforabunds)
+        np.savetxt(f'contfix_{source}_errtex.txt',(texerrinradius))
+        print('Done')
+        sys.exit()
+    else:
+        np.savetxt(f'contfix_{source}_abuns.txt',abundinradius)
+        np.savetxt(f'contfix_{source}_errabuns.txt',(np.array(abundinradius)/np.array(abundsnrinradius)))
+        np.savetxt(f'contfix_{source}_tex.txt',texinradius)
+        np.savetxt(f'contfix_{source}_errtex.txt',(texerrinradius))
+        print('Dont')
+        sys.exit()
+        
+for data2 in teststack:
+    if data2[0] <= edge:
+        massestosum.append(data2[1])
+        masserrtoprop.append(data2[8])
+        lumstosum.append(data2[3])
+        lumerrtoprop.append(data2[7])
+        nh2tomean.append(data2[4])
+        nh2errortomean.append(data2[5])
+    else:
+        break
 masssum=np.nansum(massestosum)
 propmasserr=np.sqrt(np.nansum(np.square(masserrtoprop)))*np.sqrt(pixperbeam)#np.sum(masserrtoprop)
 lumsum=np.nansum(lumstosum)
@@ -520,7 +544,7 @@ sourcenamesfortable={'SgrB2S':'SgrB2S','DSi':'DS1','DSii':'DS2','DSiii':'DS3','D
 
 densalpha=fit_dens.alpha.value
 errdensalpha=round_to_1(derr[2])
-onlydens=False
+onlydens=True
 plt.figure()
 if source == 'DSiv':
     plt.errorbar(listordered_centrtopix,radialdensitylist,yerr=err_radialdens,label='Data',fmt='o')
@@ -580,7 +604,7 @@ else:
 #pdb.set_trace()
 if source == 'SgrB2S':
     plt.figure()
-    plt.scatter(trotsforabunds,abundinradius,s=5,c=nh2tomean,norm=mpl.colors.LogNorm())
+    plt.scatter(trotsforabunds,abundinradius,s=5,c=nh2inradius,norm=mpl.colors.LogNorm())
     #plt.yscale('log')
     plt.xlabel('$T_{rot}$ (K)',fontsize=14)
     plt.ylabel('X(CH$_3$OH)',fontsize=14)
@@ -593,7 +617,7 @@ if source == 'SgrB2S':
     plt.show()
 
     plt.figure()
-    plt.scatter(rr2_sgrb2s,abundinradius,s=5,c=nh2tomean,norm=mpl.colors.LogNorm())
+    plt.scatter(rr2_sgrb2s,abundinradius,s=5,c=nh2inradius,norm=mpl.colors.LogNorm())
     plt.yscale('log')
     plt.xlabel('$r$ (AU)',fontsize=14)
     plt.ylabel('X(CH$_3$OH)',fontsize=14)
@@ -604,7 +628,7 @@ if source == 'SgrB2S':
     plt.show()
 
     plt.figure()
-    plt.scatter(rr2_sgrb2s,nh2tomean,s=5,c=texinradius,vmax=plottexmax,cmap='inferno')
+    plt.scatter(rr2_sgrb2s,nh2inradius,s=5,c=texinradius,vmax=plottexmax,cmap='inferno')
     plt.yscale('log')
     plt.xlabel('$r$ (AU)',fontsize=14)
     plt.ylabel('N(H$_2$) (cm$^{-2}$)',fontsize=14)
@@ -724,7 +748,7 @@ else:
     ax0.set_ylabel('T$_{rot}$ (K)',fontsize=14)
     ax1.set_ylabel('Residuals',fontsize=10)
     if source == 'SgrB2S':
-        ax0.set_ylim(ymax=(max(upperfill)+30),ymin=100)
+        ax0.set_ylim(ymax=(800),ymin=100)#max(upperfill)+30),ymin=100)
     else:
         ax0.set_ylim(ymax=(max(upperfill)+30))
     ax0.legend()
@@ -740,7 +764,7 @@ else:
     plt.show()
 if source=='SgrB2S':
     plt.figure()
-    plt.scatter(nh2inradius,ntotsinradius,s=5,c=premask_tex,cmap='inferno')
+    plt.scatter(nh2inradius,ntotsinradius,s=5,c=texinradius,vmax=plottexmax,cmap='inferno')
     '''
     x=[min(nh2inradius),max(nh2inradius)]
     y1=(9.5e-8*np.array(x))
@@ -783,7 +807,7 @@ print(f'norm error: {pcov[0,0]**0.5}')
 print(f'index initial guess: {lowerbound_initialguess[source]}')
 print(f'index error: {pcov[1,1]**0.5}')
 '''
-onlypowerlaw=False
+onlypowerlaw=True
 powerlawpath='/blue/adamginsburg/d.jeff/imaging_results/SgrB2DS-CH3OH/contsanitycheck_powerlawtable_bootmasked.fits'
 pwrlwprams=[(round(fit_pl.alpha_1.value,2)*u.dimensionless_unscaled),(round(perr[2],2)*u.dimensionless_unscaled),(round(fit_pl.alpha_2.value,2)*u.dimensionless_unscaled),(round(perr[3],2)*u.dimensionless_unscaled),(round(fit_pl.x_break.value)*u.AU),(round(perr[1])*u.AU)]
 powerlawparams=QTable(rows=[pwrlwprams],names=['alpha_1','alpha_1 error','alpha_2','alpha_2 error','x_break','x_break error'])
