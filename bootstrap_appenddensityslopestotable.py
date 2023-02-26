@@ -24,7 +24,8 @@ def transpose_table(tab_before, id_col_name='Core'):#source: https://gist.github
         tab_after.add_column(Column(new_rownames, name=id_col_name),index=0)
     return tab_after
 
-pretablepath='bootstrap_t150_compositehotcoresummarytable.fits'
+pretablepath='contsanitycheck_bootmasked_t180_compositehotcoresummarytable.fits'
+'''
 inputtablepath='bootstrap_t150_compositetabletranspose.fits'
 
 if not os.path.exists(inputtablepath):
@@ -35,23 +36,23 @@ if not os.path.exists(inputtablepath):
     pdb.set_trace()
     print(f'Saving transposed input table at {inputtablepath}')
     transpose_pretable.write(inputtablepath)
-
-sumtable=Table.read(inputtablepath)
-densitytable=Table.read('bootstrap_densityslopes.fits')
-cores=np.array(['DS1','DS2','DS3','DS4','DS5','DS6','DS7','DS8','DS9','SgrB2S'])
-cores_t=cores.reshape([10,1])
-core_table=QTable(cores_t)
-newdensitytable=hstack([core_table,densitytable])
-transdensitytable=transpose_table(newdensitytable)
-newstack=vstack([sumtable,transdensitytable])
+'''
+sumtable=Table.read(pretablepath)
+densitytable=Table.read('contsanitycheck_densityslopes_bootmasked.fits')
+#cores=np.array(['DS1','DS2','DS3','DS4','DS5','DS6','DS7','DS8','DS9','SgrB2S'])
+#cores_t=cores.reshape([10,1])
+#core_table=QTable(cores_t)
+#newdensitytable=hstack([core_table,densitytable])
+#transdensitytable=transpose_table(newdensitytable)
+newstack=hstack([sumtable,densitytable])
 newsumtable=Table(newstack)
-newsumtable['Core'][18]=densitytable.keys()[0]
-newsumtable['Core'][19]=densitytable.keys()[1]
+#newsumtable['Core'][18]=densitytable.keys()[0]
+#newsumtable['Core'][19]=densitytable.keys()[1]
 #newsumtable.remove_column(' ')
 print(newsumtable)
 pdb.set_trace()
 
-newsumtable.write('bootstrap_t150_compositetransposedensitytable.fits')
+newsumtable.write('contsanitycheck_t180_compositedensitytable.fits')
 
 
 

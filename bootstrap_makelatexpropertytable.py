@@ -26,8 +26,8 @@ def transpose_table(tab_before, id_col_name='Core'):#source: https://gist.github
 def round_to_1(x):
     return round(x, -int(floor(log10(abs(x))))) 
 
-sumtable=QTable.read('bootstrap_t150_compositetransposedensitytable.fits')
-sumtable_transpose=sumtable#transpose_table(sumtable)
+sumtable=QTable.read('contsanitycheck_t180_compositedensitytable.fits')#'bootstrap_t150_compositetransposedensitytable.fits')
+sumtable_transpose=transpose_table(sumtable)#sumtable
 transtable=sumtable_transpose#Table.read('compositetable_transpose_preservesnrsforsgrb2s_wip.fits')
 tableclip=transtable
 
@@ -43,9 +43,16 @@ a1list=[]
 a2list=[]
 dindexlist=[]
 breaklist=[]
+sourcelist=[]
+colnamelist=[]
 
-for key in tableclip.keys():
+#colnames=True
+#pdb.set_trace()
+
+for key in list(tableclip.keys()):
     if key == 'Core':
+        colnamelist=['Core','$T_{peak}$ [K]','$R_{150}$ (AU)','$M_{core}$ [M$_{\odot}$]','$L$ [L$_{\odot}$]','X(\methanol)$_{peak}$ ($10^{-8}$)','$\\alpha_1$','$\\alpha_2$','$r_{break}$','$p$']
+        '''
         trotstrlist.append('$T_{peak}$ [K]')
         radiuslist.append('$R_{150}$ (AU)')
         massstrlist.append('$M_{core}$ [M$_{\odot}$]')
@@ -55,14 +62,17 @@ for key in tableclip.keys():
         a2list.append('$\\alpha_2$')
         dindexlist.append('$p$')
         breaklist.append('$r_{break}$')
-    if key != 'Core':
-        masserr=str(int(tableclip[key][5]))
-        troterr=str(int(tableclip[key][1]))
+        '''
+        sourcelist=list(tableclip.keys())[1:]
+
+    else:
+        masserr=str(round(tableclip[key][5],2))
+        troterr=str(round(tableclip[key][1],2))
         lumerr=tableclip[key][7]
-        raderr=str(int(tableclip[key][9]))
+        raderr=str(round(tableclip[key][9]))
         a1err=tableclip[key][11]
         a2err=tableclip[key][13]
-        breakerr=int(tableclip[key][15])
+        breakerr=round(tableclip[key][15])
         derr=tableclip[key][19]
         templumerr=np.inf
         if lumerr < 1:
@@ -72,7 +82,7 @@ for key in tableclip.keys():
             else:
                 lumerr=templumerr
         else:
-            lumerr=str(int(lumerr))
+            lumerr=str(round(lumerr,2))
             pass
         abunerr=tableclip[key][17]/1e-8
         tempabunerr=np.inf
@@ -80,10 +90,10 @@ for key in tableclip.keys():
             tempabunerr=round_to_1(abunerr)
             abunerr=str(tempabunerr)
         else:
-            abunerr=str(int(abunerr))
+            abunerr=str(round(abunerr,2))
             pass
-        mass=str(round(tableclip[key][4]))
-        trot=str(round(tableclip[key][0]))
+        mass=str(round(tableclip[key][4],2))
+        trot=str(round(tableclip[key][0],2))
         lum=tableclip[key][6]
         if lum < 1:
             lum=str(round(lum,(len(str(lumerr))-2)))
@@ -98,12 +108,12 @@ for key in tableclip.keys():
         if tempabunerr < 1:
             abun=str(round(abun,(len(str(abunerr))-2)))
         else:
-            abun=str(round(abun))
-        rad=str(int(tableclip[key][8]))
+            abun=str(round(abun,2))
+        rad=str(round(tableclip[key][8]))
         alpha1=str(tableclip[key][10])
         alpha2=str(tableclip[key][12])
         dindex=str(round(tableclip[key][18],(len(str(derr))-2)))
-        rbreak=str(int(tableclip[key][14]))
+        rbreak=str(round(tableclip[key][14]))
 
         massstr=f'${mass}\pm{masserr}$'
         trotstr=f'${trot}\pm{troterr}$'
@@ -124,8 +134,11 @@ for key in tableclip.keys():
         a2list.append(a2str)
         dindexlist.append(dstr)
         breaklist.append(breakstr)
-finaltable=Table(rows=[trotstrlist,radiuslist,massstrlist,lumstrlist,abunstrlist,a1list,a2list,breaklist,dindexlist],names=tableclip.keys())
+        #pdb.set_trace()
+finaltable=Table(data=[sourcelist,trotstrlist,radiuslist,massstrlist,lumstrlist,abunstrlist,a1list,a2list,breaklist,dindexlist],names=colnamelist)#tableclip.keys())
 
 print(finaltable)
 
-finaltable.write('bootstrap_t150_density_summarytable_latex.csv',overwrite=True)
+pdb.set_trace()
+
+finaltable.write('contsanitycheck_summarytable_latex.csv',overwrite=True)

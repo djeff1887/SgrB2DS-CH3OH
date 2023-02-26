@@ -106,8 +106,8 @@ imgdims=np.shape(sortedmom0[0])
 #gs1.update(wspace=0.025, hspace=0.05)
 
 #brightestline={'SgrB2S':600,'DSi':450,'DSii':0,'DSiii':0,'DSiv':0,'DSv':0,'DSVI':0,'DSVII':0,'DSVIII':0}
-sourcewspace={'SgrB2S':-0.75,'DSi':-0.75,'DSii':0,'DSiii':0,'DSiv':0,'DSv':0,'DSVI':-0.42,'DSVII':0,'DSVIII':0,'DSIX':0}
-sourcehspace={'SgrB2S':0,'DSi':0,'DSii':0,'DSiii':0,'DSiv':-0.38,'DSv':-0.38,'DSVI':0,'DSVII':-0.38,'DSVIII':-0.38,'DSIX':-0.38}
+sourcewspace={'SgrB2S':0,'DSi':-0.75,'DSii':0,'DSiii':0,'DSiv':0,'DSv':0,'DSVI':-0.42,'DSVII':0,'DSVIII':0,'DSIX':0}
+sourcehspace={'SgrB2S':-0.35,'DSi':0,'DSii':0,'DSiii':0,'DSiv':-0.38,'DSv':-0.38,'DSVI':0,'DSVII':-0.38,'DSVIII':-0.38,'DSIX':-0.38}
 for row in np.arange(numrows):
     for col in np.arange(numcols):
         if (col+(row*(numcols-1))) >= len(sortedmom0):

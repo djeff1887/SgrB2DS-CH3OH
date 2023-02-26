@@ -10,10 +10,10 @@ dGC=8.34*u.kpc#per Meng et al. 2019 https://www.aanda.org/articles/aa/pdf/2019/1
 
 source=['DSi','DSii','DSiii','DSiv','DSv','DSVI','DSVII','DSVIII','DSIX','SgrB2S']
 fielddict={'SgrB2S':1,'DSi':10,'DSii':10,'DSiii':10,'DSiv':10,'DSv':10,'DSVI':2,'DSVII':3,'DSVIII':3,'DSIX':7}
-homedict={'SgrB2S':"new_testingstdfixandontheflyrepstuff_K_OctReimage_restfreqfix_newvelmask_newpeakamp/",'DSi':"Kfield10originals_trial7_field10errors_newexclusion_matchslabwidthtorep/",'DSii':"Kfield10originals_noexclusions/",'DSiii':"Kfield10originals_noexclusions/",'DSiv':"Kfield10originals_noexclusions/",'DSv':"Kfield10originals_noexclusions_include4-3_150K_trial2/",'DSVI':"Kfield2originals_trial3_8_6-8_7excluded/",'DSVII':'Kfield3originals_200K_trial1_noexclusions/','DSVIII':'Kfield3originals_175K_trial1_noexclusions/','DSIX':'Kfield7originals_150K_trial1_noexclusions/'}#base+'field10originals_z0_000186431_5-6mhzwidth_stdfixes/'
+homedict={'SgrB2S':'/nov2022continuumsanitycheck_limitvt1lines_centeronlinepeak_repline20-20/','DSi':'/nov2022continuumsanitycheck/','DSii':'/nov2022continuumsanitycheck/','DSiii':'/nov2022continuumsanitycheck/','DSiv':'/nov2022contniuumsanitycheck/','DSv':f'/nov2022contniuumsanitycheck/','DSVI':'/nov2022continuumsanitycheck/','DSVII':f'/nov2022contniuumsanitycheck/','DSVIII':f'/nov2022contniuumsanitycheck/','DSIX':f'/nov2022contniuumsanitycheck/'}#{'SgrB2S':"new_testingstdfixandontheflyrepstuff_K_OctReimage_restfreqfix_newvelmask_newpeakamp/",'DSi':"Kfield10originals_trial7_field10errors_newexclusion_matchslabwidthtorep/",'DSii':"Kfield10originals_noexclusions/",'DSiii':"Kfield10originals_noexclusions/",'DSiv':"Kfield10originals_noexclusions/",'DSv':"Kfield10originals_noexclusions_include4-3_150K_trial2/",'DSVI':"Kfield2originals_trial3_8_6-8_7excluded/",'DSVII':'Kfield3originals_200K_trial1_noexclusions/','DSVIII':'Kfield3originals_175K_trial1_noexclusions/','DSIX':'Kfield7originals_150K_trial1_noexclusions/'}#base+'field10originals_z0_000186431_5-6mhzwidth_stdfixes/'
 
 pixdict={'SgrB2S':(73,54),'DSi':(36,42),'DSii':(22,24),'DSiii':(24,24),'DSiv':(32,31),'DSv':(19,19),'DSVI':(62,62),'DSVII':(75,75),'DSVIII':(50,50),'DSIX':(34,35)}
-sumtable=QTable.read('bootstrap_hotcoresummarytable_postreprojsmooth_t150radius.fits')
+sumtable=QTable.read('contsanitycheck_hotcoresummarytable_postreprojsmooth_t180radius_bootmasked.fits')
 
 radii=sumtable['Radius']
 
@@ -36,7 +36,7 @@ for core in source:
     abundances=abundfits[0].data
     err_abund=fits.getdata(abunerrmap)
     if core == 'SgrB2S':
-        corerad=15000*u.AU#radii[i]
+        corerad=10000*u.AU#15000,radii[i]
     else:
         corerad=2000*u.AU
     cellsize=(np.abs(abundfits[0].header['CDELT1']*u.deg)).to('arcsec')
@@ -71,11 +71,11 @@ for core in source:
 abuntable=QTable(data=[abuns],names=['X(CH3OH)'])
 errabuntable=QTable(data=[errabuns],names=['X(CH3OH) error'])
 
-powerlawtable=QTable.read('bootstrap_powerlawtable.fits')
+powerlawtable=QTable.read('contsanitycheck_powerlawtable_bootmasked.fits')
 
 compositetable=hstack([sumtable,powerlawtable,abuntable,errabuntable])
 
-compositepath='/blue/adamginsburg/d.jeff/imaging_results/SgrB2DS-CH3OH/bootstrap_t150_compositehotcoresummarytable.fits'
+compositepath='/blue/adamginsburg/d.jeff/imaging_results/SgrB2DS-CH3OH/contsanitycheck_bootmasked_t180_compositehotcoresummarytable.fits'
 
 print(f'Writing table to {compositepath}')
 compositetable.write(compositepath,overwrite=True)
