@@ -6,24 +6,30 @@ import glob
 import math
 import numpy as np
 import astropy.units as u
+import matplotlib.patheffects as pe
+import matplotlib as mpl
+
+plt.close('all')
+mpl.interactive(True)
 
 cm=plt.cm.get_cmap('inferno')
 cm.set_bad('black')
 
 #sourcepath='/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/SgrB2S/z0_0002306756533745274_testbox2_5-6mhzwidth/'
-sgrb2dspath="/blue/adamginsburg/d.jeff/imaging_results/adamcleancontinuum/Sgr_B2_DS_B6_uid___A001_X1290_X46_continuum_merged_12M_robust0_selfcal4_finaliter.image.tt0.pbcor.fits"
-sgrb2stexmap="/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/SgrB2S/new_testingstdfixandontheflyrepstuff_K_OctReimage_restfreqfix_newvelmask_newpeakamp/texmap_3sigma_allspw_withnans_weighted.fits"
+#sgrb2dspath='/orange/adamginsburg/sgrb2/2017.1.00114.S/imaging_results/Sgr_B2_DS_B6_uid___A001_X1290_X46_continuum_merged_12M_robust2_selfcal4_finaliter_feathered_with_bolocam.fits'
+sgrb2dspath="/blue/adamginsburg/d.jeff/imaging_results/adamcleancontinuum/Sgr_B2_DS_B6_uid___A001_X1290_X46_continuum_merged_12M_robust0_selfcal4_finaliter.image.tt0.pbcor.fits"# Using this one b/c the feathered one has that weird background
+sgrb2stexmap="/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/SgrB2S/new_testingstdfixandontheflyrepstuff_K_OctReimage_restfreqfix_newvelmask_newpeakamp/bootstrap_texmap_3sigma_allspw_withnans_weighted.fits"
 #sgrb2stexmap="/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/SgrB2S/z0_0002306756533745274_testbox2_5-6mhzwidth/texmap_3sigma_allspw_withnans_weighted.fits"
-sgrb2dsitexmap="/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSi/Kfield10originals_trial7_field10errors_newexclusion_matchslabwidthtorep/texmap_3sigma_allspw_withnans_weighted.fits"
+sgrb2dsitexmap="/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSi/Kfield10originals_trial7_field10errors_newexclusion_matchslabwidthtorep/bootstrap_texmap_3sigma_allspw_withnans_weighted.fits"
 #sgrb2dsitexmap="/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/DSi/z0_000186407_box1_5-6mhzwidth/texmap_3sigma_allspw_withnans_weighted.fits"
-sgrb2dsiitexmap="/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSii/Kfield10originals_noexclusions/texmap_3sigma_allspw_withnans_weighted.fits"
-sgrb2dsiiitexmap="/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSiii/Kfield10originals_noexclusions/texmap_3sigma_allspw_withnans_weighted.fits"
-sgrb2dsivtexmap="/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSiv/Kfield10originals_noexclusions/texmap_3sigma_allspw_withnans_weighted.fits"
-dsvtexmap="/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSv/Kfield10originals_noexclusions_include4-3_150K_trial2/texmap_0transmask_3sigma_allspw_withnans_weighted.fits"
-ds6texmap="/blue/adamginsburg/d.jeff/SgrB2DSreorg/field2/CH3OH/DSVI/Kfield2originals_trial2_16_6-16_7excluded/texmap_3sigma_allspw_withnans_weighted.fits"
-ds7texmap="/blue/adamginsburg/d.jeff/SgrB2DSreorg/field3/CH3OH/DSVII/Kfield3originals_trial1_noexclusions/texmap_3sigma_allspw_withnans_weighted.fits"
-ds8texmap="/blue/adamginsburg/d.jeff/SgrB2DSreorg/field3/CH3OH/DSVIII/Kfield3originals_175K_trial1_noexclusions/texmap_3sigma_allspw_withnans_weighted.fits"
-ds9texmap="/blue/adamginsburg/d.jeff/SgrB2DSreorg/field7/CH3OH/DSIX/Kfield7originals_150K_trial1_noexclusions/texmap_3sigma_allspw_withnans_weighted.fits"
+sgrb2dsiitexmap="/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSii/Kfield10originals_noexclusions/bootstrap_texmap_3sigma_allspw_withnans_weighted.fits"
+sgrb2dsiiitexmap="/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSiii/Kfield10originals_noexclusions/bootstrap_texmap_3sigma_allspw_withnans_weighted.fits"
+sgrb2dsivtexmap="/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSiv/Kfield10originals_noexclusions/bootstrap_texmap_3sigma_allspw_withnans_weighted.fits"
+dsvtexmap="/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSv/Kfield10originals_noexclusions_include4-3_150K_trial2/bootstrap_texmap_3sigma_allspw_withnans_weighted.fits"
+ds6texmap="/blue/adamginsburg/d.jeff/SgrB2DSreorg/field2/CH3OH/DSVI/Kfield2originals_trial3_8_6-8_7excluded/bootstrap_texmap_3sigma_allspw_withnans_weighted.fits"
+ds7texmap="/blue/adamginsburg/d.jeff/SgrB2DSreorg/field3/CH3OH/DSVII/Kfield3originals_200K_trial1_noexclusions/bootstrap_texmap_3sigma_allspw_withnans_weighted.fits"
+ds8texmap="/blue/adamginsburg/d.jeff/SgrB2DSreorg/field3/CH3OH/DSVIII/Kfield3originals_175K_trial1_noexclusions/bootstrap_texmap_3sigma_allspw_withnans_weighted.fits"
+ds9texmap="/blue/adamginsburg/d.jeff/SgrB2DSreorg/field7/CH3OH/DSIX/Kfield7originals_150K_trial1_noexclusions/bootstrap_texmap_3sigma_allspw_withnans_weighted.fits"
 
 sgrb2dshdu=fits.open(sgrb2dspath)[0]
 sgrb2dsdata=sgrb2dshdu.data.squeeze()
@@ -49,10 +55,11 @@ theta=np.linspace(0,2*np.pi,150)
 a=pbrad*np.cos(theta)
 b=pbrad*np.sin(theta)
 
+fluxscalefactor=1000
 tmax=520
 tmin=20
-jymax=0.050831314
-jymaxfull=0.01
+jymax=(0.050831314*fluxscalefactor)#Scalled up to
+jymaxfull=(0.01*fluxscalefactor)
 axins_dims=0.45
 
 centerx=1453
@@ -105,76 +112,126 @@ ax.axis([348,2164,448,3735])
 ra=ax.coords[0]
 dec=ax.coords[1]
 axins=ax.inset_axes([lefthoriz,0.864,axins_dims,axins_dims])
-axins.imshow(sgrb2dsdata,origin='lower', norm=visualization.simple_norm(sgrb2dsdata, stretch='sqrt',max_cut=jymax),cmap='gray')
+axins.imshow(sgrb2dsdata*fluxscalefactor,origin='lower', norm=visualization.simple_norm(sgrb2dsdata, stretch='sqrt',max_cut=jymax),cmap='gray_r')
 axins.set_xlim((centerx-width),(centerx+width))
 axins.set_ylim((centery-width),(centery+width))
-continuum=ax.imshow(sgrb2dsdata, origin='lower',norm=visualization.simple_norm(sgrb2dsdata, stretch='sqrt', max_cut=jymaxfull, min_cut=0),cmap='gray_r')
+continuum=ax.imshow((sgrb2dsdata*fluxscalefactor), origin='lower',norm=visualization.simple_norm((sgrb2dsdata*fluxscalefactor), stretch='sqrt', max_cut=jymaxfull, min_cut=0),cmap='gray_r')
 axins2=axins.inset_axes([-1.25,0,1,1])
 axins2show=axins2.imshow(sgrb2shdu.data,vmax=tmax,vmin=tmin,origin='lower',cmap='inferno')
-axins2.annotate('Sgr B2 (S)',(25,25))
+s_txt=axins2.text(3,102,'Sgr B2(S)',size=11,color='black')
+s_txt.set_path_effects([pe.withStroke(linewidth=3,foreground='w')])
+
+shape=sgrb2shdu.data.shape
+xratio=3/shape[1]
+yratio=102/shape[0]
 
 axins3=ax.inset_axes([righthoriz,0.264,axins_dims,axins_dims])
-axins3.imshow(sgrb2dsdata,origin='lower',norm=visualization.simple_norm(sgrb2dsdata, stretch='sqrt', max_cut=jymax),cmap='gray')
+axins3.imshow(sgrb2dsdata*fluxscalefactor,origin='lower',norm=visualization.simple_norm(sgrb2dsdata, stretch='sqrt', max_cut=jymax),cmap='gray_r')
 axins3.set_xlim((centerx2-width2),(centerx2+width2))
 axins3.set_ylim((centery2-width2),(centery2+width2))
 axins4=axins3.inset_axes([1.25,0,1,1])
 axins4.imshow(sgrb2dsihdu.data, vmax=tmax,vmin=tmin,origin='lower',cmap='inferno')
+shape1=sgrb2dsihdu.data.shape
+xpos1=round(shape1[1]*xratio)
+ypos1=round(shape1[0]*yratio)
+txt1=axins4.text(xpos1,ypos1,'DS1',size=11,color='black')
+txt1.set_path_effects([pe.withStroke(linewidth=3,foreground='w')])
 
 axins5=ax.inset_axes([righthoriz,0.564,axins_dims,axins_dims])
-axins5.imshow(sgrb2dsdata,origin='lower',norm=visualization.simple_norm(sgrb2dsdata, stretch='sqrt', max_cut=jymax),cmap='gray')
+axins5.imshow(sgrb2dsdata*fluxscalefactor,origin='lower',norm=visualization.simple_norm(sgrb2dsdata, stretch='sqrt', max_cut=jymax),cmap='gray_r')
 axins5.set_xlim((centerx3-width3),(centerx3+width3))
 axins5.set_ylim((centery3-width3),(centery3+width3))
 axins6=axins5.inset_axes([1.25,0,1,1])
 axins6.imshow(dsiihdu.data, vmax=tmax,vmin=tmin,origin='lower',cmap='inferno')
+shape2=dsiihdu.data.shape
+xpos2=round(shape2[1]*xratio)
+ypos2=round(shape2[0]*yratio)
+txt2=axins6.text(xpos2,ypos2,'DS2',size=11,color='black')
+txt2.set_path_effects([pe.withStroke(linewidth=3,foreground='w')])
 
 axins7=ax.inset_axes([righthoriz,-0.036,axins_dims,axins_dims])
-axins7.imshow(sgrb2dsdata,origin='lower',norm=visualization.simple_norm(sgrb2dsdata, stretch='sqrt', max_cut=jymax),cmap='gray')
+axins7.imshow(sgrb2dsdata*fluxscalefactor,origin='lower',norm=visualization.simple_norm(sgrb2dsdata, stretch='sqrt', max_cut=jymax),cmap='gray_r')
 axins7.set_xlim((centerx6-width6),(centerx6+width6))
 axins7.set_ylim((centery6-width6),(centery6+width6))
 axins8=axins7.inset_axes([1.25,0,1,1])
 axins8.imshow(dsvhdu.data, vmax=tmax,vmin=tmin,origin='lower',cmap='inferno')
+shape5=dsvhdu.data.shape
+xpos5=round(shape5[1]*xratio)
+ypos5=round(shape5[0]*yratio)
+txt5=axins8.text(xpos5,ypos5,'DS5',size=11,color='black')
+txt5.set_path_effects([pe.withStroke(linewidth=3,foreground='w')])
 
 axins9=ax.inset_axes([righthoriz,0.864,axins_dims,axins_dims])
-axins9.imshow(sgrb2dsdata,origin='lower',norm=visualization.simple_norm(sgrb2dsdata, stretch='sqrt', max_cut=jymax),cmap='gray')
+axins9.imshow(sgrb2dsdata*fluxscalefactor,origin='lower',norm=visualization.simple_norm(sgrb2dsdata, stretch='sqrt', max_cut=jymax),cmap='gray_r')
 axins9.set_xlim((centerx5-width5),(centerx5+width5))
 axins9.set_ylim((centery5-width5),(centery5+width5))
 axins10=axins9.inset_axes([1.25,0,1,1])
 axins10.imshow(dsivhdu.data, vmax=tmax,vmin=tmin,origin='lower',cmap='inferno')
+shape4=dsivhdu.data.shape
+xpos4=round(shape4[1]*xratio)
+ypos4=round(shape4[0]*yratio)
+txt4=axins10.text(xpos4,ypos4,'DS4',size=11,color='black')
+txt4.set_path_effects([pe.withStroke(linewidth=3,foreground='w')])
 
 axins11=ax.inset_axes([lefthoriz,0.564,axins_dims,axins_dims])
-axins11.imshow(sgrb2dsdata,origin='lower', norm=visualization.simple_norm(sgrb2dsdata, stretch='sqrt',max_cut=jymax),cmap='gray')
+axins11.imshow(sgrb2dsdata*fluxscalefactor,origin='lower', norm=visualization.simple_norm(sgrb2dsdata, stretch='sqrt',max_cut=jymax),cmap='gray_r')
 axins11.set_xlim((centerx4-width4),(centerx4+width4))
 axins11.set_ylim((centery4-width4),(centery4+width4))
 axins12=axins11.inset_axes([-1.25,0,1,1])
 axins12.imshow(dsiiihdu.data,vmax=tmax,vmin=tmin,origin='lower',cmap='inferno')
+shape3=dsiiihdu.data.shape
+xpos3=round(shape3[1]*xratio)
+ypos3=round(shape3[0]*yratio)
+txt3=axins12.text(xpos3,ypos3,'DS3',size=11,color='black')
+txt3.set_path_effects([pe.withStroke(linewidth=3,foreground='w')])
 
 axins13=ax.inset_axes([lefthoriz,0.264,axins_dims,axins_dims])
-axins13.imshow(sgrb2dsdata,origin='lower', norm=visualization.simple_norm(sgrb2dsdata, stretch='sqrt',max_cut=jymax),cmap='gray')
+axins13.imshow(sgrb2dsdata*fluxscalefactor,origin='lower', norm=visualization.simple_norm(sgrb2dsdata, stretch='sqrt',max_cut=jymax),cmap='gray_r')
 axins13.set_xlim((centerx7-width7),(centerx7+width7))
 axins13.set_ylim((centery7-width7),(centery7+width7))
 axins14=axins13.inset_axes([-1.25,0,1,1])
 axins14.imshow(ds6hdu.data,vmax=tmax,vmin=tmin,origin='lower',cmap='inferno')
+shape6=ds6hdu.data.shape
+xpos6=round(shape6[1]*xratio)
+ypos6=round(shape6[0]*yratio)
+txt6=axins14.text(xpos6,ypos6,'DS6',size=11,color='black')
+txt6.set_path_effects([pe.withStroke(linewidth=3,foreground='w')])
 
 axins15=ax.inset_axes([lefthoriz,-0.036,axins_dims,axins_dims])
-axins15.imshow(sgrb2dsdata,origin='lower', norm=visualization.simple_norm(sgrb2dsdata, stretch='sqrt',max_cut=jymax),cmap='gray')
+axins15.imshow(sgrb2dsdata*fluxscalefactor,origin='lower', norm=visualization.simple_norm(sgrb2dsdata, stretch='sqrt',max_cut=jymax),cmap='gray_r')
 axins15.set_xlim((centerx8-width8),(centerx8+width8))
 axins15.set_ylim((centery8-width8),(centery8+width8))
 axins16=axins15.inset_axes([-1.25,0,1,1])
 axins16.imshow(ds7hdu.data,vmax=tmax,vmin=tmin,origin='lower',cmap='inferno')
+shape7=ds7hdu.data.shape
+xpos7=round(shape7[1]*xratio)
+ypos7=round(shape7[0]*yratio)
+txt7=axins16.text(xpos7,ypos7,'DS7',size=11,color='black')
+txt7.set_path_effects([pe.withStroke(linewidth=3,foreground='w')])
 
 axins17=ax.inset_axes([lefthoriz,-0.336,axins_dims,axins_dims])
-axins17.imshow(sgrb2dsdata,origin='lower', norm=visualization.simple_norm(sgrb2dsdata, stretch='sqrt',max_cut=jymax),cmap='gray')
+axins17.imshow(sgrb2dsdata*fluxscalefactor,origin='lower', norm=visualization.simple_norm(sgrb2dsdata, stretch='sqrt',max_cut=jymax),cmap='gray_r')
 axins17.set_xlim((centerx10-width10),(centerx10+width10))
 axins17.set_ylim((centery10-width10),(centery10+width10))
 axins18=axins17.inset_axes([-1.25,0,1,1])
 axins18.imshow(ds9hdu.data,vmax=tmax,vmin=tmin,origin='lower',cmap='inferno')
+shape9=ds9hdu.data.shape
+xpos9=round(shape9[1]*xratio)
+ypos9=round(shape9[0]*yratio)
+txt9=axins18.text(xpos9,ypos9,'DS9',size=11,color='black')
+txt9.set_path_effects([pe.withStroke(linewidth=3,foreground='w')])
 
 axins19=ax.inset_axes([righthoriz,-0.336,axins_dims,axins_dims])
-axins19.imshow(sgrb2dsdata,origin='lower', norm=visualization.simple_norm(sgrb2dsdata, stretch='sqrt',max_cut=jymax),cmap='gray')
+axins19.imshow(sgrb2dsdata*fluxscalefactor,origin='lower', norm=visualization.simple_norm(sgrb2dsdata, stretch='sqrt',max_cut=jymax),cmap='gray_r')
 axins19.set_xlim((centerx9-width9),(centerx9+width9))
 axins19.set_ylim((centery9-width9),(centery9+width9))
 axins20=axins19.inset_axes([1.25,0,1,1])
 axins20.imshow(ds8hdu.data,vmax=tmax,vmin=tmin,origin='lower',cmap='inferno')
+shape8=ds8hdu.data.shape
+xpos8=round(shape8[1]*xratio)
+ypos8=round(shape8[0]*yratio)
+txt8=axins20.text(xpos8,ypos8,'DS8',size=11,color='black')
+txt8.set_path_effects([pe.withStroke(linewidth=3,foreground='w')])
 
 #plt.grid(color='white', ls='solid')
 dec.set_axislabel('Dec')
@@ -260,10 +317,12 @@ ax.indicate_inset_zoom(axins17)
 ax.indicate_inset_zoom(axins19)
 #axins.indicate_inset_zoom(axins2)
 
-plt.Circle((centerx3,centery3),15)
+#plt.Circle((centerx3,centery3),15)
 
-cb=plt.colorbar(axins2show,shrink=1.4,pad=0.35)
-#cb2=plt.colorbar(continuum,shrink=1.4,pad=0.2)
+cb=plt.colorbar(axins2show,shrink=1.4,pad=0)
+cb2=plt.colorbar(continuum,shrink=1.4,pad=0.4)#,anchor=(0.0,1.0))
 cb.set_label(label='T$_{rot}$ (K)',size=15)
+cb2.set_label(label=r'$S_{\nu}$ (mJy)',size=15)
 axins2show.figure.axes[1].tick_params(axis='y',labelsize=13)
+cb2.ax.tick_params(labelsize=13)#continuum.figure.axes[1].tick_params(axis='y',labelsize=13)
 plt.show()

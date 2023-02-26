@@ -80,36 +80,46 @@ notreproj_cntmimage=fits.open(cntminfile)
 print(f'Continuum image: {cntminfile}')
 restfreq=notreproj_cntmimage[0].header['RESTFRQ']*u.Hz
 
-source='DSi'#os.getenv('envsource')
+source='SgrB2S'#os.getenv('envsource')
 assert source is not None; 'os.getenv didn\'t work'
 print(f'Source: {source}')
 
-sourcedict={'SgrB2S':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/SgrB2S/new_testingstdfixandontheflyrepstuff_K_OctReimage_restfreqfix_newvelmask_newpeakamp/",'DSi':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSi/Kfield10originals_trial7_field10errors_newexclusion_matchslabwidthtorep/",'DSii':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSii/Kfield10originals_noexclusions/",'DSiii':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSiii/Kfield10originals_noexclusions/",'DSiv':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSiv/Kfield10originals_noexclusions/",'DSv':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSv/Kfield10originals_noexclusions_include4-3_150K_trial2/",'DSVI':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field2/CH3OH/DSVI/Kfield2originals_trial3_8_6-8_7excluded/",'DSVII':'/blue/adamginsburg/d.jeff/SgrB2DSreorg/field3/CH3OH/DSVII/Kfield3originals_200K_trial1_noexclusions/','DSVIII':'/blue/adamginsburg/d.jeff/SgrB2DSreorg/field3/CH3OH/DSVIII/Kfield3originals_175K_trial1_noexclusions/','DSIX':'/blue/adamginsburg/d.jeff/SgrB2DSreorg/field7/CH3OH/DSIX/Kfield7originals_150K_trial1_noexclusions/','DSX':'/blue/adamginsburg/d.jeff/SgrB2DSreorg/field7/CH3OH/DSX/Kfield7originals_100K_trial1_noexclusions/'}
-sourcepath=sourcedict[source]
+fielddict={'SgrB2S':1,'DSi':10,'DSii':10,'DSiii':10,'DSiv':10,'DSv':10,'DSVI':2,'DSVII':3,'DSVIII':3,'DSIX':7}
+fnum=fielddict[source]
 
-texmap=fits.open(sourcepath+'texmap_3sigma_allspw_withnans_weighted.fits')
+sourcedict={'SgrB2S':'/nov2022continuumsanitycheck_centeronlinepeak/','DSi':'/nov2022continuumsanitycheck/','DSii':'/nov2022continuumsanitycheck/','DSiii':'/nov2022continuumsanitycheck/','DSiv':'/nov2022contniuumsanitycheck/','DSv':f'/nov2022contniuumsanitycheck/','DSVI':'/nov2022continuumsanitycheck/','DSVII':f'/nov2022contniuumsanitycheck/','DSVIII':f'/nov2022contniuumsanitycheck/','DSIX':f'/nov2022contniuumsanitycheck/'}#{'SgrB2S':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/SgrB2S/new_testingstdfixandontheflyrepstuff_K_OctReimage_restfreqfix_newvelmask_newpeakamp/",'DSi':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSi/Kfield10originals_trial7_field10errors_newexclusion_matchslabwidthtorep/",'DSii':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSii/Kfield10originals_noexclusions/",'DSiii':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSiii/Kfield10originals_noexclusions/",'DSiv':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSiv/Kfield10originals_noexclusions/",'DSv':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSv/Kfield10originals_noexclusions_include4-3_150K_trial2/",'DSVI':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field2/CH3OH/DSVI/Kfield2originals_trial3_8_6-8_7excluded/",'DSVII':'/blue/adamginsburg/d.jeff/SgrB2DSreorg/field3/CH3OH/DSVII/Kfield3originals_200K_trial1_noexclusions/','DSVIII':'/blue/adamginsburg/d.jeff/SgrB2DSreorg/field3/CH3OH/DSVIII/Kfield3originals_175K_trial1_noexclusions/','DSIX':'/blue/adamginsburg/d.jeff/SgrB2DSreorg/field7/CH3OH/DSIX/Kfield7originals_150K_trial1_noexclusions/','DSX':'/blue/adamginsburg/d.jeff/SgrB2DSreorg/field7/CH3OH/DSX/Kfield7originals_100K_trial1_noexclusions/'}
+sourcepath=f'/blue/adamginsburg/d.jeff/SgrB2DSreorg/field{fnum}/CH3OH/{source}'+sourcedict[source]
+
+texmap=fits.open(sourcepath+'texmap_0transmask_3sigma_allspw_withnans_weighted.fits')
+texerrfits=fits.open(sourcepath+'error_trot_boostrap1000_nonegativeslope.fits')
 
 ntotfits=fits.open(sourcepath+'ntotmap_allspw_withnans_weighted_useintercept_3sigma.fits')
 ntotmap=ntotfits[0].data*u.cm**-2
-ntoterrfits=fits.open(sourcepath+'ntoterrmap_allspw_withnans_weighted_useintercept.fits')
-ntoterrmap=ntoterrfits[0].data*u.cm**-2
+ntoterrfits=fits.open(sourcepath+'error_ntot_boostrap1000_nonegativeslope.fits')
+ntoterrmap=np.squeeze(ntoterrfits[0].data)*u.cm**-2
 ch3ohSigmam_map=ntotmap*molweight_ch3oh
 
-snrfits=fits.open(sourcepath+'texmap_snr_allspw_weighted.fits')
-snrmap=snrfits[0].data
+#snrfits=fits.open(sourcepath+'texmap_snr_allspw_weighted.fits')
+snrmap=texmap[0].data/texerrfits[0].data#snrfits[0].data
 
-texerrfits=fits.open(sourcepath+'texmap_error_allspw_withnans_weighted.fits')
-texerrmap=texerrfits[0].data
-maskedtexerr=np.ma.masked_where(texerrmap > 500,texerrmap)
-texerrmap=maskedtexerr.filled(fill_value=np.nan)*u.K
-cmbmasktexerr=np.ma.masked_where(texmap[0].data < Tcmb.value, texerrmap)
-texerrmap=cmbmasktexerr.filled(fill_value=np.nan)
 
-reprojtexmappath=sourcepath+'texmap_3sigma_allspw_withnans_weighted_reprojecttobolocamcont_smoothed.fits'
-reprojtexerrpath=sourcepath+'ntotmap_allspw_withnans_weighted_useintercept_3sigma_reprojecttobolocamcont_smoothed.fits'
-reprojsnrpath=sourcepath+'texmap_snr_allspw_weighted_reprojecttobolocamcont_smoothed.fits'
-reprojntotpath=sourcepath+'ntotmap_allspw_withnans_weighted_useintercept_3sigma_reprojecttobolocamcont_smoothed.fits'
-reprojntoterrpath=sourcepath+'ntoterrmap_allspw_withnans_weighted_useintercept_reprojecttobolocamcont_smoothed.fits'
+texerrmap=np.squeeze(texerrfits[0].data)
+#maskedtexerr=np.ma.masked_where(texerrmap < 1,texerrmap)
+maskedtexerr=np.ma.masked_where(texerrmap >= 500,texerrmap)
+temptexerrmap=maskedtexerr.filled(fill_value=np.nan)*u.K
+cmbmasktexerr=np.ma.masked_where(temptexerrmap.value < Tcmb.value, temptexerrmap.value)
+texerrmap=cmbmasktexerr.filled(fill_value=np.nan)*u.K
+
+maskedntoterr=np.ma.masked_where(ntoterrmap.value >= 1e19, ntoterrmap)
+tempmaskntoterr=maskedntoterr.filled(fill_value=np.nan)
+maskedntoterr2=np.ma.masked_where(tempmaskntoterr.value <= 1e12, tempmaskntoterr.value)
+ntoterrmap=maskedntoterr2.filled(fill_value=np.nan)*u.cm**-2
+
+reprojtexmappath=sourcepath+'bootstrap_texmap_3sigma_allspw_withnans_weighted_reprojecttobolocamcont_smoothed.fits'
+reprojtexerrpath=sourcepath+'boostrap_ntotmap_allspw_withnans_weighted_useintercept_3sigma_reprojecttobolocamcont_smoothed.fits'
+reprojsnrpath=sourcepath+'bootstrap_texmap_snr_allspw_weighted_reprojecttobolocamcont_smoothed.fits'
+reprojntotpath=sourcepath+'bootstrap_ntotmap_allspw_withnans_weighted_useintercept_3sigma_reprojecttobolocamcont_smoothed.fits'
+reprojntoterrpath=sourcepath+'bootstrap_ntoterrmap_allspw_withnans_weighted_useintercept_reprojecttobolocamcont_smoothed.fits'
 #reproj
 
 newcontpath=sourcepath+'reprojectedcontinuum.fits'
@@ -140,6 +150,7 @@ else:
         newcontprimaryHDU.header['RESTFRQ']=restfreq.to('Hz').value
         newcontprimaryHDU.header['BMAJ']=cntmbeam.major.to('deg').value
         newcontprimaryHDU.header['BMIN']=cntmbeam.minor.to('deg').value
+        #newcontprimaryHDU.header['BPA']=cntmbeam.
     
         newcontHDUList=fits.HDUList([newcontprimaryHDU])
 
@@ -167,12 +178,20 @@ else:
     cmbmaskntot=np.ma.masked_where(smoothed_trot < Tcmb.value,smoothed_ntot)
     smoothed_ntot=cmbmaskntot.filled(fill_value=np.nan)
 
-    smoothed_ntoterr=convolve(ntoterrmap, beam_deconv.as_kernel(pixscale),nan_treatment='interpolate')
+    smoothed_ntoterr=convolve(ntoterrmap, beam_deconv.as_kernel(pixscale),fill_value=np.nan, nan_treatment='interpolate')
     cmbmaskntoterr=np.ma.masked_where(smoothed_trot < Tcmb.value, smoothed_ntoterr)
-    smoothed_ntoterr=cmbmaskntoterr.filled(fill_value=np.nan)
+    asmoothed_ntoterr=cmbmaskntoterr.filled(fill_value=np.nan)
+'''
+plt.figure(1)
+plt.imshow(smoothed_ntoterr,origin='lower',vmin=0,vmax=2e17)
+plt.show()
 
-#pdb.set_trace()
+plt.figure(2)
+plt.imshow(smoothed_troterr,origin='lower',vmin=0,vmax=300)
+plt.show()
 
+pdb.set_trace()
+'''
 texmapdata=smoothed_trot*u.K#texmap[0].data*u.K
 
 cntmdata=cntmimage[0].data*u.Jy
@@ -201,7 +220,7 @@ rms_1mm_K=(cntmstd/beamarea_sr).to(u.K,equivalencies=equiv)
 
 snr=3
 
-pdb.set_trace()
+#pdb.set_trace()
 
 cntmsurfbright=cntmdata/beamarea_sr
 err_cntmsurfbright=cntmstd/beamarea_sr
@@ -356,7 +375,7 @@ gasmassprimaryhdu.header=texmap[0].header
 gasmassprimaryhdu.header['BTYPE']='H2 Mass'
 gasmassprimaryhdu.header['BUNIT']='solMass'
 gasmasshdul=fits.HDUList([gasmassprimaryhdu])
-gasmassfitspath=sourcepath+f'h2massmap_{snr}sigma_bolocamfeather_smoothedtobolocam.fits'
+gasmassfitspath=sourcepath+f'bootstrap_h2massmap_{snr}sigma_bolocamfeather_smoothedtobolocam.fits'
 print(f'Saving H2 mass map at {gasmassfitspath}')
 gasmasshdul.writeto(gasmassfitspath,overwrite=True)
 
@@ -365,7 +384,7 @@ errgasmassprimaryhdu.header=texmap[0].header
 errgasmassprimaryhdu.header['BTYPE']='H2 Mass error'
 errgasmassprimaryhdu.header['BUNIT']='solMass'
 errgasmasshdul=fits.HDUList([errgasmassprimaryhdu])
-errgasmassfitspath=sourcepath+f'h2massmap_error_bolocamfeather_smoothedtobolocam.fits'
+errgasmassfitspath=sourcepath+f'bootstrap_h2massmap_error_bolocamfeather_smoothedtobolocam.fits'
 print(f'Saving H2 mass error map at {errgasmassfitspath}')
 errgasmasshdul.writeto(errgasmassfitspath,overwrite=True)
 
@@ -374,7 +393,7 @@ nh2primaryhdu.header=texmap[0].header
 nh2primaryhdu.header['BTYPE']='N(H2)'
 nh2primaryhdu.header['BUNIT']='cm-2'
 nh2hdul=fits.HDUList([nh2primaryhdu])
-nh2fitspath=sourcepath+f'nh2map_{snr}sigma_bolocamfeather_smoothedtobolocam.fits'
+nh2fitspath=sourcepath+f'bootstrap_nh2map_{snr}sigma_bolocamfeather_smoothedtobolocam.fits'
 print(f'Saving N(H2) map at {nh2fitspath}\n')
 nh2hdul.writeto(nh2fitspath,overwrite=True)
 
@@ -383,7 +402,7 @@ nh2uncprimaryhdu.header=texmap[0].header
 nh2uncprimaryhdu.header['BTYPE']='N(H2) error'
 nh2uncprimaryhdu.header['BUNIT']='cm-2'
 nh2unchdul=fits.HDUList([nh2uncprimaryhdu])
-nh2uncfitspath=sourcepath+f'nh2map_error_bolocamfeather_smoothedtobolocam.fits'
+nh2uncfitspath=sourcepath+f'bootstrap_nh2map_error_bolocamfeather_smoothedtobolocam.fits'
 print(f'Saving N(H2) map at {nh2uncfitspath}\n')
 nh2unchdul.writeto(nh2uncfitspath,overwrite=True)
 
@@ -392,7 +411,7 @@ ch3ohabundprimaryhdu.header=texmap[0].header
 ch3ohabundprimaryhdu.header['BTYPE']='Abundance (CH3OH)'
 ch3ohabundprimaryhdu.header['BUNIT']='cm-2/cm-2'
 ch3ohabundhdul=fits.HDUList([ch3ohabundprimaryhdu])
-ch3ohabundfitspath=sourcepath+f'ch3ohabundance_ntotintercept_bolocamfeather_smoothedtobolocam.fits'
+ch3ohabundfitspath=sourcepath+f'bootstrap_ch3ohabundance_ntotintercept_bolocamfeather_smoothedtobolocam.fits'
 print(f'Saving CH3OH abundance map at {ch3ohabundfitspath}\n')
 ch3ohabundhdul.writeto(ch3ohabundfitspath,overwrite=True)
 
@@ -401,7 +420,7 @@ errch3ohabundprimaryhdu.header=texmap[0].header
 errch3ohabundprimaryhdu.header['BTYPE']='Abundance error (CH3OH)'
 errch3ohabundprimaryhdu.header['BUNIT']='cm-2/cm-2'
 errch3ohabundhdul=fits.HDUList([errch3ohabundprimaryhdu])
-errch3ohabundfitspath=sourcepath+f'ch3ohabundance_error_ntotintercept_bolocamfeather_smoothedtobolocam.fits'
+errch3ohabundfitspath=sourcepath+f'bootstrap_ch3ohabundance_error_ntotintercept_bolocamfeather_smoothedtobolocam.fits'
 print(f'Saving CH3OH abundance error map at {errch3ohabundfitspath}\n')
 errch3ohabundhdul.writeto(errch3ohabundfitspath,overwrite=True)
 
@@ -410,16 +429,16 @@ snrch3ohabundprimaryhdu.header=texmap[0].header
 snrch3ohabundprimaryhdu.header['BTYPE']='Abundance SNR (CH3OH)'
 snrch3ohabundprimaryhdu.header['BUNIT']='cm-2/cm-2'
 snrch3ohabundhdul=fits.HDUList([snrch3ohabundprimaryhdu])
-snrch3ohabundfitspath=sourcepath+f'ch3ohabundance_snr_ntotintercept_bolocamfeather_smoothedtobolocam.fits'
+snrch3ohabundfitspath=sourcepath+f'bootstrap_ch3ohabundance_snr_ntotintercept_bolocamfeather_smoothedtobolocam.fits'
 print(f'Saving CH3OH abundance SNR map at {snrch3ohabundfitspath}\n')
 snrch3ohabundhdul.writeto(snrch3ohabundfitspath,overwrite=True)
 
 sigclipch3ohabundprimaryhdu=fits.PrimaryHDU(ch3ohabundance_sigclip.value)
 sigclipch3ohabundprimaryhdu.header=texmap[0].header
 sigclipch3ohabundprimaryhdu.header['BTYPE']='Abundance (CH3OH)'
-sigclipch3ohabundprimaryhdu.header['BUNIT']='cm-2'
+sigclipch3ohabundprimaryhdu.header['BUNIT']='cm-2/cm-2'
 sigclipch3ohabundhdul=fits.HDUList([sigclipch3ohabundprimaryhdu])
-sigclipch3ohabundfitspath=sourcepath+f'ch3ohabundance_{snr}sigma_ntotintercept_bolocamfeather_smoothedtobolocam.fits'
+sigclipch3ohabundfitspath=sourcepath+f'bootstrap_ch3ohabundance_{snr}sigma_ntotintercept_bolocamfeather_smoothedtobolocam.fits'
 print(f'Saving CH3OH abundance map at {sigclipch3ohabundfitspath}\n')
 sigclipch3ohabundhdul.writeto(sigclipch3ohabundfitspath,overwrite=True)
 
@@ -428,7 +447,7 @@ lumprimaryhdu.header=texmap[0].header
 lumprimaryhdu.header['BTYPE']='Luminosity'
 lumprimaryhdu.header['BUNIT']='Lsun'
 lumhdul=fits.HDUList([lumprimaryhdu])
-lumfitspath=sourcepath+f'boltzmannlum_{snr}sigma_bolocamfeather_smoothedtobolocam.fits'
+lumfitspath=sourcepath+f'bootstrap_boltzmannlum_{snr}sigma_bolocamfeather_smoothedtobolocam.fits'
 print(f'Saving luminosity map at {lumfitspath}\n')
 lumhdul.writeto(lumfitspath,overwrite=True)
 
@@ -437,7 +456,7 @@ lumerrprimaryhdu.header=texmap[0].header
 lumerrprimaryhdu.header['BTYPE']='Luminosity error'
 lumerrprimaryhdu.header['BUNIT']='Lsun'
 lumerrhdul=fits.HDUList([lumerrprimaryhdu])
-lumerrfitspath=sourcepath+f'boltzmannlum_error_bolocamfeather_smoothedtobolocam.fits'
+lumerrfitspath=sourcepath+f'bootstrap_boltzmannlum_error_bolocamfeather_smoothedtobolocam.fits'
 print(f'Saving luminosity error map at {lumerrfitspath}\n')
 lumerrhdul.writeto(lumerrfitspath,overwrite=True)
 
@@ -446,7 +465,7 @@ tauprimaryhdu.header=texmap[0].header
 tauprimaryhdu.header['BTYPE']='Optical depth (tau)'
 tauprimaryhdu.header['BUNIT']='unitless'
 tauhdul=fits.HDUList([tauprimaryhdu])
-taufitspath=sourcepath+f'opticaldepth_{snr}sigma_bolocamfeather_smoothedtobolocam.fits'
+taufitspath=sourcepath+f'bootstrap_opticaldepth_{snr}sigma_bolocamfeather_smoothedtobolocam.fits'
 print(f'Saving optical depth map at {taufitspath}\n')
 tauhdul.writeto(taufitspath,overwrite=True)
 
@@ -455,7 +474,7 @@ errtauprimaryhdu.header=texmap[0].header
 errtauprimaryhdu.header['BTYPE']='Optical depth (tau) error'
 errtauprimaryhdu.header['BUNIT']='unitless'
 errtauhdul=fits.HDUList([errtauprimaryhdu])
-errtaufitspath=sourcepath+f'opticaldepth_error_bolocamfeather_smoothedtobolocam.fits'
+errtaufitspath=sourcepath+f'bootstrap_opticaldepth_error_bolocamfeather_smoothedtobolocam.fits'
 print(f'Saving optical depth error map at {errtaufitspath}\n')
 errtauhdul.writeto(errtaufitspath,overwrite=True)
 
@@ -464,7 +483,7 @@ smoothedtrotprimaryhdu.header=texmap[0].header
 smoothedtrotprimaryhdu.header['BMAJ']=bmaj.to('deg').value
 smoothedtrotprimaryhdu.header['BMIN']=bmaj.to('deg').value
 smoothedtrothdul=fits.HDUList([smoothedtrotprimaryhdu])
-smoothedtrotpath=sourcepath+f'smoothed_trot_to_bolocamfeathercont.fits'
+smoothedtrotpath=sourcepath+f'bootstrap_smoothed_trot_to_bolocamfeathercont.fits'
 print(f'Saving smoothed temperature map at {smoothedtrotpath}\n')
 smoothedtrothdul.writeto(smoothedtrotpath,overwrite=True)
 
@@ -473,7 +492,7 @@ errsmoothedtrotprimaryhdu.header=texmap[0].header
 errsmoothedtrotprimaryhdu.header['BMAJ']=bmaj.to('deg').value
 errsmoothedtrotprimaryhdu.header['BMIN']=bmin.to('deg').value
 errsmoothedtrothdul=fits.HDUList([errsmoothedtrotprimaryhdu])
-errsmoothedtrotpath=sourcepath+f'smoothed_trot_err.fits'
+errsmoothedtrotpath=sourcepath+f'bootstrap_smoothed_trot_err.fits'
 print(f'Saving smoothed temperature error map at {errsmoothedtrotpath}\n')
 errsmoothedtrothdul.writeto(errsmoothedtrotpath,overwrite=True)
 
@@ -484,7 +503,7 @@ smoothedntotprimaryhdu.header['BMIN']=bmaj.to('deg').value
 smoothedntotprimaryhdu.header['BTYPE']='Column density (CH3OH)'
 smoothedntotprimaryhdu.header['BUNIT']='cm-2'
 smoothedntothdul=fits.HDUList([smoothedntotprimaryhdu])
-smoothedntotpath=sourcepath+f'smoothed_ntot_to_bolocamfeathercont.fits'
+smoothedntotpath=sourcepath+f'bootstrap_smoothed_ntot_to_bolocamfeathercont.fits'
 print(f'Saving smoothed column density map at {smoothedntotpath}\n')
 smoothedntothdul.writeto(smoothedntotpath,overwrite=True)
 
@@ -495,7 +514,7 @@ errsmoothedntotprimaryhdu.header['BMIN']=bmin.to('deg').value
 errsmoothedntotprimaryhdu.header['BTYPE']='Column density error (CH3OH)'
 errsmoothedntotprimaryhdu.header['BUNIT']='cm-2'
 errsmoothedntothdul=fits.HDUList([errsmoothedntotprimaryhdu])
-errsmoothedntotpath=sourcepath+f'smoothed_ntot_err.fits'
+errsmoothedntotpath=sourcepath+f'bootstrap_smoothed_ntot_err.fits'
 print(f'Saving smoothed column density error map at {errsmoothedntotpath}\n')
 errsmoothedntothdul.writeto(errsmoothedntotpath,overwrite=True)
         

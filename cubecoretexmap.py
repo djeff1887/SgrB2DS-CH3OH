@@ -27,19 +27,19 @@ Splatalogue.QUERY_URL= 'https://splatalogue.online/c_export.php'
 print('Cube-->Core-->Tex start\n')
 print('Begin Jy/beam-to-K and region subcube conversion\n')
 
-source='DSVIII'
+source='SgrB2S'
 print(f'Source: {source}\n')
-fields={'SgrB2S':1,'DSi':10,'DSii':10,'DSiii':10,'DSiv':10,'DSv':10,'DSVI':2,'DSVII':3,'DSVIII':3}
+fields={'SgrB2S':1,'DSi':10,'DSii':10,'DSiii':10,'DSiv':10,'DSv':10,'DSVI':2,'DSVII':3,'DSVIII':3,'DSIX':7,'DSX':7,'DSXI':8}
 fnum=fields[source]
 
 #inpath="/orange/adamginsburg/sgrb2/d.jeff/data/field10originalimages/"
-inpaths={1:'/orange/adamginsburg/sgrb2/d.jeff/data/OctReimage_K/',10:"/orange/adamginsburg/sgrb2/d.jeff/data/field10originals_K/",2:"/orange/adamginsburg/sgrb2/d.jeff/data/field2originals_K/",3:"/orange/adamginsburg/sgrb2/d.jeff/data/field3originals_K/"}
+inpaths={1:'/orange/adamginsburg/sgrb2/d.jeff/data/OctReimage_K/',10:"/orange/adamginsburg/sgrb2/d.jeff/data/field10originals_K/",2:"/orange/adamginsburg/sgrb2/d.jeff/data/field2originals_K/",3:"/orange/adamginsburg/sgrb2/d.jeff/data/field3originals_K/",7:"/orange/adamginsburg/sgrb2/d.jeff/data/field7originals_K/",8:"/orange/adamginsburg/sgrb2/d.jeff/data/field8originals_K/"}
 inpath=inpaths[fnum]#'/blue/adamginsburg/d.jeff/imaging_results/data/OctReimage/'
 beamcubes=glob.glob(inpath+'*.fits')
-homes={1:'/orange/adamginsburg/sgrb2/d.jeff/products/OctReimage_K/',10:"/orange/adamginsburg/sgrb2/d.jeff/products/field10originals_K/",2:"/orange/adamginsburg/sgrb2/d.jeff/products/field2originals_K/",3:"/orange/adamginsburg/sgrb2/d.jeff/products/field3originals_K/"}
+homes={1:'/orange/adamginsburg/sgrb2/d.jeff/products/OctReimage_K/',10:"/orange/adamginsburg/sgrb2/d.jeff/products/field10originals_K/",2:"/orange/adamginsburg/sgrb2/d.jeff/products/field2originals_K/",3:"/orange/adamginsburg/sgrb2/d.jeff/products/field3originals_K/",7:"/orange/adamginsburg/sgrb2/d.jeff/products/field7originals_K/",8:"/orange/adamginsburg/sgrb2/d.jeff/products/field8originals_K/"}
 home=homes[fnum]#'/blue/adamginsburg/d.jeff/imaging_results/products/OctReimage/'
 cubes=glob.glob(home+'*pbcor_line.fits')
-sourceregs={'SgrB2S':'fk5; box(266.8353410, -28.3962005, 0.0016806, 0.0016806)','DSi':'fk5; box(266.8316387, -28.3971867, 0.0010556, 0.0010556)','DSii':'fk5; box(266.8335363, -28.3963159, 0.0006389, 0.0006389)','DSiii':'fk5; box(266.8332758, -28.3969270, 0.0006944, 0.0006944)','DSiv':'fk5; box(266.8323834, -28.3954424, 0.0009000, 0.0009000)','DSv':'fk5; box(266.8321331, -28.3976585, 0.0005556, 0.0005556)','DSVI':'fk5; box(266.8380037, -28.4050741, 0.0017361, 0.0017361)','DSVII':'fk5; box(266.8426074, -28.4094401, 0.0020833, 0.0020833)', 'DSVIII':'fk5; box(266.8418408, -28.4118242, 0.0014028, 0.0014028)'}
+sourceregs={'SgrB2S':'fk5; box(266.8353410, -28.3962005, 0.0016806, 0.0016806)','DSi':'fk5; box(266.8316387, -28.3971867, 0.0010556, 0.0010556)','DSii':'fk5; box(266.8335363, -28.3963159, 0.0006389, 0.0006389)','DSiii':'fk5; box(266.8332758, -28.3969270, 0.0006944, 0.0006944)','DSiv':'fk5; box(266.8323834, -28.3954424, 0.0009000, 0.0009000)','DSv':'fk5; box(266.8321331, -28.3976585, 0.0005556, 0.0005556)','DSVI':'fk5; box(266.8380037, -28.4050741, 0.0017361, 0.0017361)','DSVII':'fk5; box(266.8426074, -28.4094401, 0.0020833, 0.0020833)', 'DSVIII':'fk5; box(266.8418408, -28.4118242, 0.0014028, 0.0014028)','DSIX':'fk5; box(266.8477371, -28.4311386, 0.0009583, 0.0009583)','DSX':'fk5; box(266.8452950, -28.4282608, 0.0017083, 0.0017083)','DSXI':'fk5; box(266.8404733, -28.4286378, 0.0013194, 0.0013194)'}
 #region='fk5; box(266.8321311,-28.3976633, 0.0010833, 0.0010833)'#DSv
 #region='fk5; box(266.8323834,-28.39544244, 0.0009000, 0.0009000)'#DSiv
 region=sourceregs[source]#'fk5; box(266.8316387, -28.3971867, 0.0010556, 0.0010556)'#DSi-large
@@ -48,11 +48,11 @@ region=sourceregs[source]#'fk5; box(266.8316387, -28.3971867, 0.0010556, 0.00105
 #box(266.8335363, -28.3963159, 0.0006389, 0.0006389)' #DSii
 #/iii
 #box(266.8315833, -28.3971867, 0.0006528, 0.0006528)' #DSi-small
-outpath_base=f'/blue/adamginsburg/d.jeff/SgrB2DSminicubes/{source}/'
-outstatpath_end={1:'OctReimage_K/',10:'field10originals_K/',2:'field2originals_K/',3:'field3originals_K/'}
+outpath_base=f'/orange/adamginsburg/sgrb2/2017.1.00114.S/desmond/SgrB2DSminicubes/{source}/'
+outstatpath_end={1:'OctReimage_K/',10:'field10originals_K/',2:'field2originals_K/',3:'field3originals_K/',7:'field7originals_K/',8:'field8originals_K/'}
 outpath=outpath_base+outstatpath_end[fnum]#f'/blue/adamginsburg/d.jeff/SgrB2DSminicubes/{source}/field10originals/'
 #outpath=f'/blue/adamginsburg/d.jeff/SgrB2DSminicubes/{source}/OctReimage_K/'#imaging_results/DSii_iiibox1/'
-statfixpath_base='/blue/adamginsburg/d.jeff/SgrB2DSstatcontfix/'
+statfixpath_base='/orange/adamginsburg/sgrb2/2017.1.00114.S/desmond/SgrB2DSstatcontfix/'
 statfixpath=statfixpath_base+outstatpath_end[fnum]#f'/blue/adamginsburg/d.jeff/SgrB2DSstatcontfix/OctReimage_K/'
 
 regionparams=[float(val) for val in region[9:(len(region)-1)].split(', ')]
@@ -175,7 +175,7 @@ R_i=1
 f=1
 Tbg=2.7355*u.K
 
-dopplershifts={'SgrB2S':0.000234806,'DSi':0.0001842772437139578,'DSii':0.00016236367659115043,'DSiii':0.00017500261911843952,'DSiv':0.00018225233186845314,'DSv':0.0001838576164010067,'DSVI':0.0001661613132158407,'DSVII':0.00016320118280935546,'DSVIII':0.0001661546432045067}#:0.000190713}/old doppler S: 0.0002306756533745274/old doppler I: 0.000186431
+dopplershifts={'SgrB2S':0.000234806,'DSi':0.0001842772437139578,'DSii':0.00016236367659115043,'DSiii':0.00017500261911843952,'DSiv':0.00018225233186845314,'DSv':0.0001838576164010067,'DSVI':0.0001661613132158407,'DSVII':0.00016320118280935546,'DSVIII':0.0001661546432045067,'DSIX':0.00015453732389175085,'DSX':0.00016375916278648755}#:0.000190713}/old doppler S: 0.0002306756533745274/old doppler I: 0.000186431
 
 z=dopplershifts[source]
 #z=0.00017594380066803095 #SgrB2DSII?
@@ -184,9 +184,9 @@ z=dopplershifts[source]
 print(f'Doppler shift: {z} / {(z*c).to("km s-1")}\n')
 
 print('Setting input LTE parameters')
-trotdict={'SgrB2S':300*u.K,'DSi':300*u.K,'DSii':150*u.K,'DSiii':150*u.K,'DSiv':150*u.K,'DSv':150*u.K,'DSVI':300*u.K,'DSVII':250*u.K,'DSVIII':175*u.K}
+trotdict={'SgrB2S':300*u.K,'DSi':300*u.K,'DSii':150*u.K,'DSiii':150*u.K,'DSiv':150*u.K,'DSv':150*u.K,'DSVI':300*u.K,'DSVII':200*u.K,'DSVIII':175*u.K,'DSIX':150*u.K,'DSX':100*u.K}
 testT=trotdict[source]#500*u.K
-ntotdict={'SgrB2S':1e17*u.cm**-2,'DSi':1e17*u.cm**-2,'DSii':1e17*u.cm**-2,'DSiii':1e17*u.cm**-2,'DSiv':1e17*u.cm**-2,'DSv':1e16*u.cm**-2,'DSVI':1e17*u.cm**-2,'DSVII':1e16*u.cm**-2,'DSVIII':1e16*u.cm**-2}
+ntotdict={'SgrB2S':1e17*u.cm**-2,'DSi':1e17*u.cm**-2,'DSii':1e17*u.cm**-2,'DSiii':1e17*u.cm**-2,'DSiv':1e17*u.cm**-2,'DSv':1e16*u.cm**-2,'DSVI':1e17*u.cm**-2,'DSVII':1e16*u.cm**-2,'DSVIII':1e16*u.cm**-2,'DSIX':1e16*u.cm**-2,'DSX':1e15*u.cm**-2}
 testntot=ntotdict[source]
 print(f'Input Tex: {testT}\nInput Ntot: {testntot}')
 
@@ -501,7 +501,6 @@ def linelooplte(line_list,line_width,iterations,quantum_numbers):
                 sigma1hdul.writeto(moment0filename,overwrite=True)
                 print(f'Saved to {moment0filename}')
                 kkmsstdarray=maskslabmom0
-                pass
             else:
                 print('Commence moment0 procedure\n')
                 #cubemask=BooleanArrayMask(mask=cubemaskarray,wcs=slab.wcs)
@@ -521,7 +520,10 @@ def linelooplte(line_list,line_width,iterations,quantum_numbers):
                 print('Unmasked moment0 computing...\n')
                 slabmom0=oldstyleslab.moment0()
                 print('Masked moment0 computing...\n')
-                maskslabmom0=maskedslab.moment0()
+
+                contmom0=reprojcont_K*slabfwhm#continuum sanity check
+
+                maskslabmom0=maskedslab.moment0()+contmom0
                 #momend=time.time()-momstart
                 #print(f'{quantum_numbers[i]} elapsed time: {time.strftime("%H:%M:%S", time.gmtime(momend))}')
                 print('\nComputing masking residuals')
@@ -624,16 +626,18 @@ assert 'spw0' in datacubes[0], 'Cube list out of order'
 #maskeddatacube=sc.read(maskname)
 #maskeddatacube=maskeddatacube.with_spectral_unit((u.km/u.s),velocity_convention='radio',rest_value=220027805942.10373*u.Hz)
 
-stdhomedict={1:'/orange/adamginsburg/sgrb2/d.jeff/products/OctReimage_K/',10:'/orange/adamginsburg/sgrb2/d.jeff/products/field10originals_K/',2:'/orange/adamginsburg/sgrb2/d.jeff/products/field2originals_K/',3:'/orange/adamginsburg/sgrb2/d.jeff/products/field3originals_K/'}
+stdhomedict={1:'/orange/adamginsburg/sgrb2/d.jeff/products/OctReimage_K/',10:'/orange/adamginsburg/sgrb2/d.jeff/products/field10originals_K/',2:'/orange/adamginsburg/sgrb2/d.jeff/products/field2originals_K/',3:'/orange/adamginsburg/sgrb2/d.jeff/products/field3originals_K/',7:'/orange/adamginsburg/sgrb2/d.jeff/products/field7originals_K/'}
 stdhome=stdhomedict[fnum]
 
 #cubemaskarray=maskeddatacube.get_mask_array()
 
-sourcelocs={'SgrB2S':'new_testingstdfixandontheflyrepstuff_K_OctReimage_restfreqfix_newvelmask_newpeakamp/','DSi':'/Kfield10originals_trial7_field10errors_newexclusion_matchslabwidthtorep/','DSii':'/Kfield10originals_noexclusions/','DSiii':'/Kfield10originals_noexclusions/','DSiv':'/Kfield10originals_noexclusions/','DSv':f'/Kfield10originals_noexclusions_include4-3_{int(testT.value)}K_trial2/','DSVI':'/Kfield2originals_trial3_8_6-8_7excluded/','DSVII':f'/Kfield3originals_{int(testT.value)}K_trial2_noexclusions/','DSVIII':f'/Kfield3originals_{int(testT.value)}K_trial1_noexclusions/'}
+sourcelocs={'SgrB2S':'/nov2022continuumsanitycheck_limitvt1lines_centeronlinepeak_repline20-20/','DSi':'/nov2022continuumsanitycheck/','DSii':'/nov2022continuumsanitycheck/','DSiii':'/nov2022continuumsanitycheck/','DSiv':'/nov2022contniuumsanitycheck/','DSv':f'/nov2022contniuumsanitycheck_ntot1e15/','DSVI':'/nov2022continuumsanitycheck/','DSVII':f'/nov2022contniuumsanitycheck/','DSVIII':f'/nov2022contniuumsanitycheck/','DSIX':f'/nov2022contniuumsanitycheck/','DSX':f'/Kfield7originals_{int(testT.value)}K_trial1_noexclusions/'}#'/Kfield10originals_trial7_field10errors_newexclusion_matchslabwidthtorep/'
 
-representativelines={'SgrB2S':'4_2-3_1vt=0','DSi':'8_1-7_0vt=0','DSii':'8_1-7_0vt=0','DSiii':'10_2--9_3-vt=0','DSiv':'20_1-20_0vt=0','DSv':'8_1-7_0vt=0','DSVI':'8_1-7_0vt=0','DSVII':'8_1-7_0vt=0','DSVIII':'8_1-7_0vt=0'}
-representativelws={'SgrB2S':(10*u.km/u.s),'DSi':(3*u.km/u.s),'DSii':(3*u.km/u.s),'DSiii':(3*u.km/u.s),'DSiv':(4*u.km/u.s),'DSv':(4*u.km/u.s),'DSVI':(3*u.km/u.s),'DSVII':(2.5*u.km/u.s),'DSVIII':(2.5*u.km/u.s)}#{'SgrB2S':8*u.MHz,'DSi':3.6*u.MHz}#11MHz for ~10 km/s
-representativecubes={'SgrB2S':1,'DSi':1,'DSii':1,'DSiii':2,'DSiv':0,'DSv':1,'DSVI':1,'DSVII':1,'DSVIII':1}#spwnumber
+origsourcelocs={'SgrB2S':'/new_testingstdfixandontheflyrepstuff_K_OctReimage_restfreqfix_newvelmask_newpeakamp/','DSi':'/Kfield10originals_trial7_field10errors_newexclusion_matchslabwidthtorep/','DSii':'/Kfield10originals_noexclusions/','DSiii':'/Kfield10originals_noexclusions/','DSiv':'/Kfield10originals_noexclusions/','DSv':f'/Kfield10originals_noexclusions_include4-3_{int(testT.value)}K_trial2/','DSVI':'/Kfield2originals_trial3_8_6-8_7excluded/','DSVII':f'/Kfield3originals_{int(testT.value)}K_trial1_noexclusions/','DSVIII':f'/Kfield3originals_{int(testT.value)}K_trial1_noexclusions/','DSIX':f'/Kfield7originals_{int(testT.value)}K_trial1_noexclusions/','DSX':f'/Kfield7originals_{int(testT.value)}K_trial1_noexclusions/'}#
+
+representativelines={'SgrB2S':'20_1-20_0vt=0','DSi':'8_1-7_0vt=0','DSii':'8_1-7_0vt=0','DSiii':'10_2--9_3-vt=0','DSiv':'20_1-20_0vt=0','DSv':'8_1-7_0vt=0','DSVI':'8_1-7_0vt=0','DSVII':'8_1-7_0vt=0','DSVIII':'8_1-7_0vt=0','DSIX':'8_1-7_0vt=0','DSX':'8_1-7_0vt=0'}#oldS 4_2-3_1vt=0
+representativelws={'SgrB2S':(10*u.km/u.s),'DSi':(3*u.km/u.s),'DSii':(3*u.km/u.s),'DSiii':(3*u.km/u.s),'DSiv':(4*u.km/u.s),'DSv':(4*u.km/u.s),'DSVI':(3*u.km/u.s),'DSVII':(2.5*u.km/u.s),'DSVIII':(2.5*u.km/u.s),'DSIX':(5*u.km/u.s),'DSX':(4*u.km/u.s)}#{'SgrB2S':8*u.MHz,'DSi':3.6*u.MHz}#11MHz for ~10 km/s
+representativecubes={'SgrB2S':0,'DSi':1,'DSii':1,'DSiii':2,'DSiv':0,'DSv':1,'DSVI':1,'DSVII':1,'DSVIII':1,'DSIX':1,'DSX':1}#spwnumber
 
 sourcepath=f'/blue/adamginsburg/d.jeff/SgrB2DSreorg/field{fnum}/CH3OH/{source}/'+sourcelocs[source]
 nupperpath=sourcepath+'nuppers/'
@@ -646,6 +650,10 @@ figpath=sourcepath+'figures/'
 overleafpath="/blue/adamginsburg/d.jeff/repos/CH3OHTemps/figures/"
 
 picklepath=sourcepath+'ch3ohlinesdict.obj'
+
+origsourcepath=f'/blue/adamginsburg/d.jeff/SgrB2DSreorg/field{fnum}/CH3OH/{source}/'+origsourcelocs[source]
+contpath=origsourcepath+'reprojectedcontinuum.fits'
+
 
 if os.path.isdir(slabpath):
     print(f'Source path directory tree {sourcepath} already exists.\n')
@@ -700,8 +708,8 @@ masterfluxes=[]
 masterbeams=[]
 masterstddevs=[]
 
-excludedlines={'SgrB2S':['7_6-7_7E1vt1','14_6-14_7E1vt1','11_6-11_7E1vt1'],'DSi':['11_6-11_7E1vt1','25_3-24_4E1vt0','14_6-14_7E1vt1','7_6-7_7E1vt1','13_3--14_4-vt2','13_3+-14_4+vt2','15_6-15_7E1vt1'],'DSii':'','DSiii':'','DSiv':'','DSv':'','DSVI':["6_1--7_2-vt1",'14_6-14_7E1vt1','10_6-10_7E1vt1','9_6-9_7E1vt1','11_6-11_7E1vt1','13_6-13_7E1vt1','12_6-12_7E1vt1','13_3--14_4-vt2','13_3+-14_4+vt2','7_6-7_7E1vt1','16_6-16_7E1vt1','8_6-8_7E1vt1'],'DSVII':'','DSVIII':''}#need exclusions for DSVI
-restfreq_representativeline={'SgrB2S':218.44006300*u.GHz,'DSi':220.07856100*u.GHz,'DSii':220.07856100*u.GHz,'DSiii':231.28111000*u.GHz,'DSiv':217.88650400*u.GHz,'DSv':220.07856100*u.GHz,'DSVI':220.07856100*u.GHz,'DSVII':220.07856100*u.GHz,'DSVIII':220.07856100*u.GHz}#All taken from Splatalogue
+excludedlines={'SgrB2S':['7_6-7_7E1vt1','14_6-14_7E1vt1','11_6-11_7E1vt1','15_6-15_7E1vt1','9_6-9_7E1vt1','13_6-13_7E1vt1','12_6-12_7E1vt1','8_6-8_7E1vt1'],'DSi':['11_6-11_7E1vt1','25_3-24_4E1vt0','14_6-14_7E1vt1','7_6-7_7E1vt1','13_3--14_4-vt2','13_3+-14_4+vt2','15_6-15_7E1vt1'],'DSii':'','DSiii':'','DSiv':'','DSv':'','DSVI':["6_1--7_2-vt1",'14_6-14_7E1vt1','10_6-10_7E1vt1','9_6-9_7E1vt1','11_6-11_7E1vt1','13_6-13_7E1vt1','12_6-12_7E1vt1','13_3--14_4-vt2','13_3+-14_4+vt2','7_6-7_7E1vt1','16_6-16_7E1vt1','8_6-8_7E1vt1'],'DSVII':'','DSVIII':'','DSIX':'','DSX':''}
+restfreq_representativeline={'SgrB2S':217.88650400*u.GHz,'DSi':220.07856100*u.GHz,'DSii':220.07856100*u.GHz,'DSiii':231.28111000*u.GHz,'DSiv':217.88650400*u.GHz,'DSv':220.07856100*u.GHz,'DSVI':220.07856100*u.GHz,'DSVII':220.07856100*u.GHz,'DSVIII':220.07856100*u.GHz,'DSIX':220.07856100*u.GHz,'DSX':220.07856100*u.GHz}#All taken from Splatalogue;  oldS 218.44006300
 representative_filename_base=sourcepath+representativelines[source]+'repline_'
 rep_mom1=representative_filename_base+'mom1.fits'
 rep_fwhm=representative_filename_base+'fwhm.fits'
@@ -740,6 +748,12 @@ for imgnum in range(len(datacubes)):
     stdcellsize=(np.abs(stdimage[0].header['CDELT1']*u.deg)).to('arcsec')
     stdcutoutsize=round(((float(regiondims)*u.deg)/stdcellsize).to('').value)#43:52 selects the region size set by the region variables in the cube>core section of the code
     stddata=stdimage[0].data*u.K
+
+    reprojcontfits=fits.open(contpath)
+    reprojcont=reprojcontfits[0].data*u.Jy
+    reprojcontrestfreq=225*u.GHz#manual addition 11/9/2022, wiggle room w/i GHz
+    cntmbeam=radio_beam.Beam.from_fits_header(reprojcontfits[0].header)
+    reprojcont_K=reprojcont.to('K',cntmbeam.jtok_equiv(reprojcontrestfreq))
     
     print('Acquiring cube rest frequency and computing target pixel coordinates')
     spwrestfreq=header['RESTFRQ']*u.Hz
@@ -758,7 +772,7 @@ for imgnum in range(len(datacubes)):
     #print(velcube.spectral_axis)
     cube_unmasked=velcube.unmasked_data
     
-    targetworldcrds={'SgrB2S':[[0,0,0],[2.66835339e+02, -2.83961660e+01, 0]], 'DSi':[[0,0,0],[266.8316149,-28.3972040,0]], 'DSii':[[0,0,0],[266.8335363,-28.3963158,0]],'DSiii':[[0,0,0],[266.8332758,-28.3969269,0]],'DSiv':[[0,0,0],[266.8323834, -28.3954424,0]],'DSv':[[0,0,0],[266.8321331, -28.3976585, 0]],'DSVI':[[0,0,0],[266.8380037, -28.4050741,0]],'DSVII':[[0,0,0],[266.8426074, -28.4094401,0]],'DSVIII':[[0,0,0],[266.8418408, -28.4118242, 0]]}
+    targetworldcrds={'SgrB2S':[[0,0,0],[266.8351718,-28.3961210, 0]], 'DSi':[[0,0,0],[266.8316149,-28.3972040,0]], 'DSii':[[0,0,0],[266.8335363,-28.3963158,0]],'DSiii':[[0,0,0],[266.8332758,-28.3969269,0]],'DSiv':[[0,0,0],[266.8323834, -28.3954424,0]],'DSv':[[0,0,0],[266.8321331, -28.3976585, 0]],'DSVI':[[0,0,0],[266.8380037, -28.4050741,0]],'DSVII':[[0,0,0],[266.8426074, -28.4094401,0]],'DSVIII':[[0,0,0],[266.8418408, -28.4118242, 0]],'DSIX':[[0,0,0],[266.8477371, -28.4311386,0]],'DSX':[[0,0,0],[266.8452950, -28.4282608,0]]}#;oldSreferencepix 2.66835339e+02,-2.83961660e+01
     cube_w=cube.wcs
     stdwcs=WCS(stdimage[0].header)#WCS(stdimage[0].header)
     
@@ -866,6 +880,7 @@ for imgnum in range(len(datacubes)):
     '''
     singlecmpntwidth=(0.00485/8)*u.GHz
     linewidth=representativelws[source]#10*u.km/u.s#8*u.MHz
+    linewidth_freq=velocitytofreq(linewidth,restfreq_representativeline[source])
     oldwideslabwidth=(15.15*u.MHz)
     originallinewidth=(11231152.36688232*u.Hz/2)#0.005*u.GHz####0.5*0.0097*u.GHz#from small line @ 219.9808GHz# 0.0155>>20.08km/s 
     nu_offset=oldwideslabwidth-originallinewidth
@@ -892,10 +907,10 @@ for imgnum in range(len(datacubes)):
         '''This transmoment0 file has intensity (K km/s) units'''
         if len(tempkeys) == 0:
             print(f'No transitions detected in this spw ({images[imgnum]})')
-            transmomslab=cube.spectral_slab((lines[0]-linewidth),(lines[0]+linewidth))
+            transmomslab=cube.spectral_slab((lines[0]-linewidth_freq),(lines[0]+linewidth_freq))
             transmoment0=transmomslab.moment0()
             transmom0header=transmoment0.header
-            print(f'Set transmoment0 to moment0 from {(lines[0]+linewidth).to("GHz")} to {(lines[0]-linewidth).to("GHz")}')
+            print(f'Set transmoment0 to moment0 from {(lines[0]+linewidth_freq).to("GHz")} to {(lines[0]-linewidth_freq).to("GHz")}')
         else:
             transmoment0=fits.open(spwdict[images[imgnum]][tempkeys[0]]['filename'])
             transmom0header=transmoment0[0].header
@@ -943,10 +958,17 @@ ordereddegens=[]
 print(f'Begin pixel loops of shape ({testyshape},{testxshape})')
 pixelzcoord_nupper=0
 pixelzcoord_nuperr=0
+master_transkeys=[]
+spws_with_detections=[]
 for key in spwdictkeys:
     transdict=spwdict[key]
     #print(f'transdict: {transdict}')
     transitionkeys=list(spwdict[key])
+    master_transkeys.append(transitionkeys)
+    if len(transitionkeys) > 0:
+        spws_with_detections.append(transdict)
+    else:
+        pass
     #print(f'transitionkeys: {transitionkeys}')
     for transkey in range(len(transitionkeys)):#Need to figure out way to store the n_us per pixel, per moment map. possibly append in 3D array
         print(f'Transition: {transitionkeys[transkey]}/Nupper array z-coord: {pixelzcoord_nupper}')
@@ -1039,9 +1061,14 @@ for key in spwdictkeys:
 print('Setting up and executing model fit')
 texmap=np.empty((testyshape,testxshape))
 ntotmap=np.empty((testyshape,testxshape))
+
+ntoterrmap=np.empty((testyshape,testxshape))
 texerrormap=np.empty((testyshape,testxshape))
+
 texsigclipmap=np.empty((testyshape,testxshape))
+ntotsigclipmap=np.zeros((testyshape,testxshape))
 texsnrmap=np.empty((testyshape,testxshape))
+ntotsnrmap=np.zeros((testyshape,testxshape))
 numtransmap=np.empty((testyshape,testxshape))
 degensforfit=[]
 snr=3
@@ -1085,6 +1112,9 @@ for y in range(testyshape):
             texsnrmap[y,x]=np.nan
             texsigclipmap[y,x]=obsTex
             texerrormap[y,x]=np.nan
+            ntoterrmap[y,x]=np.nan
+            ntotsigclipmap[y,x]=np.nan
+            ntotsnrmap[y,x]=np.nan
         else:
             #log10nuerr=[]
             errstofit=[]
@@ -1103,7 +1133,7 @@ for y in range(testyshape):
             #print('Model fit complete')
             #print('Compute obsTex and obsNtot')
             obsTrot=-np.log10(np.e)/(fit_lin.slope)
-            obsNtot=qrot_partfunc*10**(np.log10(nupperstofit[0])+fit_lin.slope*eukstofit[0])
+            obsNtot=qrot_partfunc*10**(fit_lin.intercept)#qrot_partfunc*10**(np.log10(nupperstofit[0])+fit_lin.slope*eukstofit[0])
             
             A=np.stack((eukstofit,np.ones_like(eukstofit)),axis=1)
             C=np.diagflat(log10variances)
@@ -1117,23 +1147,40 @@ for y in range(testyshape):
                 b_unc = covmat[1,1]**0.5
             
             dobsTrot=np.abs(np.abs(m_unc/fit_lin.slope)*obsTrot*u.K)
+            dobsNtot=np.abs(qrot_partfunc*10**(fit_lin.intercept)*(np.log(10)*b_unc))*u.cm**-2#np.sqrt((qrot_partfunc*10**(np.log10(nupperstofit[0])+fit_lin.slope*eukstofit[0])*np.log(10)*eukstofit[0]*m_unc)**2+(qrot_partfunc*10**(np.log10(nupperstofit[0])+fit_lin.slope*eukstofit[0])*(1/(nupperstofit[0]*np.log(10)))*nuperrors[0])**2)*u.cm**-2
             
             sigTrot=(obsTrot*u.K/dobsTrot).to('')
+            sigNtot=(obsNtot*u.cm**-2/dobsNtot).to('')
             
             texmap[y,x]=obsTrot
             ntotmap[y,x]=obsNtot
             texerrormap[y,x]=dobsTrot.to('K').value
+            ntoterrmap[y,x]=dobsNtot.value
             texsnrmap[y,x]=sigTrot
+            ntotsnrmap[y,x]=sigNtot
+            
             if sigTrot >= snr:
                 texsigclipmap[y,x]=obsTrot
             else:
                 texsigclipmap[y,x]=np.nan
+                
+            if sigNtot >= snr:
+                '''
+                if obsNtot >= 1e29 or dobsNtot.value <= 1:
+                    ntotsigclipmap[y,x]=np.nan
+                else:
+                '''
+                ntotsigclipmap[y,x]=obsNtot
+            #elif np.isnan(dobsNtot) or dobsNtot == 0:
+            #     ntotsigclipmap[y,x]=np.nan
+            else:
+                ntotsigclipmap[y,x]=np.nan
 
 detectnum=0
 transmaskarr=np.ma.masked_where(numtransmap<=detectnum,texsigclipmap)
 transmasktexmap=transmaskarr.filled(fill_value=np.nan)#np.array(np.ma.masked_where(numtransmap<detectnum,texsigclipmap))
             
-transmoment0=fits.open(transdict[transitionkeys[transkey]]['filename'])
+transmoment0=fits.open(spws_with_detections[0][master_transkeys[0][0]]['filename'])
 transmom0header=transmoment0[0].header
 
 primaryhdutex=fits.PrimaryHDU(texmap)
@@ -1149,8 +1196,8 @@ primaryhduntot.header=transmom0header
 primaryhduntot.header['BTYPE']='Total column density'
 primaryhduntot.header['BUNIT']='cm-2'
 hdulntot=fits.HDUList([primaryhduntot])
-print(f'Saving raw ntot map at {sourcepath+"ntotmap_allspw_withnans_weighted.fits"}\n')
-hdulntot.writeto(sourcepath+'ntotmap_allspw_withnans_weighted.fits',overwrite=True)
+print(f'Saving raw ntot map at {sourcepath+"ntotmap_allspw_withnans_weighted_useintercept.fits"}\n')
+hdulntot.writeto(sourcepath+'ntotmap_allspw_withnans_weighted_useintercept.fits',overwrite=True)
 
 primaryhdutexerr=fits.PrimaryHDU(texerrormap)
 primaryhdutexerr.header=transmom0header
@@ -1193,6 +1240,33 @@ hdultransmasktex=fits.HDUList([primaryhdutransmasktex])
 nsigmatransmaskedpath=sourcepath+f"texmap_{detectnum}transmask_{snr}sigma_allspw_withnans_weighted.fits"
 print(f'Saving {detectnum} transition masked temperature map at {nsigmatransmaskedpath}\n')
 hdultransmasktex.writeto(nsigmatransmaskedpath,overwrite=True)
+
+primaryhduntoterr=fits.PrimaryHDU(ntoterrmap)
+primaryhduntoterr.header=transmom0header
+primaryhduntoterr.header['BTYPE']='Total column density error'
+primaryhduntoterr.header['BUNIT']='cm-2'
+hdulntoterr=fits.HDUList([primaryhduntoterr])
+ntoterrpath=sourcepath+f"ntoterrmap_allspw_withnans_weighted_useintercept.fits"
+print(f'Saving ntoterr map at {ntoterrpath}\n')
+hdulntoterr.writeto(ntoterrpath,overwrite=True)
+
+primaryhduntotsig=fits.PrimaryHDU(ntotsigclipmap)
+primaryhduntotsig.header=transmom0header
+primaryhduntotsig.header['BTYPE']='Total column density'
+primaryhduntotsig.header['BUNIT']='cm-2'
+hdulntotsig=fits.HDUList([primaryhduntotsig])
+ntotsigpath=sourcepath+f"ntotmap_allspw_withnans_weighted_useintercept_{snr}sigma.fits"
+print(f'Saving sigmaclip ntot map at {ntotsigpath}\n')
+hdulntotsig.writeto(ntotsigpath,overwrite=True)
+
+primaryhduntotsnr=fits.PrimaryHDU(ntotsnrmap)
+primaryhduntotsnr.header=transmom0header
+primaryhduntotsnr.header['BTYPE']='Total column density SNR'
+primaryhduntotsnr.header['BUNIT']='cm-2/cm-2'
+hdulntotsnr=fits.HDUList([primaryhduntotsnr])
+ntotsnrpath=sourcepath+f"ntotmap_snr_allspw_withnans_weighted_useintercept.fits"
+print(f'Saving ntot snr map at {ntotsnrpath}\n')
+hdulntotsnr.writeto(ntotsnrpath,overwrite=True)
 
 nugs_swapaxis2toaxis0=np.swapaxes(nugsmap,0,2)
 nugserr_swapaxis2toaxis0=np.swapaxes(nugserrormap,0,2)
@@ -1269,9 +1343,15 @@ plt.rcParams['figure.dpi'] = 150
 ra=ax.coords[0]
 dec=ax.coords[1]
 
-plottedtex=ax.imshow(plottexhdu.data,cmap=colormap)#,vmax=1000,vmin=10)
+vmaxdict={'SgrB2S':525,'DSi':320,'DSii':224,'DSiii':300,'DSiv':312,'DSv':280,'DSVI':377,'DSVII':248,'DSVIII':225,'DSIX':215}
+if source in vmaxdict.keys():
+    sourcevmax=vmaxdict[source]
+    plottedtex=ax.imshow(plottexhdu.data,vmax=sourcevmax,cmap=colormap)#,vmax=1000,vmin=10)
+else:
+    plottedtex=ax.imshow(plottexhdu.data,cmap=colormap)
 
-scaledict={'SgrB2S':5000*u.AU,'DSi':5000*u.AU,'DSii':2000*u.AU,'DSiii':2000*u.AU,'DSiv':2000*u.AU,'DSv':2000*u.AU,'DSVI':5000*u.AU,'DSVII':5000*u.AU,'DSVIII':5000*u.AU}
+
+scaledict={'SgrB2S':5000*u.AU,'DSi':5000*u.AU,'DSii':2000*u.AU,'DSiii':2000*u.AU,'DSiv':2000*u.AU,'DSv':2000*u.AU,'DSVI':5000*u.AU,'DSVII':5000*u.AU,'DSVIII':5000*u.AU,'DSIX':5000*u.AU,'DSX':5000*u.AU}
 scale=scaledict[source]
 lenn=np.arctan(scale/dGC)
 
