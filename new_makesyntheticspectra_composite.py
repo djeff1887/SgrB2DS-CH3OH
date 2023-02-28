@@ -29,7 +29,7 @@ def lineprofile(sigma,nu_0,nu):
 
 '''Collect constants for N_tot and N_upper calculations'''
 
-source='DSii'
+source='SgrB2S'
 
 sourceisnew=True
 
@@ -55,7 +55,7 @@ kappa=((2*b_0)-a_0-c_0)/(a_0-c_0)
 f=1
 
 
-dopplershifts={'SgrB2S':0.000228,'DSi':0.0001865,'DSii':0.00016,'DSiii':0.00017500261911843952,'DSiv':0.00018225233186845314,'DSv':0.0001838576164010067,'DSVI':0.0001661613132158407,'DSVII':0.00016320118280935546,'DSVIII':0.0001662062062062062,'DSIX':0.00015453732389175085}#:0.000190713}/old doppler S: 0.0002306756533745274/0.00015954965399894244/0.00016236367659115043
+dopplershifts={'SgrB2S':0.000228,'DSi':0.0001865,'DSii':0.000163,'DSiii':0.00017500261911843952,'DSiv':0.00018225233186845314,'DSv':0.0001838576164010067,'DSVI':0.0001661613132158407,'DSVII':0.00016320118280935546,'DSVIII':0.0001662062062062062,'DSIX':0.00015453732389175085}#:0.000190713}/old doppler S: 0.0002306756533745274/0.00015954965399894244/0.00016236367659115043
 
 s_othermol_dshift_v={' CH3CHO ':67.45330305*u.km/u.s,' C2H5OH ':67.45330305*u.km/u.s,' CH3OCHO ':67.45330305*u.km/u.s,' C(18)O ':69.551850256*u.km/u.s,' 13CH3OH ':67.5*u.km/u.s,' SO ':70.5*u.km/u.s}#' CH3OH ':68352.680424
 ds2_othermol_dshift_v={' CH3OCHO ':49*u.km/u.s,' CH3CHO ':49*u.km/u.s,' C2H5OH ':49.3*u.km/u.s}#47831.782945392486 m / s
@@ -133,11 +133,11 @@ molnum=specieslist.index(speciesname)#42
 
 testntot=1e14*u.cm**-2
 
-sgrb2scolumns={' CH3OH ':2e17*u.cm**-2,' CH3OCHO ':7e15*u.cm**-2, ' CH3CHO ':5e15*u.cm**-2,' C2H5OH ':6e16*u.cm**-2,' CH3OCH3 ':1.5e15*u.cm**-2,' DCN ':5e15*u.cm**-2, ' OCS ':8e16*u.cm**-2,' 13CH3OH ':1.5e17*u.cm**-2,' H2CO ':5e16*u.cm**-2,' HC3N ':1.8e15*u.cm**-2, ' C(18)O ':1.3e19*u.cm**-2,' 13CS ':8e15*u.cm**-2,' SO2 ':3e16*u.cm**-2,' NH2CHO ':5e13*u.cm**-2,' HNCO ':2e16*u.cm**-2,' SO ':2e13*u.cm**-2,' SiO ':1e15*u.cm**-2}# ' CH3NH2 ':2e15*u.cm**-2,' CH3(18)OH ':2.5e16*u.cm**-2,' CH3COOH ':2e15*u.cm**-2,,' NH2CN ':1e14*u.cm**-2, ' NH2D ':1e15*u.cm**-2, ' t-HCOOH ':5e14*u.cm**-2,' SiS ':1e14*u.cm**-2, ' c-HCCCH ':2.5e15*u.cm**-2, 'Acetone':6e13*u.cm**-2,' CH3C(15)N ':3e13*u.cm**-2, }#' HOONO ':5e15*u.cm**-2
+sgrb2scolumns={' CH3OH ':2e17*u.cm**-2,' CH3OCHO ':7e15*u.cm**-2, ' CH3CHO ':5e15*u.cm**-2,' C2H5OH ':6e16*u.cm**-2,' CH3OCH3 ':1.5e15*u.cm**-2,' DCN ':5e15*u.cm**-2, ' OCS ':8e16*u.cm**-2,' 13CH3OH ':1.5e17*u.cm**-2,' H2CO ':5e16*u.cm**-2,' HC3N ':1.8e15*u.cm**-2, ' C(18)O ':1.3e19*u.cm**-2,' 13CS ':8e15*u.cm**-2,' SO2 ':3e16*u.cm**-2,' NH2CHO ':5e13*u.cm**-2,' HNCO ':2e16*u.cm**-2,' SO ':2e13*u.cm**-2,' SiO ':1e15*u.cm**-2,' H2S ':1e18*u.cm**-2,' H2CCO ':1e16*u.cm**-2,}#' H2CS ':1e18*u.cm**-2,' CH3(18)OH ':2.5e16*u.cm**-2,' CH3COOH ':2e15*u.cm**-2,,' NH2CN ':1e14*u.cm**-2, ' NH2D ':1e15*u.cm**-2, ' t-HCOOH ':5e14*u.cm**-2,' SiS ':1e14*u.cm**-2, ' c-HCCCH ':2.5e15*u.cm**-2, 'Acetone':6e13*u.cm**-2,' CH3C(15)N ':3e13*u.cm**-2,' SiN ':2e15*u.cm**-2, ' CH3NH2 ':9e15*u.cm**-2,}#' HOONO ':5e15*u.cm**-2,
 
 dsicolumns={' CH3OH ':1e17*u.cm**-2,' CH3OCHO ':3e14*u.cm**-2,' HOONO ':1e15*u.cm**-2,' HNCO ':0.7e15*u.cm**-2,' DCN ':1e14*u.cm**-2,' H2CO ':1e16*u.cm**-2,' C2H5OH ':3e15*u.cm**-2, ' CH3CHO ':2e14*u.cm**-2,' CH3COOH ':0.7e14*u.cm**-2, ' CH3NH2 ':1e15*u.cm**-2, ' CH3OCH3 ':6e13*u.cm**-2,' HC3N ':1e14*u.cm**-2, ' NH2CHO ':1e12*u.cm**-2,' NH2CN ':0.8e14*u.cm**-2, ' NH2D ':1e15*u.cm**-2, ' SO2 ':8e14*u.cm**-2, ' SO ':7e11*u.cm**-2, ' t-HCOOH ':5e14*u.cm**-2,' SiS ':5e13*u.cm**-2,' C(18)O ':5e17*u.cm**-2,' CH2DOH ':5e15*u.cm**-2, ' CH2NH ':1e13*u.cm**-2,"Ethylene Glycol":1e13*u.cm**-2,'Acetone':0.25e13*u.cm**-2, ' SiO ':7e13*u.cm**-2, ' OCS ':5.25e15*u.cm**-2, ' 13CS ':5e14*u.cm**-2, ' 13CH3OH ':2e15*u.cm**-2}
 
-ds2columns={' CH3OH ':6e16*u.cm**-2,' CH3OCHO ':5e14*u.cm**-2,' CH3CHO ':6e14*u.cm**-2,' C2H5OH ':7e15*u.cm**-2,' CH3OCH3 ':2.8e14*u.cm**-2,' DCN ':7e14*u.cm**-2,' OCS ':3.5e16*u.cm**-2,' 13CH3OH ':1.5e16*u.cm**-2,}#' HNCO ':2.5e14*u.cm**-2,' DCN ':5e13*u.cm**-2,' H2CO ':1.75e15*u.cm**-2,' CH3COOH ':1e14*u.cm**-2, ' CH3NH2 ':1e15*u.cm**-2, ,' HC3N ':5e13*u.cm**-2, ' NH2CHO ':1e12*u.cm**-2,' NH2CN ':1e13*u.cm**-2, ' NH2D ':1e15*u.cm**-2, ' SO2 ':2.5e14*u.cm**-2, ' SO ':4e11*u.cm**-2, ' t-HCOOH ':1e14*u.cm**-2,' SiS ':1e14*u.cm**-2, ' SiO ':0.3e14*u.cm**-2,' 13CS ':1e14*u.cm**-2,' C(18)O ':3e17*u.cm**-2,' H2S ':2.5e16*u.cm**-2, ' CH3(18)OH ':1e14*u.cm**-2}' HOONO ':1e16*u.cm**-2,
+ds2columns={' CH3OH ':6e16*u.cm**-2,' CH3OCHO ':5e14*u.cm**-2,' CH3CHO ':6e14*u.cm**-2,' C2H5OH ':7e15*u.cm**-2,' CH3OCH3 ':2.8e14*u.cm**-2,' DCN ':7e14*u.cm**-2,' OCS ':3.5e16*u.cm**-2,' 13CH3OH ':1.5e16*u.cm**-2,' H2CO ':4e16*u.cm**-2,' HC3N ':5e14*u.cm**-2,' C(18)O ':5e18*u.cm**-2,' 13CS ':2e15*u.cm**-2,' SO2 ':2.5e15*u.cm**-2,' NH2CHO ':1e13*u.cm**-2,' HNCO ':4e15*u.cm**-2,' SO ':4e12*u.cm**-2, ' SiO ':6e14*u.cm**-2,' H2S ':3.5e17*u.cm**-2,}#' CH3(18)OH ':2.5e15*u.cm**-2, ' CH3NH2 ':1e15*u.cm**-2, ' (13)CN ':1.5e15*u.cm**-2  NH2CN ':1e13*u.cm**-2, ' NH2D ':1e15*u.cm**-2, ' t-HCOOH ':1e14*u.cm**-2,  ' SiS ':4e15*u.cm**-2,}' HOONO ':1e16*u.cm**-2,'Carbon Dioxide':5e16*u.cm**-2,' NaCl ':1e16*u.cm**-2,' CH3COOH ':7e14*u.cm**-2,' HDCO ':1e18*u.cm**-2,
 
 ds5columns={' CH3OH ':1e15*u.cm**-2,' CH3OCHO ':1e15*u.cm**-2,' HOONO ':1e15*u.cm**-2,' HNCO ':1e15*u.cm**-2,' DCN ':1e14*u.cm**-2,' H2CO ':1.75e15*u.cm**-2,' C2H5OH ':3e15*u.cm**-2, ' CH3CHO ':1e14*u.cm**-2,' CH3COOH ':1e14*u.cm**-2, ' CH3NH2 ':1e15*u.cm**-2, ' CH3OCH3 ':1e13*u.cm**-2,' HC3N ':1e14*u.cm**-2, ' NH2CHO ':1e12*u.cm**-2,' NH2CN ':1e14*u.cm**-2, ' NH2D ':1e15*u.cm**-2, ' SO2 ':1e15*u.cm**-2, ' SO ':6e11*u.cm**-2, ' t-HCOOH ':1e14*u.cm**-2,' SiS ':1e14*u.cm**-2, ' OCS ':3e15*u.cm**-2, ' SiO ':0.3e14*u.cm**-2}
 
@@ -161,7 +161,7 @@ else:
 methntot=columndict[' CH3OH ']
 plt.rcParams['figure.dpi'] = 150
 plt.figure(1, figsize=(20,10))
-molcolors=['red','cyan','orange','brown','deepskyblue','darkviolet','yellow','pink','darkviolet','darkkhaki','silver','blue','lime','magenta','grey','plum']
+molcolors=['red','cyan','orange','brown','deepskyblue','darkviolet','yellow','pink','darkviolet','darkkhaki','silver','blue','lime','magenta','grey','plum','fuchsia','darkcyan']
 spwmoldict={}
 dummylist=[]
 firstmolline={}#list(np.ones(len(columndict.keys())))
@@ -303,7 +303,7 @@ for spectrum, img, stdimage in zip(spectra,images,stds):
             continue
 
     #compositespec=modelspec+methmodelspec
-    plt.plot(freqs,methmodelspec(freqs),drawstyle='steps-mid',color='green')#plt.plot(freqs,compositespec(freqs),drawstyle='steps-mid',color='green')
+    plt.plot(freqs,methmodelspec(freqs),drawstyle='steps-mid',color='green',linestyle='--')#plt.plot(freqs,compositespec(freqs),drawstyle='steps-mid',color='green')
     #plt.plot(freqs,modelspec(freqs),drawstyle='steps-mid',color='orange')
     #plt.plot(plot,cube[:,int(round(targetpixcrd[1][1])),int(round(targetpixcrd[1][0]))].value,color='black',drawstyle='steps')
     '''
@@ -324,6 +324,7 @@ for spectrum, img, stdimage in zip(spectra,images,stds):
     '''
 plt.xlabel(r'$\nu$ (Hz)')
 plt.ylabel('T$_b$ (K)')
+plt.ylim(ymax=100)
 #plt.title(f'source: {source}, modelTex: {testT}, modelntot: {testntot}, {specieslist[molnum]}')
 plt.legend()
 plt.show()
