@@ -29,7 +29,7 @@ def lineprofile(sigma,nu_0,nu):
 
 '''Collect constants for N_tot and N_upper calculations'''
 
-source='SgrB2S'
+source='DSii'
 
 sourceisnew=True
 
@@ -71,7 +71,7 @@ sourcelocs={'SgrB2S': r'C:/Users/desmond/Dropbox/Research/SgrB2DS/Spectra/files/
 
 texlocs={'SgrB2S':r'C:/Users/desmond/Dropbox/Research/SgrB2DS/Sources/SgrB2S/new_testingstdfixandontheflyrepstuff_K_OctReimage_restfreqfix_newvelmask_newpeakamp/','DSi':r'C:/Users/desmond/Dropbox/Research/SgrB2DS/Sources/DS1/Kfield10originals_trial7_field10errors_newexclusion_matchslabwidthtorep/','DSii':r'C:/Users/desmond/Dropbox/Research/SgrB2DS/Sources/DS2/Kfield10originals_noexclusions/','DSiii':r'C:/Users/desmond/Dropbox/Research/SgrB2DS/Sources/DSiii/Kfield10originals_noexclusions/','DSiv':r'C:/Users/desmond/Dropbox/Research/SgrB2DS/Sources/DSiv/Kfield10originals_noexclusions/','DSv':r'C:/Users/desmond/Dropbox/Research/SgrB2DS/Sources/DS5/Kfield10originals_noexclusions_include4-3_150K_trial2/','DSVI':r'C:/Users/desmond/Dropbox/Research/SgrB2DS/Sources/DS6/DSVI/Kfield2originals_trial2_16_6-16_7excluded/','DSVII':r'C:/Users/desmond/Dropbox/Research/SgrB2DS/Sources/DS7/Kfield3originals_trial1_noexclusions/','DSIX':r'C:/Users/desmond/Dropbox/Research/SgrB2DS/Sources/DS9/Kfield7originals_150K_trial1_noexclusions/'}
 
-arabicswitch={'DSiii':'DS3','DSiv':'DS4','DSv':'DS5'}
+arabicswitch={'DSiii':'DS3','DSiv':'DS4','DSv':'DS5','DSVI':'DS6','DSVII':'DS7','DSVIII':'DS8','DSIX':'DS9'}
 
 if source in arabicswitch.keys():
     texlocs[source]=texlocs[source].replace(source,arabicswitch[source])
@@ -160,20 +160,51 @@ else:
 
 methntot=columndict[' CH3OH ']
 plt.rcParams['figure.dpi'] = 150
-plt.figure(1, figsize=(20,10))
+plt.figure(1, figsize=(30,10))
 molcolors=['red','cyan','orange','brown','deepskyblue','darkviolet','yellow','pink','darkviolet','darkkhaki','silver','blue','lime','magenta','grey','plum','fuchsia','darkcyan']
 spwmoldict={}
 dummylist=[]
-firstmolline={}#list(np.ones(len(columndict.keys())))
+p1firstmolline={}#list(np.ones(len(columndict.keys())))
+p2firstmolline={}
+p3firstmolline={}
+p4firstmolline={}
+firstmolline=p1firstmolline
+plotspecpad=0.005*u.GHz
+n=1
+
 for m in columndict.keys():
-    firstmolline.update({m:1})
+    p1firstmolline.update({m:1})
+    p2firstmolline.update({m:1})
+    p3firstmolline.update({m:1})
+    p4firstmolline.update({m:1})
 
 for spectrum, img, stdimage in zip(spectra,images,stds):
     print('Getting ready - '+img)
+    plt.rcParams['figure.dpi'] = 150
+    plt.figure(n, figsize=(30,10))
+    n+=1
+    if img == 'spw1':
+        firstmolline=p2firstmolline
+    if img == 'spw2':
+        firstmolline=p3firstmolline
+    if img == 'spw3':
+        firstmolline=p4firstmolline
+        '''
+        plt.xlim(xmin=(p1minfreq-plotspecpad).value,xmax=(p1maxfreq+plotspecpad).value)
+        plt.xlabel(r'$\nu$ (Hz)',fontsize=16)
+        plt.ylabel('T$_b$ (K)',fontsize=16)
+        plt.ylim(ymax=100)
+        plt.tick_params(labelsize=13)
+        plt.legend()
+        plt.tight_layout()
+        plt.show()
+        '''
+        
+    
     spec=np.genfromtxt(spectrum)
     error=fits.getdata(stdimage)[targetpix[0],targetpix[1]]*u.K
 
-    freqs=spec[:,0]*u.MHz#cube.spectral_axis
+    freqs=(spec[:,0]*u.MHz).to('GHz')#cube.spectral_axis
     data=spec[:,1]*u.K
     freqflip=False
     if freqs[0] > freqs[1]:
@@ -195,7 +226,7 @@ for spectrum, img, stdimage in zip(spectra,images,stds):
     '''Generate methanol table for use during contaminant search'''
     methanol_table=Splatalogue.query_lines(freq_min, freq_max, chemical_name=' CH3OH ', energy_max=1840, energy_type='eu_k', line_lists=['JPL','CDMS','SLAIM','ToyoMA','OSU','RFI','Lisa'], show_upper_degeneracy=True)
     minmethtable=utils.minimize_table(methanol_table)
-    mlines=((minmethtable['Freq']*10**9)/(1+z)*u.Hz).to('MHz')
+    mlines=((minmethtable['Freq']*10**9)/(1+z)*u.Hz).to('GHz')
     mqns=minmethtable['QNs']
     meuks=minmethtable['EU_K']*u.K
     meujs=[]
@@ -212,10 +243,10 @@ for spectrum, img, stdimage in zip(spectra,images,stds):
     #mbaseline.bounding_box=(freqs[0],freqs[(len(freqs)-1)])
     #modelspec=baseline
     methmodelspec=baseline
-    plot=np.linspace(freqs[0],freqs[(len(freqs)-1)],np.shape(spec)[0]).to('MHz')
+    plot=np.linspace(freqs[0],freqs[(len(freqs)-1)],np.shape(spec)[0]).to('GHz')
     modeldict={}
        
-    for molecule,hue,first in zip(list(columndict.keys())[1:], molcolors,firstmolline):     
+    for molecule,hue,first in zip(list(columndict.keys())[1:], molcolors,list(firstmolline.keys())[1:]):     
         '''Generate species table for contaminant search'''
         modelspec=baseline
         species_table= Splatalogue.query_lines(freq_min, freq_max, chemical_name=molecule, energy_max=1840, energy_type='eu_k', line_lists=['JPL','CDMS','SLAIM','ToyoMA','OSU','RFI','Lisa'], show_upper_degeneracy=True)
@@ -228,9 +259,9 @@ for spectrum, img, stdimage in zip(spectra,images,stds):
         minchemtable=utils.minimize_table(species_table)
         if molecule in othermol_dshift_v.keys():
             otherz=othermol_dshift_v[molecule]/c
-            clines=((minchemtable['Freq']*10**9)/(1+otherz)*u.Hz).to('MHz')
+            clines=((minchemtable['Freq']*10**9)/(1+otherz)*u.Hz).to('GHz')
         else:
-            clines=((minchemtable['Freq']*10**9)/(1+z)*u.Hz).to('MHz')
+            clines=((minchemtable['Freq']*10**9)/(1+z)*u.Hz).to('GHz')
         
         cqns=minchemtable['QNs']
         ceuks=minchemtable['EU_K']*u.K
@@ -303,9 +334,14 @@ for spectrum, img, stdimage in zip(spectra,images,stds):
             continue
 
     #compositespec=modelspec+methmodelspec
-    plt.plot(freqs,methmodelspec(freqs),drawstyle='steps-mid',color='green',linestyle='--')#plt.plot(freqs,compositespec(freqs),drawstyle='steps-mid',color='green')
-    #plt.plot(freqs,modelspec(freqs),drawstyle='steps-mid',color='orange')
-    #plt.plot(plot,cube[:,int(round(targetpixcrd[1][1])),int(round(targetpixcrd[1][0]))].value,color='black',drawstyle='steps')
+    if firstmolline[' CH3OH ']:
+        plt.plot(freqs,methmodelspec(freqs),drawstyle='steps-mid',linestyle='--',color='green',label=' CH3OH ')
+        firstmolline[' CH3OH ']=0
+        print('yay')
+    else:
+        plt.plot(freqs,methmodelspec(freqs),drawstyle='steps-mid',linestyle='--',color='green')
+        print('yayy')
+    #plt.plot(freqs,methmodelspec(freqs),drawstyle='steps-mid',color='green',linestyle='--')#plt.plot(freqs,compositespec(freqs),drawstyle='steps-mid',color='green')
     '''
     print('Overplotting axvlines and transition annotations')
     for line,qn,detected in zip(clines,cqns,linedetections):
@@ -322,9 +358,17 @@ for spectrum, img, stdimage in zip(spectra,images,stds):
         else:
             continue
     '''
-plt.xlabel(r'$\nu$ (Hz)')
-plt.ylabel('T$_b$ (K)')
-plt.ylim(ymax=100)
-#plt.title(f'source: {source}, modelTex: {testT}, modelntot: {testntot}, {specieslist[molnum]}')
-plt.legend()
-plt.show()
+    '''
+    if img == 'spw3':
+        p2maxfreq=max(freqs)
+        plt.xlim(xmin=(p2minfreq-plotspecpad).value,xmax=(p2maxfreq+plotspecpad).value)
+    '''
+    plt.xlabel(r'$\nu$ (Hz)',fontsize=16)
+    plt.ylabel('T$_b$ (K)',fontsize=16)
+    plt.xlim(xmin=(min(freqs)-plotspecpad).value,xmax=(max(freqs)+plotspecpad).value)
+    plt.ylim(ymax=100)
+    plt.tick_params(labelsize=13)
+    plt.tight_layout()
+    plt.legend()
+    plt.savefig(fr'C:/Users/desmond/Desktop/CH3OHTemps/CompositeSpectra/{source}_{img}_compositespectra.png')
+    plt.show()
