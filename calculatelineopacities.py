@@ -82,6 +82,7 @@ for tblpath in alltablepaths:
 
     savefigbase=f'/blue/adamginsburg/d.jeff/repos/CH3OHTemps/figures/{s}'
     savefighome=savefigbase+repodict[s]
+
     savefigpath1=savefighome+'_contfix_lineopacities.png'
     savefigpath2=savefighome+'_contfix_linear_lineopacities.png'
     savefigpath3=savefighome+'_contfix_tauvseupper.png'
