@@ -24,7 +24,7 @@ def N_u(nu,Aij,velocityintegrated_intensity_K):#,velint_intK_err):#taken from py
     #nuppererr=((8*np.pi*k*nu**2)/(h*c**3*Aij))*velint_intK_err
     return nuppercalc#,nuppererr
 
-repodict={'SgrB2S':'/new_testingstdfixandontheflyrepstuff_K_OctReimage_restfreqfix_newvelmask_newpeakamp/','DSi':'/Kfield10originals_trial7_field10errors_newexclusion_matchslabwidthtorep/','DSii':'/Kfield10originals_noexclusions/','DSiii':'/Kfield10originals_noexclusions/','DSiv':'/Kfield10originals_noexclusions/','DSv':f'/Kfield10originals_noexclusions_include4-3_150K_trial2/','DSVI':'/Kfield2originals_trial3_8_6-8_7excluded/','DSVII':'/Kfield3originals_200K_trial1_noexclusions/','DSVIII':'/Kfield3originals_175K_trial1_noexclusions/','DSIX':f'/Kfield7originals_150K_trial1_noexclusions/'}
+repodict={'SgrB2S':'/nov2022continuumsanitycheck_limitvt1lines_centeronlinepeak_repline20-20/','DSi':'/nov2022continuumsanitycheck/','DSii':'/nov2022continuumsanitycheck/','DSiii':'/nov2022continuumsanitycheck/','DSiv':'/nov2022contniuumsanitycheck/','DSv':f'/nov2022contniuumsanitycheck/','DSVI':'/nov2022continuumsanitycheck/','DSVII':f'/nov2022contniuumsanitycheck/','DSVIII':f'/nov2022contniuumsanitycheck/','DSIX':f'/nov2022contniuumsanitycheck/'}#{'SgrB2S':'/new_testingstdfixandontheflyrepstuff_K_OctReimage_restfreqfix_newvelmask_newpeakamp/','DSi':'/Kfield10originals_trial7_field10errors_newexclusion_matchslabwidthtorep/','DSii':'/Kfield10originals_noexclusions/','DSiii':'/Kfield10originals_noexclusions/','DSiv':'/Kfield10originals_noexclusions/','DSv':f'/Kfield10originals_noexclusions_include4-3_150K_trial2/','DSVI':'/Kfield2originals_trial3_8_6-8_7excluded/','DSVII':'/Kfield3originals_200K_trial1_noexclusions/','DSVIII':'/Kfield3originals_175K_trial1_noexclusions/','DSIX':f'/Kfield7originals_150K_trial1_noexclusions/'}
 
 k=cnst.k_B
 h=cnst.h
@@ -82,10 +82,10 @@ for tblpath in alltablepaths:
 
     savefigbase=f'/blue/adamginsburg/d.jeff/repos/CH3OHTemps/figures/{s}'
     savefighome=savefigbase+repodict[s]
-    savefigpath1=savefighome+'_lineopacities.png'
-    savefigpath2=savefighome+'_linear_lineopacities.png'
-    savefigpath3=savefighome+'_tauvseupper.png'
-    savefigpath4=savefighome+'_linear_tauvseupper.png'
+    savefigpath1=savefighome+'_contfix_lineopacities.png'
+    savefigpath2=savefighome+'_contfix_linear_lineopacities.png'
+    savefigpath3=savefighome+'_contfix_tauvseupper.png'
+    savefigpath4=savefighome+'_contfix_linear_tauvseupper.png'
 
     plt.figure()
     plt.scatter(masterngs,tau150,c=qtable['EU(K)'].value,label='$Q_{rot}$(150 K)')
