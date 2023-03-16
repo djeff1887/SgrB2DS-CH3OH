@@ -82,10 +82,10 @@ for tblpath in alltablepaths:
 
     savefigbase=f'/blue/adamginsburg/d.jeff/repos/CH3OHTemps/figures/{s}'
     savefighome=savefigbase+repodict[s]
-    savefigpath1=savefighome+'_lineopacities.png'
-    savefigpath2=savefighome+'_linear_lineopacities.png'
-    savefigpath3=savefighome+'_tauvseupper.png'
-    savefigpath4=savefighome+'_linear_tauvseupper.png'
+    savefigpath1=savefighome+'qrotfix_lineopacities.png'
+    savefigpath2=savefighome+'qrotfix_linear_lineopacities.png'
+    savefigpath3=savefighome+'qrotfix_tauvseupper.png'
+    savefigpath4=savefighome+'qrotfix_linear_tauvseupper.png'
 
     plt.figure()
     plt.scatter(masterngs,tau150,c=qtable['EU(K)'].value,label='$Q_{rot}$(150 K)')
