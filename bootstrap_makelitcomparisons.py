@@ -5,6 +5,8 @@ import matplotlib.pyplot as plt
 from astropy.table import Table
 import matplotlib as mpl
 import pdb
+import glob
+import sys
 
 plt.close('all')
 mpl.interactive(True)
@@ -66,7 +68,6 @@ err_coremasses=coremasses/eta150_snr
 percentdiff=np.abs((np.array(coremasses)-np.array(eta150_fullmasses))/(np.array(eta150_fullmasses)+np.array(coremasses)/2))#Doing percent difference with respect to the Gieser values, since we say "these values differ from the original values by XXX"
 avg_ratio=np.mean(percentdiff)
 print(f'Average percent difference between scaled and eta150 masses: {avg_ratio}')
-#pdb.set_trace()
 
 comptable=Table.read('contsanitycheck_t180_compositedensitytable.fits')
 dsmasses=np.array(comptable['H_2 Mass'])#list(comptable[4])[1:])
@@ -90,6 +91,31 @@ dstempindex[8]=comptable['alpha_1'][8]
 err_dstempindices=np.array(comptable['alpha_2 error'])
 err_dstempindices[3]=comptable['alpha_1 error'][3]
 err_dstempindices[8]=comptable['alpha_1 error'][8]
+
+radialmassprofilepaths=glob.glob('*massinterior*')
+names=['DSi_','DSii_','DSiii_','DSiv','DSv','DSVI_','DSVII_','DSVIII_','DSIX','SgrB2S']
+orderedrmpps=[]
+for src in names:
+    for rmpp in radialmassprofilepaths:
+        if src in rmpp:
+            orderedrmpps.append(np.genfromtxt(rmpp))
+
+src=0
+edgeindices=[]#interiorrmpps=[]
+
+for srcrmpp, rad in zip(orderedrmpps,dsradii):
+    for i in srcrmpp[:,2]:
+        if i > rad:
+            index=np.where(srcrmpp[:,2]==rad)[0][0]
+            edgeindices.append(index)#preint=np.delete(srcrmpp,np.arange(index,len(srcrmpp)))
+            #interiorrmpps.append(preint)
+            #print(f'edge:{index}')
+            break
+    src+=1
+    #print(src)
+    
+#print(orderedrmpps)
+#pdb.set_trace()
 
 #pdb.set_trace()
 meandsdensityindex=np.mean(dsdensindex)
@@ -128,25 +154,42 @@ plt.yscale('log')
 plt.ylabel('T$_{peak}$ (K)',fontsize=14)
 plt.xlabel('M$_{core}$ (M$_\odot$)',fontsize=14)
 plt.legend()
-plt.savefig(savefigpath+'contfix_tempvsmass.png',overwrite=True)
+#plt.savefig(savefigpath+'contfix_tempvsmass.png',overwrite=True)
 plt.show()
 
+firstline=True
 plt.figure()
 plt.errorbar(wbsmm1mass,wbsmm1radius,fmt=wbfmt,label='WB 89789 SMM1')
 plt.errorbar(w51mass,w51radius,fmt=w51fmt,label='W51')
 plt.errorbar(coremasses,coreradii,fmt=corefmt,label='CORE catalogue')
 plt.errorbar(dsmasses,dsradii,xerr=errormass,fmt=dsfmt,label='DS Hot Cores')
+for item,edge in zip(orderedrmpps,edgeindices):
+    if firstline:
+        plt.plot(item[:,0][:edge],item[:,2][:edge],ls='-',color='purple',linewidth=0.5,label='$r$-averaged Mass')
+        firstline=False
+    else:
+        plt.plot(item[:,0][:edge],item[:,2][:edge],ls='-',color='purple',linewidth=0.5)
 plt.xscale('log')
 plt.yscale('log')
 plt.xlabel('M$_{core}$ (M$_\odot$)',fontsize=14)
 plt.ylabel('$r$ (AU)',fontsize=14)
 plt.legend()
-plt.savefig(savefigpath+'contfix_radiusvsmass.png',overwrite=True)
+plt.savefig(savefigpath+'contfix_radiusvsmass_lines.png',overwrite=True)
 plt.show()
 
 plt.figure()
-plt.errorbar(coremasses,dindices,yerr=err_dindices,fmt='^',color='green',label='CORE Catalogue')
-plt.errorbar(dsmasses,dsdensindex,yerr=err_dsdens,fmt='*',color='red',label='DS Hot Cores')
+for item,edge in zip(orderedrmpps,edgeindices):
+    mrsquared=(np.array(item[:,0])*u.solMass/(1*u.Da)).to('').value/((np.array(item[:,2])*u.AU).to('cm').value**2)
+    #pdb.set_trace()
+    plt.plot(item[:,2][:edge],mrsquared[:edge],ls='-',color='purple',linewidth=0.5,label='$r$-averaged Mass')
+plt.yscale('log')
+plt.xscale('log')
+plt.show()
+sys.exit()
+
+plt.figure()
+plt.errorbar(coremasses,dindices,yerr=err_dindices,fmt='^',label='CORE Catalogue')#,color='green'
+plt.errorbar(dsmasses,dsdensindex,yerr=err_dsdens,fmt='*',label='DS Hot Cores')#,color='red'
 plt.xlabel('M$_{core}$ (M$_\odot$)',fontsize=14)
 plt.ylabel('$p$',fontsize=14)
 plt.xscale('log')
@@ -164,8 +207,8 @@ plt.savefig(savefigpath+'contfix_densityindexhistogram.png',overwrite=True)
 plt.show()
 
 plt.figure()
-plt.errorbar(coreradii,dindices,label='CORE Catalogue')
-plt.errorbar(dsradii,dsdensindex,xerr=label='DS Hot Cores')
+plt.errorbar(coreradii,dindices,yerr=err_dindices,fmt=corefmt,label='CORE Catalogue')
+plt.errorbar(dsradii,dsdensindex,yerr=err_dstempindices,fmt=dsfmt,label='DS Hot Cores')
 plt.xlabel('$r$ (AU)')
 plt.ylabel('$p$')
 plt.legend()
@@ -192,7 +235,7 @@ plt.ylabel('$q$')
 plt.legend()
 plt.savefig(savefigpath+'contfix_temperatureindexvstemp.png',overwrite=True)
 plt.show()
-
+'''
 plt.figure()
 plt.errorbar(temps,abuns,yerr=errorabun,xerr=errortemps,fmt=dsfmt,color='red')
 plt.xlabel('T$_{peak}$ (K)',fontsize=14)
@@ -202,3 +245,4 @@ plt.yscale('log')
 #plt.legend()
 plt.savefig(savefigpath+'contfix_peakabundancevstemp.png',overwrite=True)
 plt.show()
+'''

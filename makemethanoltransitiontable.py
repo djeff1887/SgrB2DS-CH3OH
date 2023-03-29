@@ -62,13 +62,13 @@ for trans in transitions:
 	newtransitions.append(trans)
 
 
-stack=hstack([newtransitions,freqs,euppers])
-table=Table(stack,names=['Transition','Frequency','$E_U$'],units=['','(GHz)','(K)'])
+stack=hstack([newtransitions,transitions,freqs,euppers])
+table=Table(stack,names=['Transition','OldTransition','Frequency','$E_U$'],units=['','','(GHz)','(K)'])
 for row in table:
 	if '$15_{6+}-16_{5+}$ $v_t$=1' in row:
 		table.remove_row(int(np.where(table['Transition']=='$15_{6+}-16_{5+}$ $v_t$=1')[0]))
 #table.write('methanoltransitiontable.fits',overwrite=True)
-table.write('methanoltransitiontable.tex',overwrite=True)
+table.write('multiplot_methanoltransitiontable.fits',overwrite=True)
 #mom0s=glob.glob(mom0home)
 
 print(transitions)

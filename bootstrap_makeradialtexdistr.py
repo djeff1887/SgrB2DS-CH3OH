@@ -245,7 +245,9 @@ S_masserrinradius=h2masserr[S_rr<r].value
 lookformax=texmapdata[rr<10**0.5].value
 lookformax_err=texerrdata[rr<10**0.5].value
 
-teststack=np.stack((centrtopix,massinradius,snrsinradius,lumsinradius,nh2inradius,nh2errorinradius,texinradius,lumerrinradius,masserrinradius),axis=1)
+abunderrinradius=(1/np.array(abundsnrinradius))*np.array(abundinradius)
+
+teststack=np.stack((centrtopix,massinradius,snrsinradius,lumsinradius,nh2inradius,nh2errorinradius,texinradius,lumerrinradius,masserrinradius,abundinradius,abunderrinradius),axis=1)
 teststack=teststack[teststack[:,0].argsort()]
 set_centrtopix=set(teststack[:,0])
 listordered_centrtopix=list(set_centrtopix)
@@ -261,6 +263,11 @@ avginversesigma=[]
 radialmaxtex=[]
 radialmintex=[]
 radialmasserr=[]
+radialabun=[]
+radialabunerr=[]
+
+onlymassinteriorandradius=False
+massinterior_radius=[]
 
 totalmass=np.nansum(teststack[:,1])
 sanitycheckmass=0
@@ -278,6 +285,8 @@ for bin in listordered_centrtopix:
     massesinterior=[]
     masserrinterior=[]
     tempmasserr=[]
+    tempabun=[]
+    tempabunerr=[]
     for data in teststack:
         #print(f'Bin: {bin} AU')
         if bin == data[0]:
@@ -288,6 +297,8 @@ for bin in listordered_centrtopix:
                 tempmass.append(data[1])
                 tempmasssnr.append(data[1]/data[8])
                 tempmasserr.append(data[8])
+                tempabun.append(data[9])
+                tempabunerr.append(data[10])
                 if np.isnan(data[6])==False:
                     if np.isinf(data[2])==False:
                         truesnr=data[2]*5
@@ -353,6 +364,8 @@ for bin in listordered_centrtopix:
                 pass
         else:
             pass
+        avgabuninrad=np.nanmean(tempabun)
+        err_avgabuninrad=np.nanmean(tempabunerr)
 
         avglist.append(avg)
         avgtexlist.append(avgtex)
@@ -363,7 +376,20 @@ for bin in listordered_centrtopix:
         radialdensitylist.append(numberdensityinbin.value)
         mrcubedlist.append(mrcubed.value)
         err_radialdens.append(err_binnumberdensity.value)
+        radialabun.append(avgabuninrad)
+        radialabunerr.append(err_avgabuninrad)
+        
+        massinterior_radius.append((massinteriorsum.value,masserrinteriorsum.value,bin))
     #pdb.set_trace()
+
+avgabunerrpath=f'{source}_err_avgabun.txt'
+np.savetxt(avgabunerrpath,np.array(radialabunerr))
+sys.exit
+
+if onlymassinteriorandradius:
+    outlist=np.array(massinterior_radius)
+    np.savetxt(f'{source}_massinterior_radius.txt',outlist)
+    sys.exit()
 
 if edge == None:#for hot sources where T never falls below 150 K
     mintemp=np.nanmin(avgtexlist)
@@ -420,7 +446,7 @@ if source == 'SgrB2S':#Selects masses,luminosities, nh2s, distances, and tempera
     #print(f'New error: {propmasserr}')
 #else:
 
-onlytexabund=True
+onlytexabund=False
 
 if onlytexabund:
     if source == 'SgrB2S':
@@ -435,7 +461,7 @@ if onlytexabund:
         np.savetxt(f'contfix_{source}_errabuns.txt',(np.array(abundinradius)/np.array(abundsnrinradius)))
         np.savetxt(f'contfix_{source}_tex.txt',texinradius)
         np.savetxt(f'contfix_{source}_errtex.txt',(texerrinradius))
-        print('Dont')
+        print('Done')
         sys.exit()
         
 for data2 in teststack:
@@ -544,7 +570,7 @@ sourcenamesfortable={'SgrB2S':'SgrB2S','DSi':'DS1','DSii':'DS2','DSiii':'DS3','D
 
 densalpha=fit_dens.alpha.value
 errdensalpha=round_to_1(derr[2])
-onlydens=True
+onlydens=False
 plt.figure()
 if source == 'DSiv':
     plt.errorbar(listordered_centrtopix,radialdensitylist,yerr=err_radialdens,label='Data',fmt='o')
@@ -601,7 +627,7 @@ if onlydens:
 else:
     pass
 
-#pdb.set_trace()
+onlyradabun=True
 if source == 'SgrB2S':
     plt.figure()
     plt.scatter(trotsforabunds,abundinradius,s=5,c=nh2inradius,norm=mpl.colors.LogNorm())
@@ -617,15 +643,21 @@ if source == 'SgrB2S':
     plt.show()
 
     plt.figure()
-    plt.scatter(rr2_sgrb2s,abundinradius,s=5,c=nh2inradius,norm=mpl.colors.LogNorm())
+    plt.scatter(listordered_centrtopix,radialabun,s=5,)#c=nh2inradius,norm=mpl.colors.LogNorm())#abundinradius
     plt.yscale('log')
     plt.xlabel('$r$ (AU)',fontsize=14)
     plt.ylabel('X(CH$_3$OH)',fontsize=14)
     plt.colorbar(pad=0,label='N(H$_2$) (cm$^{-2}$)')#'T$_K$ (K)')
-    figsavepath=figpath+f'radialavgabundiag_contsanitycheck_r{r}px_rphys{int(pixtophysicalsize.value)}AU_smoothed.png'
+    figsavepath=figpath+f'real_radialavgabundiag_contsanitycheck_r{r}px_rphys{int(pixtophysicalsize.value)}AU_smoothed.png'
     #pdb.set_trace()
     plt.savefig(figsavepath,bbox_inches='tight',overwrite=True)
     plt.show()
+    
+    savetxt=np.array([listordered_centrtopix,radialabun])
+    np.savetxt(f'{source}_radialavgabun.txt',savetxt)
+
+    if onlyradabun:
+        sys.exit()
 
     plt.figure()
     plt.scatter(rr2_sgrb2s,nh2inradius,s=5,c=texinradius,vmax=plottexmax,cmap='inferno')
@@ -651,14 +683,20 @@ else:
     plt.show()
 
     plt.figure()
-    plt.scatter(centrtopix,abundinradius,s=5,c=nh2inradius,norm=mpl.colors.LogNorm())
+    plt.scatter(listordered_centrtopix,radialabun,s=5)#,c=nh2inradius,norm=mpl.colors.LogNorm())#abundinradius
     plt.yscale('log')
     plt.xlabel('$r$ (AU)',fontsize=14)
     plt.ylabel('X(CH$_3$OH)',fontsize=14)
-    plt.colorbar(pad=0,label='N(H$_2$) (cm$^{-2}$)')#'T$_K$ (K)')
-    figsavepath=figpath+f'radialavgabundiag_contsanitycheck_r{r}px_rphys{int(pixtophysicalsize.value)}AU_smoothed.png'
+    #plt.colorbar(pad=0,label='N(H$_2$) (cm$^{-2}$)')#'T$_K$ (K)')
+    figsavepath=figpath+f'real_radialavgabundiag_contsanitycheck_r{r}px_rphys{int(pixtophysicalsize.value)}AU_smoothed.png'
     plt.savefig(figsavepath,bbox_inches='tight',overwrite=True)
     plt.show()
+
+    savetxt=np.array([listordered_centrtopix,radialabun])
+    np.savetxt(f'{source}_radialavgabun.txt',savetxt)
+
+    if onlyradabun:
+        sys.exit()
     
     plt.figure()
     plt.scatter(centrtopix,nh2inradius,s=5,c=texinradius,vmax=plottexmax,cmap='inferno')

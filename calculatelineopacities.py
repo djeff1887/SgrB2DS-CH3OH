@@ -11,6 +11,8 @@ import glob
 from astropy.table import QTable
 import sys
 import pickle
+from pyspeckit.spectrum.models.lte_molecule import get_molecular_parameters
+#from astroquery.JPLSpec import JPL
 
 mpl.interactive(True)
 plt.close('all')
@@ -32,6 +34,11 @@ c=cnst.c
 sources=sourcedict.keys()
 alltablepaths=glob.glob('OpticalDepthTables/*ntot_4-3peak.fits')#('OpticalDepthTables/*_contpeak_nothiiregion.fits')#('_4-3peak.fits')
 testT=[150,300,500]*u.K
+
+Jfreqs, Jaij, Jdeg, JEU, Qrot = get_molecular_parameters('CH3OH',
+                                                         line_lists=['JPL'],
+                                                         fmin=200*u.GHz,
+                                                         fmax=250*u.GHz)
 
 for tblpath in alltablepaths:
     s=tblpath.replace('OpticalDepthTables/','')
@@ -63,16 +70,16 @@ for tblpath in alltablepaths:
         masternuppers.append(nupper.to('cm-2').value)
         masterngs.append(nupper.to('cm-2').value/degen)
         for t in testT:
-            qrot=Q_rot_asym(t)
+            qrot=Qrot(t)
             phi_nu=lineprofile(fwhm_Hz,restfreq,restfreq)
             intertau=lte_molecule.line_tau(t,ntot,qrot,degen,restfreq,euj,aij)
             tau=(intertau*phi_nu).to('')
             
-            tauC=0.3
+            tauC=0.6
             cnupper05=nupper*(tauC/(1-np.exp(-tauC)))
             cnuppers05.append(cnupper05)
             pctdiff=(cnupper05-nupper)/((cnupper05+nupper)/2)*100
-            print(f'QN:{line["QNs"]} Tex:{t} Qrot:{qrot.to("")} Tau:{tau} Ntot:{ntot.to("cm-2")}, Nupper:{nupper.to("cm-2")} Underestimated by: {round(pctdiff.value,2)}%')
+            print(f'QN:{line["QNs"]} Tex:{t} Qrot:{qrot} Tau:{tau} Ntot:{ntot.to("cm-2")}, Nupper:{nupper.to("cm-2")} Underestimated by: {round(pctdiff.value,2)}%')
             if t == testT[0]:
                 tau150.append(tau.value)
             elif t == testT[1]:
@@ -83,10 +90,10 @@ for tblpath in alltablepaths:
     savefigbase=f'/blue/adamginsburg/d.jeff/repos/CH3OHTemps/figures/{s}'
     savefighome=savefigbase+repodict[s]
 
-    savefigpath1=savefighome+'_contfix_lineopacities.png'
-    savefigpath2=savefighome+'_contfix_linear_lineopacities.png'
-    savefigpath3=savefighome+'_contfix_tauvseupper.png'
-    savefigpath4=savefighome+'_contfix_linear_tauvseupper.png'
+    savefigpath1=savefighome+'qrotfix_lineopacities.png'
+    savefigpath2=savefighome+'qrotfix_linear_lineopacities.png'
+    savefigpath3=savefighome+'qrotfix_tauvseupper.png'
+    savefigpath4=savefighome+'qrotfix_linear_tauvseupper.png'
 
     plt.figure()
     plt.scatter(masterngs,tau150,c=qtable['EU(K)'].value,label='$Q_{rot}$(150 K)')
@@ -151,6 +158,7 @@ for tblpath in alltablepaths:
         pickle.dump(zipped,myFile)
         myFile.close
         print(f'Saved pickle of taus to this folder')
+        sys.exit()
     #sys.exit()
 '''    
 sgrb2scontsource_43tb=100*u.K#61.9*u.K#peak taken from CARTA

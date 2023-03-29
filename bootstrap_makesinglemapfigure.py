@@ -14,11 +14,13 @@ from matplotlib.patches import Rectangle
 import matplotlib as mpl
 import os
 import math
+import pdb
+import matplotlib.ticker as mticker
 #from astropy.visualization.wcsaxes import Quadrangle
 
 #plt.close()
 
-mpl.interactive(True)
+#mpl.interactive(True)
 
 def make_scalebar(ax, left_side, length, color='black', linestyle='-', label='',
                   fontsize=12, text_offset=0.1*u.arcsec, coordsys='icrs'):
@@ -39,7 +41,29 @@ def make_scalebar(ax, left_side, length, color='black', linestyle='-', label='',
                  zorder=2,bbox=dict(facecolor='white', alpha=0.6))
     ax.axis(axlims)
     return lines,txt
-set=0
+
+def make_tickstrings(list_of_float):
+    list_of_strings=[]
+    for f in list_of_float:
+        order_of_mag=math.floor(np.log10(f))
+        scaled=round(f/10**order_of_mag)#To revert back to the previous version, use math.floor here
+        #pdb.set_trace()
+        if scaled==1:
+            scaled=10
+            s1=r'$10^{'
+            s2=fr'{order_of_mag}'
+            s3=r'}$'
+            string=s1+s2+s3
+        else:
+            end1=r'$\times10^{'
+            end2=fr'{order_of_mag}'
+            end3=r'}$'
+            end=end1+end2+end3
+            string=str(scaled)+end
+        list_of_strings.append(string)
+    return list_of_strings
+
+set=4
 colordict={0:('trot','inferno','bootstrap_texmap_3sigma_allspw_withnans_weighted.fits'),1:('mom0','bone',"CH3OH~5_1-4_2E1vt0_masked.fits"),2:('nupper','Blues_r'),3:('detections','CMRmap',"ch3ohdetections5_3sigma_allspw_withnans_weighted.fits"),4:('abundance','viridis','bootstrap_ch3ohabundance_3sigma_ntotintercept_bolocamfeather_smoothedtobolocam.fits')}
 mode=colordict[set][0]
 color=colordict[set][1]
@@ -49,7 +73,7 @@ print(f'Mode: {mode}')
 cm= copy.copy(mpl.cm.get_cmap(color))#mom0 bone, temperature inferno, nupper Blues_r, detections CMRmap, abundance cividis
 cm.set_bad('black')
 dGC=8.34*u.kpc#per Meng et al. 2019 https://www.aanda.org/articles/aa/pdf/2019/10/aa35920-19.pdf
-source=os.getenv('source')#'SgrB2S'
+source='DSIX'#os.getenv('source')#'SgrB2S'
 print(f'Source: {source}\n')
 fields={'SgrB2S':1,'DSi':10,'DSii':10,'DSiii':10,'DSiv':10,'DSv':10,'DSVI':2,'DSVII':3,'DSVIII':3,'DSIX':7}
 fnum=fields[source]
@@ -57,9 +81,9 @@ fnum=fields[source]
 home=f'/blue/adamginsburg/d.jeff/SgrB2DSreorg/field{fnum}/CH3OH/'
 sourcepath=home+f'{source}/field10originals_z0_000186431_5-6mhzwidth_stdfixes/'+'figures/'
 
-cntrfile='/blue/adamginsburg/d.jeff/imaging_results/adamcleancontinuum/Sgr_B2_DS_B6_uid___A001_X1290_X46_continuum_merged_12M_robust0_selfcal4_finaliter.image.tt0.pbcor.fits'#'/orange/adamginsburg/sgrb2/2017.1.00114.S/imaging_results/Sgr_B2_DS_B6_uid___A001_X1290_X46_continuum_merged_12M_robust2_selfcal4_finaliter_feathered_with_bolocam.fits'
+cntrfile='/orange/adamginsburg/sgrb2/2017.1.00114.S/imaging_results/Sgr_B2_DS_B6_uid___A001_X1290_X46_continuum_merged_12M_robust2_selfcal4_finaliter_feathered_with_bolocam.fits'#'/blue/adamginsburg/d.jeff/imaging_results/adamcleancontinuum/Sgr_B2_DS_B6_uid___A001_X1290_X46_continuum_merged_12M_robust0_selfcal4_finaliter.image.tt0.pbcor.fits'#
 
-sourcedict={'SgrB2S':'/new_testingstdfixandontheflyrepstuff_K_OctReimage_restfreqfix_newvelmask_newpeakamp/','DSi':'/Kfield10originals_trial7_field10errors_newexclusion_matchslabwidthtorep/','DSii':'/Kfield10originals_noexclusions/','DSiii':'/Kfield10originals_noexclusions/','DSiv':'/Kfield10originals_noexclusions/','DSv':f'/Kfield10originals_noexclusions_include4-3_150K_trial2/','DSVI':'/Kfield2originals_trial3_8_6-8_7excluded/','DSVII':'/Kfield3originals_200K_trial1_noexclusions/','DSVIII':'/Kfield3originals_175K_trial1_noexclusions/','DSIX':f'/Kfield7originals_150K_trial1_noexclusions/'}
+sourcedict={'SgrB2S':'/nov2022continuumsanitycheck_limitvt1lines_centeronlinepeak_repline20-20/','DSi':'/nov2022continuumsanitycheck/','DSii':'/nov2022continuumsanitycheck/','DSiii':'/nov2022continuumsanitycheck/','DSiv':'/nov2022contniuumsanitycheck/','DSv':f'/nov2022contniuumsanitycheck/','DSVI':'/nov2022continuumsanitycheck/','DSVII':f'/nov2022contniuumsanitycheck/','DSVIII':f'/nov2022contniuumsanitycheck/','DSIX':f'/nov2022contniuumsanitycheck/'}#{'SgrB2S':'/new_testingstdfixandontheflyrepstuff_K_OctReimage_restfreqfix_newvelmask_newpeakamp/','DSi':'/Kfield10originals_trial7_field10errors_newexclusion_matchslabwidthtorep/','DSii':'/Kfield10originals_noexclusions/','DSiii':'/Kfield10originals_noexclusions/','DSiv':'/Kfield10originals_noexclusions/','DSv':f'/Kfield10originals_noexclusions_include4-3_150K_trial2/','DSVI':'/Kfield2originals_trial3_8_6-8_7excluded/','DSVII':'/Kfield3originals_200K_trial1_noexclusions/','DSVIII':'/Kfield3originals_175K_trial1_noexclusions/','DSIX':f'/Kfield7originals_150K_trial1_noexclusions/'}
 
 infile=home+source+'/'+sourcedict[source]+pathsuffix
 
@@ -104,7 +128,7 @@ for y in range(cntrshape[0]):
 assert upperntot not in cntrhdu.data, 'Unphysical values in Ntot image'
 '''
 cntrrms=0.0002#mjy, np.nanstd(cntrhdu.data)
-cntrlist=cntrrms*np.array([3,6,8,16,32])
+cntrlist=cntrrms*np.array([5,9,27,81,128,281])
 
 cntrdata=np.squeeze(cntrhdu.data)
 
@@ -113,23 +137,35 @@ cntrwcs=WCS(cntrhdu).celestial
 texmaxpix=hduwcs.array_shape
 hdubeam=radio_beam.Beam.from_fits_header(hdu.header)
 
+plt.rcParams['figure.dpi'] = 150
 sliced=['x','y']#,0,0]#Must be in same order as axes are given in fits header, at least. 
 plt.figure()
 ax=plt.subplot(projection=hduwcs,slices=sliced)
 #ax.set_figheight(15)
 #ax.set_figwidth(15)
-plt.rcParams['figure.dpi'] = 150
 
 ra=ax.coords[0]
 dec=ax.coords[1]
 if mode == 'trot':
-    vmaxdict={'SgrB2S':520,'DSi':320,'DSii':225,'DSiii':300,'DSiv':313,'DSv':281,'DSVI':378,'DSVII':250,'DSVIII':225,'DSIX':223}
+    vmaxdict={'SgrB2S':575,'DSi':377,'DSii':232,'DSiii':339,'DSiv':325,'DSv':337,'DSVI':441,'DSVII':263,'DSVIII':259,'DSIX':275}
     img=ax.imshow(np.squeeze(hdu.data),vmax=vmaxdict[source],vmin=25,interpolation=None, cmap=cm)#, norm=mpl.colors.LogNorm())#vmaxcntm=0.005, vmaxdsi=300 (no min value),vmaxsgrb2s=605 tmin=10 (try no min value), ntotmax=6.26e17, dsintotmax=2.21e17
 elif mode == 'abundance':
-    abundadjust={'DSiii':1e-9,'DSiv':1e-9,'DSVI':1e-8,'DSVII':1e-8,'DSVIII':1e-8,'DSIX':1e-8}
-    if source in abundadjust.keys():
+    abundadjust={'DSiii':5e-9,'DSiv':5e-9,'DSv':2e-9,'DSVI':1e-8,'DSVII':1e-8,'DSVIII':1e-8,'DSIX':1e-8}
+    maxadjust={'SgrB2S':8.75e-7,'DSi':6e-7,'DSiii':7e-8}
+    if source in list(abundadjust.keys()) and source in list(maxadjust.keys()):
+        print('bothadjust')
+        maxfix=maxadjust[source]
         minfix=abundadjust[source]
-        img=ax.imshow(np.squeeze(hdu.data),interpolation=None, vmin=minfix,cmap=cm, norm=mpl.colors.LogNorm())#(vmax=5e-5,vmin=1e-7))
+        img=ax.imshow(np.squeeze(hdu.data),interpolation=None,cmap=cm, norm=mpl.colors.LogNorm(vmin=minfix,vmax=maxfix))
+    elif source in list(abundadjust.keys()) or source in list(maxadjust.keys()):
+        if source in list(abundadjust.keys()):
+            print('abundadjust')
+            minfix=abundadjust[source]
+            img=ax.imshow(np.squeeze(hdu.data),interpolation=None,cmap=cm, norm=mpl.colors.LogNorm(vmin=minfix))#(vmax=5e-5,vmin=1e-7))
+        if source in list(maxadjust.keys()):
+            print('maxadjust')
+            maxfix=maxadjust[source]
+            img=ax.imshow(np.squeeze(hdu.data),interpolation=None,cmap=cm, norm=mpl.colors.LogNorm(vmax=maxfix))
     else:
          img=ax.imshow(np.squeeze(hdu.data),interpolation=None, cmap=cm, norm=mpl.colors.LogNorm())#(vmax=5e-5,vmin=1e-7))
 else:
@@ -190,7 +226,7 @@ elif source == 'DSv':
                   length=lenn, label=f'{int(scale.value)} AU', fontsize=12, 
                   text_offset=0.015*u.arcsec)
     
-else:
+else:#Find the ideal corner position for the scalebar automatically
     scalebar_vert=math.ceil(h_img/10)
     scalebar_hor=math.ceil(l_img/10)
     scalebar_position=hduwcs.wcs_pix2world([[scalebar_vert,scalebar_hor],[0,0]],0)
@@ -225,13 +261,34 @@ ra.set_axislabel('RA (J2000)',fontsize=14,minpad=0.9)
 ra.set_ticklabel(exclude_overlapping=True)
 dec.set_axislabel('Dec (J2000)',fontsize=14,minpad=-0.7)
 ax.tick_params(fontsize=14)
-cbar1=plt.colorbar(img,label=labeldict[set],pad=0)#r'S$_\nu$ (Jy)')#'$n_{transition}$')#plt.colorbar()
+cbar1=plt.colorbar(img,label=labeldict[set],pad=0)#,ticks= [10**-8.5, np.log10(maxfix)])#r'S$_\nu$ (Jy)')#'$n_{transition}$')#plt.colorbar()
+#print(cbar1.get_ticks())
+if mode == 'abundance':
+    if maxfix:
+        #ticklimit=False
+        #cbarticktext=cbar1.ax.get_yticklabels()
+        cbarticks=cbar1.get_ticks()
+        tickbools=maxfix<cbarticks
+        index=-1
+        for boo in tickbools:
+            #endloop=False
+            if not boo:
+               index+=1
+            else:
+                #lowertick=cbarticks[index]
+                #tickconvert=maxfix/lowertick
+                #cbarticks[index+1]=maxfix
+                cbarticks=np.insert(cbarticks,(index+1),maxfix)
+                ticks_loc=cbarticks.tolist()
+                cbar1.ax.yaxis.set_major_locator(mticker.FixedLocator(ticks_loc))
+                strcbarticks=make_tickstrings(cbarticks)
+                cbar1.ax.set_yticklabels(strcbarticks)#print(cbarticks)
+                break
 
 
 print(f'Saving figure at {savefigpath}')
 plt.savefig(savefigpath)
 print('Saved')
-
 
 '''Plotting shapes
 r = Rectangle((2000,2000),1000,1000,facecolor='red')
@@ -247,5 +304,5 @@ ax.add_patch(f)
 plt.legend(loc='upper right')
 '''
               
-plt.show()
+#plt.show()
 
