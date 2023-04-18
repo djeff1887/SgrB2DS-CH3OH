@@ -6,6 +6,7 @@ import math
 import pdb
 import matplotlib as mpl
 from collections import OrderedDict
+from astropy.io import fits
 
 mpl.interactive(True)
 plt.close('all')
@@ -109,58 +110,41 @@ def rolling_median2(data,kernel,error):
         pdb.set_trace()
     return median,mederr
 
-linestyles = {'solid':(0, ()),'densely dashdotdotted':(0, (3, 1, 1, 1, 1, 1)),'dotted':(0, (1, 5)),'densely dotted':(0, (1, 1)),'dashed':(0, (5, 5)),'densely dashed':(0, (5, 1)),'solid2':(0, ()),'dashdotted':(0, (3, 5, 1, 5)),'densely dashdotted':  (0, (3, 1, 1, 1)),'densely dashdotdotdot':(0, (3, 1, 1, 1, 1, 1))}
+fielddict={'SgrB2S':1,'DSi':10,'DSii':10,'DSiii':10,'DSiv':10,'DSv':10,'DSVI':2,'DSVII':3,'DSVIII':3,'DSIX':7}
+#for source in fielddict.keys():
+source='DSi'
+fnum=fielddict[source]
+print(f'Source: {source}')
+base=f'/blue/adamginsburg/d.jeff/SgrB2DSreorg/field{fnum}/CH3OH/{source}/'
+homedict={'SgrB2S':'/nov2022continuumsanitycheck_limitvt1lines_centeronlinepeak_repline20-20/','DSi':'/nov2022continuumsanitycheck/','DSii':'/nov2022continuumsanitycheck/','DSiii':'/nov2022continuumsanitycheck/','DSiv':'/nov2022contniuumsanitycheck/','DSv':f'/nov2022contniuumsanitycheck/','DSVI':'/nov2022continuumsanitycheck/','DSVII':f'/nov2022contniuumsanitycheck/','DSVIII':f'/nov2022contniuumsanitycheck/','DSIX':f'/nov2022contniuumsanitycheck/'}
+pixdict={'SgrB2S':(26,14),'DSi':(36,42),'DSii':(22,24),'DSiii':(24,24),'DSiv':(32,31),'DSv':(19,19),'DSVI':(62,62),'DSVII':(75,75),'DSVIII':(50,50),'DSIX':(34,35)}
 
-paths=glob.glob('*intstd_radialavgabun*.txt')
-errpaths=glob.glob('*err_intstd_avgabun.txt')
-figpath='/blue/adamginsburg/d.jeff/repos/CH3OHTemps/figures/'
+home=base+homedict[source]
 
-comptable=Table.read('contsanitycheck_t180_compositedensitytable.fits')
-sources=comptable['Source']
-radii=comptable['Radius']
-names={'DSi':'DS1','DSii':'DS2','DSiii':'DS3','DSiv':'DS4','DSv':'DS5','DSVI':'DS6','DSVII':'DS7','DSVIII':'DS8','DSIX':'DS9','SgrB2S':'SgrB2S'}
-names2={'DSi':'DS1','DSii':'DS2','DSiii':'DS3','DSiv':'DS4','DSv':'DS5','DSVI':'DS6','DSVII':'DS7','DSVIII':'DS8','DSIX':'DS9','SgrB2S':'Sgr B2(S)'}
+abunpath=home+'bootstrap_ch3ohabundance_ntotnh2mask_ntotintercept_bolocamfeather_smoothedtobolocam.fits'
 
-sortedpaths=[]
-sortederrs=[]
-for s in names.keys():
-    tes=s+'_'
-    for p in paths:
-        if tes in p:
-            sortedpaths.append(p)
-for ss in names.keys():
-    tess=ss+'_'
-    for q in errpaths:
-        if tess in q:
-            sortederrs.append(q)
+data=np.squeeze(fits.getdata(abunpath))
+'''
+if source == 'SgrB2S':
+    wcsobj=WCS(smooth_trotfits[0].header)
 
-paths=sortedpaths
-errpaths=sortederrs
+    regs = regions.Regions.read('/blue/adamginsburg/d.jeff/imaging_results/regfiles/roughsgrb2smassregion_ignoresHIIregion.reg')
+    pixreg = regs[0].to_pixel(wcsobj)
+    pixmask = pixreg.to_mask()
+    
+    abunds=pixmask.cutout(abunds,fill_value=np.nan)
+'''
+    
+yy, xx = np.indices(data.shape)
+center = pixdict[source]#np.unravel_index(np.argmax(data), data.shape)
+rr = ((xx-center[1])**2 + (yy-center[0])**2)**0.5
+rrs = np.unique(rr)
 
-plt.rcParams['figure.dpi']=150
-plt.figure(figsize=(7,5))
-for src,ls in zip(names.keys(),linestyles.keys()):
-    test=src+'_'
-    for i,e in zip(paths,errpaths):
-        if test in i:
-            sourceintable=np.where(sources==names[src])[0][0]
-            profile=np.genfromtxt(i)
-            proferr=np.genfromtxt(e)
-            tempx=profile[0]
-            listordered_centrtopix=tempx#[tempx<=radii[sourceintable]]
-            radialabun=profile[1]
-            radmed=rolling_median(listordered_centrtopix,3)
-            abunmed,errorabunmed=rolling_median2(radialabun,3,proferr)
-            upperabun=np.array(abunmed)+np.array(errorabunmed)
-            lowerabun=np.array(abunmed)-np.array(errorabunmed)
-            #print(f'{names2[src]}: {medtest[:5]}')
-    plt.plot(radmed,abunmed[:len(radmed)],label=f'{names2[src]}',linestyle=linestyles[ls],)#yerr=errorabunmed[:len(radmed)])
-    plt.fill_between(radmed,upperabun,lowerabun,alpha=0.2,)#color='blue')
+avgs, edges = np.histogram(rr, bins=rrs[:], weights=data)
+norms, _ = np.histogram(rr, bins=rrs[:], weights=np.ones_like(data))
+
+plt.plot((edges[:-1] + edges[1:])/2, avgs/norms)
+
+#plt.plot(rr.flat, data.flat, ',')
 plt.yscale('log')
-plt.xlabel('$r$ (AU)',fontsize=14)
-plt.ylabel('X(CH$_3$OH)',fontsize=14)
-plt.legend()
-#plt.colorbar(pad=0,label='N(H$_2$) (cm$^{-2}$)')#'T$_K$ (K)')
-figsavepath=figpath+f'radialavgabundiag_intstd_allsource_noradcut_fillbetween.pdf'
-plt.savefig(figsavepath,bbox_inches='tight')
 plt.show()

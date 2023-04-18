@@ -44,7 +44,7 @@ R_i=1
 f=1
 Tbg=2.7355*u.K
 
-source='SgrB2S'#os.getenv('envsource')#SgrB2S
+source=os.getenv('envsource')#'DSIX'#os.getenv('envsource')#SgrB2S
 fielddict={'SgrB2S':1,'DSi':10,'DSii':10,'DSiii':10,'DSiv':10,'DSv':10,'DSVI':2,'DSVII':3,'DSVIII':3,'DSIX':7}
 fnum=fielddict[source]
 
@@ -179,25 +179,35 @@ for y in np.arange(testyshape):
             for nug,euk,weight,var in zip(np.log10(nupperstofit),eukstofit,errstofit,log10variances):
                 bslist.append((nug,euk,weight,var))
         
-            bootresult=bootstrap(np.array(bslist),1000)
-        
+            numboots=1000
+            bootresult=bootstrap(np.array(bslist),numboots)
+
             bootlines=[]
             bootTrots=[]
             bootInts=[]
+            bootNums=[]
+            bootSlopes=[]
             for boot in bootresult:
                 tempfit=fit(linemod,boot[:,1],boot[:,0],weights=boot[:,2])
                 bootlines.append(tempfit)
             for line in bootlines:
                 tempbootTrot=-np.log10(np.e)/(line.slope)
+                tempbootslope=line.slope.value
                 tempbootNtot=qrot_partfunc*10**(line.intercept)
+                tempbootintNtot=line.intercept.value
                 if line.slope >= 0:#tempbootTrot >= 1000 or tempbootTrot <= 0:
                     continue
                 else:
                     bootTrots.append(tempbootTrot)
                     bootInts.append(tempbootNtot)
-        
+                    bootNums.append(tempbootintNtot)
+                    bootSlopes.append(tempbootslope)
+
             bootTstd=astropy.stats.mad_std(bootTrots)
-            bootNstd=astropy.stats.mad_std(bootInts)
+            #slope_bootstd=astropy.stats.mad_std(bootSlopes)
+            int_bootNstd=astropy.stats.mad_std(bootNums)
+            interimfactor=fit_lin.intercept.value*(1-int_bootNstd)
+            bootNstd=(qrot_partfunc*10**(interimfactor)).value
         
 
             #pdb.set_trace()
@@ -207,8 +217,9 @@ for y in np.arange(testyshape):
             obsTrot=-np.log10(np.e)/(fit_lin.slope)
             #obsTrotcf=-np.log10(np.e)/popt[0]
             #print(f'cf Trot: {obsTrotcf}')
-            obsNtot=qrot_partfunc*10**(np.log10(nugsmap[0,y,x])+fit_lin.slope*eukstofit[0])#eukstofit[0] is '5(1)-4(2)E1vt=0', eupper 55.87102 K
+            #obsNtot=qrot_partfunc*10**(np.log10(nugsmap[0,y,x])+fit_lin.slope*eukstofit[0])#eukstofit[0] is '5(1)-4(2)E1vt=0', eupper 55.87102 K
             altNtot=qrot_partfunc*10**(fit_lin.intercept)
+            obsNtot=altNtot
             #print(f'Alt Ntot: {altNtot}')
         
             #pdb.set_trace()
@@ -274,19 +285,26 @@ bootntotphdu.header=templateheader
 bootntotphdu.header['BTYPE']='Total column density error (bootstrap)'
 bootntotphdu.header['BUNIT']='cm-2'
 bootntothdul=fits.HDUList([bootntotphdu])
-bootntothdul.writeto(home+'error_ntot_boostrap1000_nonegativeslope.fits',overwrite=True)
-print(f'Saved Ntot error for {source} at {home}error_ntot_boostrap1000_nonegativeslope.fits')
+bootntothdul.writeto(home+'error_ntot_intstd_boostrap1000_nonegativeslope.fits',overwrite=True) 
+print(f'Saved Ntot error for {source} at {home}error_ntot_intstd_boostrap1000_nonegativeslope.fits')
 
+bootntotphdu2=fits.PrimaryHDU([ntotmap])
+bootntotphdu2.header=templateheader
+bootntotphdu2.header['BTYPE']='Total column density (bootstrap)'
+bootntotphdu2.header['BUNIT']='cm-2'
+bootntothdul2=fits.HDUList([bootntotphdu2])
+bootntothdul2.writeto(home+'bootstrap_ntot_intstd_boostrap1000_nonegativeslope.fits',overwrite=True) 
+print(f'Saved Ntot for {source} at {home}ntot_intstd_boostrap1000_nonegativeslope.fits')
+
+'''#Removed for ntot fix
 boottexphdu=fits.PrimaryHDU([texerrormap])
 boottexphdu.header=templateheader
 boottexphdu.header['BTYPE']='Rotational temperature error (bootstrap)'
 boottexphdu.header['BUNIT']='K'
 boottexhdul=fits.HDUList([boottexphdu])
-boottexhdul.writeto(home+'error_trot_boostrap1000_nonegativeslope.fits',overwrite=True)
-print(f'Saved Trot error for {source} at {home}error_trot_boostrap1000_nonegativeslope.fits')
-
-#arrayTrots=np.array(bootTrots)
-#arrayNtots=np.array(bootNtots)
+boottexhdul.writeto(home+'test_error_trot_boostrap10000_nonegativeslope.fits',overwrite=True)#'error_trot_boostrap1000_nonegativeslope.fits',overwrite=True)
+print(f'Saved Trot error for {source} at {home}test_error_trot_boostrap10000_nonegativeslope.fits')
+'''
 
             
 '''

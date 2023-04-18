@@ -349,13 +349,12 @@ ax.indicate_inset_zoom(axins19)
 
 #plt.Circle((centerx3,centery3),15)
 savefigpath='/blue/adamginsburg/d.jeff/repos/CH3OHTemps/figures/zoominfigs/contfix_nograd_contours_bolocam_zoomin.png'
-a=(1.05,0,1,1)
-cbax=inset_axes(axins2,width='5%',height='100%',loc='lower right', bbox_to_anchor=a,borderpad=0,bbox_transform=ax.transAxes)#,bbox_transform=axins20.transAxes,borderpad=0)
-cb=plt.colorbar(mappable=im,cax=axins2)#axins2show,shrink=1.4,pad=0)
+cbax=axins20.inset_axes([1.25,0,1,1])#inset_axes(axins2,width='5%',height='100%',loc='lower right', bbox_to_anchor=a,borderpad=0,bbox_transform=ax.transAxes)#,bbox_transform=axins20.transAxes,borderpad=0)
+cb=plt.colorbar(shrink=2,pad=0, mappable=im,cax=cbax)
 cb2=plt.colorbar(continuum,shrink=1.2,pad=0.5)#,anchor=(0.0,1.0))
-cb.set_label(label='T$_{rot}$ (K)',size=15)
+#cb.set_label(label='T$_{rot}$ (K)',size=15)
 cb2.set_label(label=r'$T_{b}$ (K)',size=15) #r'$S_{\nu}$ (mJy/beam)'
-axins2show.figure.axes[1].tick_params(axis='y',labelsize=13)
+#axins2show.figure.axes[1].tick_params(axis='y',labelsize=13)
 cb2.ax.tick_params(labelsize=13)#continuum.figure.axes[1].tick_params(axis='y',labelsize=13)
 #plt.savefig(savefigpath,bbox_inches='tight',overwrite=True)
 #plt.tight_layout()

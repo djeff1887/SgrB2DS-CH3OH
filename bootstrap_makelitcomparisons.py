@@ -144,7 +144,8 @@ dsfmt='*'
 savefigpath='/blue/adamginsburg/d.jeff/repos/CH3OHTemps/figures/LitComparisons/'
 
 plt.rcParams['figure.dpi']=150
-fig=plt.figure()
+
+fig=plt.figure(figsize=(7,6))
 plt.errorbar(wbsmm1mass.value,wbsmm1trot.value,yerr=trotwb_err.value,fmt=wbfmt,label='WB 89789 SMM1')
 plt.errorbar(w51mass,w51trot,fmt=w51fmt,label='W51')
 plt.errorbar(coremasses,coretrots.value,yerr=trotcore_errs.value,xerr=err_coremasses,fmt=corefmt,label='CORE catalogue')
@@ -154,11 +155,11 @@ plt.yscale('log')
 plt.ylabel('T$_{peak}$ (K)',fontsize=14)
 plt.xlabel('M$_{core}$ (M$_\odot$)',fontsize=14)
 plt.legend()
-#plt.savefig(savefigpath+'contfix_tempvsmass.png',overwrite=True)
+plt.savefig(savefigpath+'contfix_tempvsmass.png')
 plt.show()
 
 firstline=True
-plt.figure()
+plt.figure(figsize=(7,6))
 plt.errorbar(wbsmm1mass,wbsmm1radius,fmt=wbfmt,label='WB 89789 SMM1')
 plt.errorbar(w51mass,w51radius,fmt=w51fmt,label='W51')
 plt.errorbar(coremasses,coreradii,fmt=corefmt,label='CORE catalogue')
@@ -172,20 +173,20 @@ for item,edge in zip(orderedrmpps,edgeindices):
 plt.xscale('log')
 plt.yscale('log')
 plt.xlabel('M$_{core}$ (M$_\odot$)',fontsize=14)
-plt.ylabel('$r$ (AU)',fontsize=14)
+plt.ylabel('$R_{core}$ (AU)',fontsize=14)
 plt.legend()
-plt.savefig(savefigpath+'contfix_radiusvsmass_lines.png',overwrite=True)
+plt.savefig(savefigpath+'contfix_radiusvsmass_lines.png')
 plt.show()
 
 plt.figure()
 for item,edge in zip(orderedrmpps,edgeindices):
     mrsquared=(np.array(item[:,0])*u.solMass/(1*u.Da)).to('').value/((np.array(item[:,2])*u.AU).to('cm').value**2)
     #pdb.set_trace()
-    plt.plot(item[:,2][:edge],mrsquared[:edge],ls='-',color='purple',linewidth=0.5,label='$r$-averaged Mass')
+    plt.plot(item[:,2][:(edge+5)],mrsquared[:(edge+5)],ls='-',color='purple',linewidth=0.5,label='$r$-averaged Mass')
 plt.yscale('log')
 plt.xscale('log')
 plt.show()
-sys.exit()
+#sys.exit()
 
 plt.figure()
 plt.errorbar(coremasses,dindices,yerr=err_dindices,fmt='^',label='CORE Catalogue')#,color='green'
@@ -194,7 +195,7 @@ plt.xlabel('M$_{core}$ (M$_\odot$)',fontsize=14)
 plt.ylabel('$p$',fontsize=14)
 plt.xscale('log')
 plt.legend()
-plt.savefig(savefigpath+'contfix_densityindexvsmass.png',overwrite=True)
+plt.savefig(savefigpath+'contfix_densityindexvsmass.png')
 plt.show()
 
 plt.figure()
@@ -203,16 +204,16 @@ plt.hist(dsdensindex,label='DS Hot Cores')
 plt.xlabel('$p$',fontsize=14)
 plt.ylabel('Counts',fontsize=14)
 plt.legend()
-plt.savefig(savefigpath+'contfix_densityindexhistogram.png',overwrite=True)
+plt.savefig(savefigpath+'contfix_densityindexhistogram.png')
 plt.show()
 
 plt.figure()
 plt.errorbar(coreradii,dindices,yerr=err_dindices,fmt=corefmt,label='CORE Catalogue')
 plt.errorbar(dsradii,dsdensindex,yerr=err_dstempindices,fmt=dsfmt,label='DS Hot Cores')
-plt.xlabel('$r$ (AU)')
+plt.xlabel('$R_{core}$ (AU)')
 plt.ylabel('$p$')
 plt.legend()
-plt.savefig(savefigpath+'contfix_densityindexvsradius.png',overwrite=True)
+plt.savefig(savefigpath+'contfix_densityindexvsradius.png')
 plt.show()
 
 plt.figure()
@@ -222,9 +223,9 @@ plt.errorbar(coreradii.value,coretrots.value,yerr=trotcore_errs.value,fmt=corefm
 plt.errorbar(dsradii,temps,yerr=errortemps,fmt=dsfmt,label='DS Hot Cores')
 plt.xscale('log')
 plt.yscale('log')
-plt.xlabel('Radius (AU)',fontsize=14)
+plt.xlabel('R_{core} (AU)',fontsize=14)
 plt.ylabel('T$_{peak}$ (K)',fontsize=14)
-plt.savefig(savefigpath+'contfix_tempvsradius.png',overwrite=True)
+plt.savefig(savefigpath+'contfix_tempvsradius.png')
 plt.legend()
 
 plt.figure()
@@ -233,7 +234,7 @@ plt.errorbar(temps,dstempindex,yerr=err_dstempindices,xerr=errortemps,fmt=dsfmt,
 plt.xlabel('T$_{peak}$ (K)',fontsize=14)
 plt.ylabel('$q$')
 plt.legend()
-plt.savefig(savefigpath+'contfix_temperatureindexvstemp.png',overwrite=True)
+plt.savefig(savefigpath+'contfix_temperatureindexvstemp.png')
 plt.show()
 '''
 plt.figure()

@@ -59,7 +59,7 @@ def powerlaw_profile(x,a,n):
 def round_to_1(x):
     return round(x, -int(math.floor(math.log10(abs(x)))))
     
-source=os.getenv('SOURCE')#'SgrB2S'
+source='DSIX'#os.getenv('SOURCE')#
 fielddict={'SgrB2S':1,'DSi':10,'DSii':10,'DSiii':10,'DSiv':10,'DSv':10,'DSVI':2,'DSVII':3,'DSVIII':3,'DSIX':7}
 fnum=fielddict[source]
 print(f'Source: {source}')
@@ -82,8 +82,9 @@ texmap=home+"bootstrap_texmap_3sigma_allspw_withnans_weighted.fits"
 
 texerrmap=home+'error_trot_boostrap1000_nonegativeslope.fits'#"texmap_error_allspw_withnans_weighted.fits"
 #snrmap=home+"texmap_snr_allspw_weighted.fits"
-abunmap=home+'bootstrap_ch3ohabundance_3sigma_ntotintercept_bolocamfeather_smoothedtobolocam.fits'
-abunsnrmap=home+'bootstrap_ch3ohabundance_snr_ntotintercept_bolocamfeather_smoothedtobolocam.fits'
+abunmap=home+'bootstrap_ch3ohabundance_3sigma_ntotintercept_intstd_bolocamfeather_smoothedtobolocam.fits'#'bootstrap_ch3ohabundance_ntotnh2mask_ntotintercept_bolocamfeather_smoothedtobolocam.fits'
+ntotnh2_abunerrpath=home+'bootstrap_ch3ohabundance_error_ntotnh2mask_ntotintercept_bolocamfeather_smoothedtobolocam.fits'
+abunsnrmap=home+'bootstrap_ch3ohabundance_snr_intstd_ntotintercept_bolocamfeather_smoothedtobolocam.fits'#'bootstrap_ch3ohabundance_snr_ntotintercept_bolocamfeather_smoothedtobolocam.fits'
 nh2map=home+'bootstrap_nh2map_3sigma_bolocamfeather_smoothedtobolocam.fits'
 nh2errormap=home+'bootstrap_nh2map_error_bolocamfeather_smoothedtobolocam.fits'
 lummap=home+'bootstrap_boltzmannlum_3sigma_bolocamfeather_smoothedtobolocam.fits'
@@ -100,8 +101,9 @@ texmap=fits.open(texmap)
 texmapdata=texmap[0].data*u.K
 texerrdata=np.squeeze(fits.getdata(texerrmap))*u.K
 snrs=(texmapdata/texerrdata).value#fits.getdata(snrmap)
-abunds=fits.getdata(abunmap)
-snr_abund=fits.getdata(abunsnrmap)
+abunds=np.squeeze(fits.getdata(abunmap))
+stopgap_errabun=np.squeeze(fits.getdata(ntotnh2_abunerrpath))
+snr_abund=abunds/stopgap_errabun#fits.getdata(abunsnrmap)
 nh2s=fits.getdata(nh2map)*u.cm**-2
 nh2s_error=fits.getdata(nh2errormap)*u.cm**-2
 lums=fits.getdata(lummap)*u.solLum
@@ -364,8 +366,16 @@ for bin in listordered_centrtopix:
                 pass
         else:
             pass
-        avgabuninrad=np.nanmean(tempabun)
-        err_avgabuninrad=np.nanmean(tempabunerr)
+        
+        ok=np.isfinite(tempabun)*np.isfinite(tempabunerr)
+        if False in ok:
+            tempabun=np.array(tempabun)[ok]
+            tempabunerr=np.array(tempabunerr)[ok]
+        avgabuninrad=np.average(tempabun, weights=(np.array(tempabun)/np.array(tempabunerr)))
+        err_avgabuninrad=np.max(tempabun)-np.min(tempabun)#np.nanmean(tempabunerr)#This is the range in values, like the radial temperature profile
+        
+        if np.isfinite(avgabuninrad) == False:
+            pdb.set_trace()
 
         avglist.append(avg)
         avgtexlist.append(avgtex)
@@ -384,7 +394,6 @@ for bin in listordered_centrtopix:
 
 avgabunerrpath=f'{source}_err_avgabun.txt'
 np.savetxt(avgabunerrpath,np.array(radialabunerr))
-sys.exit
 
 if onlymassinteriorandradius:
     outlist=np.array(massinterior_radius)
@@ -442,25 +451,22 @@ if source == 'SgrB2S':#Selects masses,luminosities, nh2s, distances, and tempera
     #abundinradius=list(pixmask.get_values(abunds))
     #abundsnrinradius=list(pixmask.get_values(snr_abund))
     trotsforabunds=texinradius#list(pixmask.get_values(texmapdata.value))
-    #pdb.set_trace()
-    #print(f'New error: {propmasserr}')
-#else:
 
 onlytexabund=False
 
 if onlytexabund:
     if source == 'SgrB2S':
-        np.savetxt(f'contfix_{source}_abuns.txt',abundinradius)
-        np.savetxt(f'contfix_{source}_errabuns.txt',(np.array(abundinradius)/np.array(abundsnrinradius)))
-        np.savetxt(f'contfix_{source}_tex.txt',trotsforabunds)
-        np.savetxt(f'contfix_{source}_errtex.txt',(texerrinradius))
+        np.savetxt(f'intstd_{source}_abuns.txt',abundinradius)
+        np.savetxt(f'intstd_{source}_errabuns.txt',(np.array(abundinradius)/np.array(abundsnrinradius)))
+        np.savetxt(f'intstd_{source}_tex.txt',trotsforabunds)
+        np.savetxt(f'intstd_{source}_errtex.txt',(texerrinradius))
         print('Done')
         sys.exit()
     else:
-        np.savetxt(f'contfix_{source}_abuns.txt',abundinradius)
-        np.savetxt(f'contfix_{source}_errabuns.txt',(np.array(abundinradius)/np.array(abundsnrinradius)))
-        np.savetxt(f'contfix_{source}_tex.txt',texinradius)
-        np.savetxt(f'contfix_{source}_errtex.txt',(texerrinradius))
+        np.savetxt(f'intstd_{source}_abuns.txt',abundinradius)
+        np.savetxt(f'intstd_{source}_errabuns.txt',(np.array(abundinradius)/np.array(abundsnrinradius)))
+        np.savetxt(f'intstd_{source}_tex.txt',texinradius)
+        np.savetxt(f'intstd_{source}_errtex.txt',(texerrinradius))
         print('Done')
         sys.exit()
         
@@ -593,7 +599,7 @@ else:
 
     densplotpath=figpath+'contsanitycheck_densityprofile_trotntotbootmasked.png'
     print(f'\nSaving to {densplotpath}')
-    plt.savefig(densplotpath,overwrite=True)
+    plt.savefig(densplotpath)#,overwrite=True)
     plt.show()
 
 densityslopepath='contsanitycheck_densityslopes_bootmasked.fits'
@@ -610,7 +616,7 @@ if os.path.exists(densityslopepath):
         print('Appending complete.')
         #pdb.set_trace()
         print(f'Saving to {densityslopepath}')
-        densstack.write(densityslopepath,overwrite=True)
+        densstack.write(densityslopepath)#,overwrite=True)
         print('Done')
 else:
     print('No density table found')
@@ -631,15 +637,15 @@ onlyradabun=True
 if source == 'SgrB2S':
     plt.figure()
     plt.scatter(trotsforabunds,abundinradius,s=5,c=nh2inradius,norm=mpl.colors.LogNorm())
-    #plt.yscale('log')
+    plt.yscale('log')
     plt.xlabel('$T_{rot}$ (K)',fontsize=14)
     plt.ylabel('X(CH$_3$OH)',fontsize=14)
-    plt.xlim(xmax=plottexmax)
+    plt.xlim(xmax=plottexmax,xmin=80)
     #plt.colorbar(pad=0,label='Luminosity (Lsun)')
     plt.colorbar(pad=0,label='N(H$_2$) (cm$^{-2}$)')#'N(CH$_3$OH) (cm$^{-2}$)')##
     figsavepath=figpath+f'texabundiag_contsanitycheck_r{r}px_rphys{int(pixtophysicalsize.value)}AU_smoothed.png'
     #pdb.set_trace()
-    plt.savefig(figsavepath,bbox_inches='tight',overwrite=True)
+    plt.savefig(figsavepath,bbox_inches='tight',)#overwrite=True)
     plt.show()
 
     plt.figure()
@@ -650,11 +656,11 @@ if source == 'SgrB2S':
     plt.colorbar(pad=0,label='N(H$_2$) (cm$^{-2}$)')#'T$_K$ (K)')
     figsavepath=figpath+f'real_radialavgabundiag_contsanitycheck_r{r}px_rphys{int(pixtophysicalsize.value)}AU_smoothed.png'
     #pdb.set_trace()
-    plt.savefig(figsavepath,bbox_inches='tight',overwrite=True)
+    plt.savefig(figsavepath,bbox_inches='tight',)#overwrite=True)
     plt.show()
     
     savetxt=np.array([listordered_centrtopix,radialabun])
-    np.savetxt(f'{source}_radialavgabun.txt',savetxt)
+    np.savetxt(f'{source}_intstd_radialavgabun.txt',savetxt)
 
     if onlyradabun:
         sys.exit()
@@ -667,7 +673,7 @@ if source == 'SgrB2S':
     plt.colorbar(pad=0,label='T$_{rot}$ (K)')#'T$_K$ (K)')
     figsavepath=figpath+f'radialavgnh2s_contsanitycheck_r{r}px_rphys{int(pixtophysicalsize.value)}AU_smoothed.png'
     #pdb.set_trace()
-    plt.savefig(figsavepath,bbox_inches='tight',overwrite=True)
+    plt.savefig(figsavepath,bbox_inches='tight',)#overwrite=True)
     plt.show()
 else:
     plt.figure()
@@ -679,7 +685,7 @@ else:
     #plt.colorbar(pad=0,label='Luminosity (Lsun)')
     plt.colorbar(pad=0,label='N(H$_2$) (cm$^{-2}$)')#'N(CH$_3$OH) (cm$^{-2}$)')##
     figsavepath=figpath+f'texabundiag_contsanitycheck_r{r}px_rphys{int(pixtophysicalsize.value)}AU_smoothed.png'
-    plt.savefig(figsavepath,bbox_inches='tight',overwrite=True)
+    plt.savefig(figsavepath,bbox_inches='tight',)#overwrite=True)
     plt.show()
 
     plt.figure()
@@ -689,11 +695,11 @@ else:
     plt.ylabel('X(CH$_3$OH)',fontsize=14)
     #plt.colorbar(pad=0,label='N(H$_2$) (cm$^{-2}$)')#'T$_K$ (K)')
     figsavepath=figpath+f'real_radialavgabundiag_contsanitycheck_r{r}px_rphys{int(pixtophysicalsize.value)}AU_smoothed.png'
-    plt.savefig(figsavepath,bbox_inches='tight',overwrite=True)
+    plt.savefig(figsavepath,bbox_inches='tight',)#overwrite=True)
     plt.show()
 
     savetxt=np.array([listordered_centrtopix,radialabun])
-    np.savetxt(f'{source}_radialavgabun.txt',savetxt)
+    np.savetxt(f'{source}_intstd_radialavgabun.txt',savetxt)
 
     if onlyradabun:
         sys.exit()
@@ -705,7 +711,7 @@ else:
     plt.ylabel('N(H$_2$) (cm$^{-2}$)',fontsize=14)
     plt.colorbar(pad=0,label='T$_{rot}$ (K)')#'T$_K$ (K)')
     figsavepath=figpath+f'radialavgnh2s_contsanitycheck_r{r}px_rphys{int(pixtophysicalsize.value)}AU_smoothed.png'
-    plt.savefig(figsavepath,bbox_inches='tight',overwrite=True)
+    plt.savefig(figsavepath,bbox_inches='tight',)#overwrite=True)
     plt.show()
 
 
@@ -838,6 +844,7 @@ else:
     plt.savefig(figsavepath,overwrite=True)
     plt.show()
 
+sys.exit()
 '''
 print(f'Norm initial guess: {fiducial_norm}')
 print(f'norm error: {pcov[0,0]**0.5}')

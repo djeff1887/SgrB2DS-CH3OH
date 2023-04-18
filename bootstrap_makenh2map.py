@@ -11,6 +11,7 @@ import reproject
 import radio_beam
 import os
 from astropy.convolution import convolve
+import sys
 
 mpl.interactive(True)
 plt.close('all')
@@ -181,6 +182,7 @@ else:
     smoothed_ntoterr=convolve(ntoterrmap, beam_deconv.as_kernel(pixscale),fill_value=np.nan, nan_treatment='interpolate')
     cmbmaskntoterr=np.ma.masked_where(smoothed_trot < Tcmb.value, smoothed_ntoterr)
     asmoothed_ntoterr=cmbmaskntoterr.filled(fill_value=np.nan)
+    
 '''
 plt.figure(1)
 plt.imshow(smoothed_ntoterr,origin='lower',vmin=0,vmax=2e17)
@@ -210,10 +212,10 @@ bmintophyssize=(np.tan(bmin)*d).to('AU')
 '''Can probably simplify beamarea_phys to d(np.tan(bmaj)*np.tan(bmin))'''
 beamarea_phys=cntmbeam.beam_projected_area(d).to('AU2')#np.pi*(bmajtophyssize/2)*(bmintophyssize/2)#Added divide by 2 on 2/1/2022, it was missing prior to this date
 #calcdomega=np.pi*(bmaj/2)*(bmin/2)
-
+sys.exit()
 geomeanbeamarea=np.sqrt((bmajtophyssize*bmintophyssize)/2)
 print(f'Geometric mean beam radius (continuum): {geomeanbeamarea}')
-sys.exit()
+
     
 cntmwcs=WCS(cntmimage[0].header)
 texwcs=WCS(texmap[0].header)
@@ -221,7 +223,7 @@ texwcs=WCS(texmap[0].header)
 equiv=u.brightness_temperature(cntmimage[0].header['RESTFRQ']*u.Hz)
 
 rms_1mm_K=(cntmstd/beamarea_sr).to(u.K,equivalencies=equiv)
-
+sys.exit()
 snr=3
 
 #pdb.set_trace()
@@ -278,102 +280,7 @@ lums=sigma3_lum
 lumserr=err_betterlum
 
 #pdb.set_trace()
-
-'''
-for y in range(np.shape(texmapdata)[0]):
-    print(f'Start Row {y}')
-    for x in range(np.shape(texmapdata)[1]):
-        hotspottex=texmapdata[y,x]
-        targetpixtoworld=texwcs.all_pix2world([(x,y)],0)#wcs_pix2world(([0,0],texmappix),ra_dec_order=True)
-        #pix2world2=texwcs.pixel_to_world([x,y],0)
-        #hotspottex=texmapdata[texmappix[0],texmappix[1]]
-        #hmm=[[targetpixtoworld.ra[0].value,targetpixtoworld.dec[0].value,0,0],[pix2world2.ra[1].value,pix2world2.dec[1].value,0,0]]
-        empty=np.empty((1,4))
-        empty[:,0]=targetpixtoworld[:,0]
-        empty[:,1]=targetpixtoworld[:,1]
-        empty[:,2]=0
-        empty[:,3]=0
-        cntmworldtopix=cntmwcs.all_world2pix(empty,0,ra_dec_order=True)#world_to_array_index([266.83628632*u.deg,-28.39626318*u.deg,225265023886.0*u.Hz,1*u.m],[0,0,0,0],[1,1,1,1])
-        cntmxpix=round(float(cntmworldtopix[:,0]))#math.floor(cntmworldtopix[1][0]-1)
-        cntmypix=round(float(cntmworldtopix[:,1]))-1#math.floor(cntmworldtopix[0][1])
-        
-        hotspotjy=cntmdatasqee[cntmypix,cntmxpix]
-        hotspotjysr=hotspotjy/beamarea_sr#The equations we're using start from the Plank function, so this gets us to spectral radiance units
-        #ntoterr=(1/snrmap[y,x])*ntotmap[y,x]
-        
-        if (hotspotjysr*beamarea_sr) < snr*cntmstd or snrmap[y,x] < 3:
-            #print('Negative continuum flux detected')
-            #print(f'Continuum pixel: ({cntmypix},{cntmxpix})')
-            #print(f'Corresponding Texmap pixel: ({y},{x})')
-            nh2[y,x]=np.nan
-            nh2_unc[y,x]=np.nan
-            nh2_snr[y,x]=np.nan
-            ch3ohabundance[y,x]=np.nan
-            lums[y,x]=np.nan
-            lumserr[y,x]=np.nan
-            tau[y,x]=np.nan
-            ch3ohabundance_unc[y,x]=np.nan
-            ch3ohabundance_snr[y,x]=np.nan
-            ch3ohabundance_sigclip[y,x]=np.nan
-            #print(f'Pixel ({y},{x}) flux < 3*sigma in continuum')
-            #pdb.set_trace()
-            continue
-
-        #print(f'Results for region in {source}\nTex pixel {texmappix}):\nCntm pixel: {cntmypix,cntmxpix}')
-        #print(f'target flux density: {cntmdatasqee[cntmypix,cntmxpix].to("mJy")}, target temperature {hotspottex}')
-        jysrtoK=hotspotjysr.to(u.K,equivalencies=equiv)
-        targettau=opticaldepth(hotspotjysr,restfreq,hotspottex).decompose()#.to('')# units are disagreeing at the moment, but pretty sure this is the optical depth in spite of the dangling sr-1 term
-        targetlum=luminosity(bmajtophyssize,jysrtoK).to("solLum")#per Ginsburg+2017, this uses the peak of the continuum, not methanol
-        targetlumerr=error_luminosity(bmajtophyssize,jysrtoK).to('solLum')
-        targetgasmass=gasmass(hotspotjysr,beamarea_sr,restfreq,cntmkappa,hotspottex)
-        gassmass_unc=gassmasserr(hotspotjysr,beamarea_sr,restfreq,cntmkappa,hotspottex,texerrmap[y,x])
-        targetSigmam=((targetgasmass/(np.pi*beamarea_phys)).to('g cm-2'))
-        Sigmam_unc=np.abs(gassmass_unc/targetgasmass)*targetSigmam
-        targetSigmam_reduced=(targetSigmam/mu).to('cm-2')
-        Sigmam_reduced_unc=(np.abs(Sigmam_unc/targetSigmam)*targetSigmam_reduced).to('cm-2')
-        Sigmam_reduced_snr=(targetSigmam_reduced/Sigmam_reduced_unc).to('')
-        #pdb.set_trace()
-        if targetSigmam_reduced < 0:
-            print('Negative surface density detected')
-            print(f'Continuum flux density: {hotspotjysr}')
-            print(f'Brightness: {jysrtoK}')
-            print(f'Gass mass: {targetgasmass.to("solMass")}')
-            print(f'Sigma_m: {targetSigmam}')
-            print(f'Reduced Sigma_m: {targetSigmam_reduced}')
-            pdb.set_trace()
-        if Sigmam_reduced_snr < snr:
-            print(f'Pixel ({y},{x}) Sigma_mass < 3sigma')
-            nh2[y,x]=np.nan
-            nh2_unc[y,x]=Sigmam_reduced_unc.value
-            nh2_snr[y,x]=Sigmam_reduced_snr.value
-            ch3ohabundance[y,x]=np.nan
-            lums[y,x]=np.nan
-            lumserr[y,x]=np.nan
-            tau[y,x]=np.nan
-            ch3ohabundance_unc[y,x]=np.nan
-            ch3ohabundance_snr[y,x]=np.nan
-            ch3ohabundance_sigclip[y,x]=np.nan
-            continue
-        targetch3ohabund=(ntotmap[y,x]/targetSigmam_reduced).to('')
-        ch3ohabun_unc=np.sqrt(((1/targetSigmam_reduced)*ntoterrmap[y,x])**2+((-ntotmap[y,x]/(targetSigmam_reduced**2))*Sigmam_reduced_unc)**2).to('')#((1/Sigmam_reduced_snr)*targetch3ohabund).to('')
-        ch3ohabun_snr=targetch3ohabund/ch3ohabun_unc
-        
-        nh2[y,x]=targetSigmam_reduced.value
-        nh2_unc[y,x]=Sigmam_reduced_unc.value
-        nh2_snr[y,x]=Sigmam_reduced_snr.value
-        ch3ohabundance[y,x]=targetch3ohabund.value
-        ch3ohabundance_unc[y,x]=ch3ohabun_unc.value
-        ch3ohabundance_snr[y,x]=ch3ohabun_snr.value
-        lums[y,x]=targetlum.value
-        lumserr[y,x]=targetlumerr.value
-        tau[y,x]=targettau.value
-        
-        if ch3ohabun_snr >= 3:
-            ch3ohabundance_sigclip[y,x]=targetch3ohabund.value
-        else:
-            ch3ohabundance_sigclip[y,x]=np.nan
-   
-'''     
+  
 gasmassprimaryhdu=fits.PrimaryHDU(sigma3_gasmass.value)
 gasmassprimaryhdu.header=texmap[0].header
 gasmassprimaryhdu.header['BTYPE']='H2 Mass'
