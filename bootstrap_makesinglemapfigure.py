@@ -63,8 +63,8 @@ def make_tickstrings(list_of_float):
         list_of_strings.append(string)
     return list_of_strings
 
-set=4
-colordict={0:('trot','inferno','bootstrap_texmap_3sigma_allspw_withnans_weighted.fits'),1:('mom0','bone',"CH3OH~5_1-4_2E1vt0_masked.fits"),2:('nupper','Blues_r'),3:('detections','CMRmap',"ch3ohdetections0_3sigma_allspw_withnans_weighted.fits"),4:('abundance','viridis','bootstrap_ch3ohabundance_3sigma_ntotintercept_intstd_bolocamfeather_smoothedtobolocam.fits')}
+set=5
+colordict={0:('trot','inferno','bootstrap_texmap_3sigma_allspw_withnans_weighted.fits'),1:('mom0','bone',"CH3OH~5_1-4_2E1vt0_masked.fits"),2:('nupper','Blues_r'),3:('detections','CMRmap',"ch3ohdetections0_3sigma_allspw_withnans_weighted.fits"),4:('abundance','viridis','bootstrap_ch3ohabundance_3sigma_ntotintercept_intstd_bolocamfeather_smoothedtobolocam.fits'),5:('nh2','Greys_r','bootstrap_nh2map_3sigma_bolocamfeather_smoothedtobolocam.fits')}
 mode=colordict[set][0]
 color=colordict[set][1]
 pathsuffix=colordict[set][2]
@@ -73,7 +73,7 @@ print(f'Mode: {mode}')
 cm= copy.copy(mpl.cm.get_cmap(color))#mom0 bone, temperature inferno, nupper Blues_r, detections CMRmap, abundance cividis
 cm.set_bad('black')
 dGC=8.34*u.kpc#per Meng et al. 2019 https://www.aanda.org/articles/aa/pdf/2019/10/aa35920-19.pdf
-source='DSIX'#os.getenv('source')#'SgrB2S'
+source='SgrB2S'#os.getenv('source')#
 print(f'Source: {source}\n')
 fields={'SgrB2S':1,'DSi':10,'DSii':10,'DSiii':10,'DSiv':10,'DSv':10,'DSVI':2,'DSVII':3,'DSVIII':3,'DSIX':7}
 fnum=fields[source]
@@ -126,7 +126,7 @@ for y in range(cntrshape[0]):
             pass
 assert upperntot not in cntrhdu.data, 'Unphysical values in Ntot image'
 '''
-cntrrms=0.0002#mjy, np.nanstd(cntrhdu.data)
+cntrrms=0.0002#mjy, np.nanstd(cntrhdu.data)#this is definitely actually in Jy
 cntrlist=cntrrms*np.array([5,9,27,81,128,281])
 
 cntrdata=np.squeeze(cntrhdu.data)
@@ -136,7 +136,7 @@ cntrwcs=WCS(cntrhdu).celestial
 texmaxpix=hduwcs.array_shape
 hdubeam=radio_beam.Beam.from_fits_header(hdu.header)
 
-plt.rcParams['figure.dpi'] = 150
+plt.rcParams['figure.dpi'] = 300
 sliced=['x','y']#,0,0]#Must be in same order as axes are given in fits header, at least. 
 plt.figure()
 ax=plt.subplot(projection=hduwcs,slices=sliced)
@@ -169,6 +169,13 @@ elif mode == 'abundance':
     else:
         img=ax.imshow(np.squeeze(hdu.data),interpolation=None, cmap=cm, norm=mpl.colors.LogNorm())
         maxfix=False
+
+elif mode == 'nh2':
+    nh2min={'SgrB2S':5e22}
+    if source in list(nh2min.keys()):
+        img=ax.imshow(np.squeeze(hdu.data),interpolation=None, cmap=cm, norm=mpl.colors.LogNorm(),vmin=nh2min[source])
+    else:
+        img=ax.imshow(np.squeeze(hdu.data),interpolation=None, cmap=cm, norm=mpl.colors.LogNorm())
 else:
     img=ax.imshow(np.squeeze(hdu.data),interpolation=None, cmap=cm)
 lims=ax.axis()
@@ -256,7 +263,7 @@ ax.add_patch(hdubeamplot)
 hdubeamplot.set_facecolor('gray')
 hdubeamplot.set_edgecolor('white')
 
-labeldict={0:'T$_{K}$ (K)',1:r'Intensity (K km s$^{-1}$)',2:r'N$_{upper}$ (cm$^{-2}$)',3:'$n_{transition}$',4:'X(CH$_3$OH)'}
+labeldict={0:'T$_{K}$ (K)',1:r'Intensity (K km s$^{-1}$)',2:r'N$_{upper}$ (cm$^{-2}$)',3:'$n_{transition}$',4:'X(CH$_3$OH)',5:'$N$(H$_2$) (cm$^{-2}$)'}
 ax.axis(lims)
 ra.set_axislabel('RA (J2000)',fontsize=14,minpad=0.9)
 ra.set_ticklabel(exclude_overlapping=True)

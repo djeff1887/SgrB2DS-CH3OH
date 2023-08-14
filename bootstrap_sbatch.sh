@@ -1,1 +1,1 @@
-sources=("SgrB2S" "DSi" "DSii" "DSiii" "DSiv" "DSv" "DSVI" "DSVII" "DSVIII" "DSIX"); for envsource in ${sources[@]}; do export envsource; sbatch --job-name=${envsource}_bootstrap --output=${envsource}_contcheck_output_%j.out bootstrap_trotntotmap.slurm --export=all;done
+sources=("SgrB2S" "DSi" "DSii" "DSiii" "DSiv" "DSv" "DSVI" "DSVII" "DSVIII" "DSIX"); for envsource in ${sources[@]}; do export envsource; sbatch --job-name=${envsource}_qrotfix_bootstrap --output=${envsource}_qrotfix_output_%j.out bootstrap_trotntotmap.slurm --export=all;done

@@ -137,7 +137,7 @@ for ss in names.keys():
 paths=sortedpaths
 errpaths=sortederrs
 
-plt.rcParams['figure.dpi']=150
+plt.rcParams['figure.dpi']=300
 plt.figure(figsize=(7,5))
 for src,ls in zip(names.keys(),linestyles.keys()):
     test=src+'_'

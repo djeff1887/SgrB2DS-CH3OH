@@ -87,10 +87,10 @@ dsdensindex=np.array(comptable['density_alpha'])#list(comptable[18])[1:]
 err_dsdens=np.array(comptable['err_densityalpha'])#list(comptable[19])[1:]
 dstempindex=np.array(comptable['alpha_2'])
 dstempindex[3]=comptable['alpha_1'][3]
-dstempindex[8]=comptable['alpha_1'][8]
+dstempindex[8]=0.62#comptable['alpha_1'][8]
 err_dstempindices=np.array(comptable['alpha_2 error'])
 err_dstempindices[3]=comptable['alpha_1 error'][3]
-err_dstempindices[8]=comptable['alpha_1 error'][8]
+err_dstempindices[8]=0.03#comptable['alpha_1 error'][8]
 
 radialmassprofilepaths=glob.glob('*massinterior*')
 names=['DSi_','DSii_','DSiii_','DSiv','DSv','DSVI_','DSVII_','DSVIII_','DSIX','SgrB2S']
@@ -143,7 +143,7 @@ corefmt='^'
 dsfmt='*'
 savefigpath='/blue/adamginsburg/d.jeff/repos/CH3OHTemps/figures/LitComparisons/'
 
-plt.rcParams['figure.dpi']=150
+plt.rcParams['figure.dpi']=300
 
 fig=plt.figure(figsize=(7,6))
 plt.errorbar(wbsmm1mass.value,wbsmm1trot.value,yerr=trotwb_err.value,fmt=wbfmt,label='WB 89789 SMM1')
@@ -208,7 +208,8 @@ plt.savefig(savefigpath+'contfix_densityindexhistogram.png')
 plt.show()
 
 plt.figure()
-plt.errorbar(coreradii,dindices,yerr=err_dindices,fmt=corefmt,label='CORE Catalogue')
+coreradval=coreradii.value
+plt.errorbar(coreradval,dindices,yerr=err_dindices,fmt=corefmt,label='CORE Catalogue')
 plt.errorbar(dsradii,dsdensindex,yerr=err_dstempindices,fmt=dsfmt,label='DS Hot Cores')
 plt.xlabel('$R_{core}$ (AU)')
 plt.ylabel('$p$')
@@ -227,7 +228,7 @@ plt.xlabel('R_{core} (AU)',fontsize=14)
 plt.ylabel('T$_{peak}$ (K)',fontsize=14)
 plt.savefig(savefigpath+'contfix_tempvsradius.png')
 plt.legend()
-
+'''
 plt.figure()
 plt.errorbar(coretrots.value,tindices,yerr=err_tindices,xerr=trotcore_errs.value,fmt=corefmt,label='CORE catalogue')
 plt.errorbar(temps,dstempindex,yerr=err_dstempindices,xerr=errortemps,fmt=dsfmt,label='DS Hot Cores')
@@ -236,6 +237,7 @@ plt.ylabel('$q$')
 plt.legend()
 plt.savefig(savefigpath+'contfix_temperatureindexvstemp.png')
 plt.show()
+'''
 '''
 plt.figure()
 plt.errorbar(temps,abuns,yerr=errorabun,xerr=errortemps,fmt=dsfmt,color='red')

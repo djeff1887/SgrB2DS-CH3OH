@@ -17,6 +17,7 @@ from scipy.optimize import curve_fit as cf
 from math import log10, floor
 from astropy.stats import bootstrap
 import astropy.stats
+#from pyspeckit.spectrum.models.lte_molecule import get_molecular_parameters
 
 mpl.interactive(True)
 plt.rcParams["figure.dpi"]=150
@@ -46,7 +47,14 @@ R_i=1
 f=1
 Tbg=2.7355*u.K
 
-source='SgrB2S'
+'''
+Jfreqs, Jaij, Jdeg, JEU, qrot = get_molecular_parameters('CH3OH',
+                                                         catalog='JPL',
+                                                         fmin=150*u.GHz,
+                                                         fmax=300*u.GHz)
+'''
+
+source='DSi'
 fielddict={'SgrB2S':1,'DSi':10,'DSii':10,'DSiii':10,'DSiv':10,'DSv':10,'DSVI':2,'DSVII':3,'DSVIII':3,'DSIX':7}
 fnum=fielddict[source]
 
@@ -75,7 +83,7 @@ spwdict=pickle.load(infile)
 fulltexmap=fits.getdata(home+'texmap_3sigma_allspw_withnans_weighted.fits')
 trotdict={'SgrB2S':300*u.K,'DSi':300*u.K,'DSii':150*u.K,'DSiii':150*u.K,'DSiv':150*u.K,'DSv':100*u.K,'DSVI':300*u.K,'DSVII':200*u.K,'DSVIII':175*u.K,'DSIX':150*u.K}
 testT=trotdict[source]
-qrot_partfunc=Q_rot_asym(testT).to('')
+#qrot_partfunc=qrot(testT).to('')
 
 print('Setting up and executing model fit')
 testyshape=np.shape(fulltexmap)[0]
@@ -99,8 +107,8 @@ for master in range(len(allmaster[:,0])):
     
 testzshape=len(mastereuks)
 
-ypix=61#69#36dsi#73#70#int(input('y coord:'))61
-xpix=64#58#40dsi#54#55#int(input('x coord:'))64
+ypix=36#37#69#36dsi#73#70#int(input('y coord:'))61 dsiring:36
+xpix=42#41#58#40dsi#54#55#int(input('x coord:'))64 dsiring:35
 pixel=(ypix,xpix)
 pixellist=list([pixel])
 
@@ -163,45 +171,64 @@ for px in pixellist:
             errstofit.append(temperrfit)
         
         fit_lin=fit(linemod,eukstofit,np.log10(nupperstofit), weights=errstofit)
-        #popt,pcov=cf(line,eukstofit,np.log10(nupperstofit),sigma=errstofit)
-        #perr = np.sqrt(np.diag(pcov))
+        obsTrot=-np.log10(np.e)/(fit_lin.slope)
+        qrot_partfunc=9473.271845042498*u.dimensionless_unscaled#qrot(obsTrot*u.K).to('')
         
         bslist=[]
         for nug,euk,weight,var in zip(np.log10(nupperstofit),eukstofit,errstofit,log10variances):
             bslist.append((nug,euk,weight,var))
         
-        bootresult=bootstrap(np.array(bslist),10000)
+        numboots=1000
+        bootresult=bootstrap(np.array(bslist),numboots)
         
         bootlines=[]
         bootTrots=[]
         bootInts=[]
+        bootNums=[]
+        bootSlopes=[]
         for boot in bootresult:
             tempfit=fit(linemod,boot[:,1],boot[:,0],weights=boot[:,2])
             bootlines.append(tempfit)
         for line in bootlines:
             tempbootTrot=-np.log10(np.e)/(line.slope)
+            tempbootslope=line.slope.value
             tempbootNtot=qrot_partfunc*10**(line.intercept)
+            tempbootintNtot=line.intercept.value
             if line.slope >= 0:#tempbootTrot >= 1000 or tempbootTrot <= 0:
                 continue
             else:
                 bootTrots.append(tempbootTrot)
                 bootInts.append(tempbootNtot)
+                bootNums.append(tempbootintNtot)
+                bootSlopes.append(tempbootslope)
         
         bootTstd=astropy.stats.mad_std(bootTrots)
-        bootNstd=astropy.stats.mad_std(bootInts)
+        slope_bootstd=astropy.stats.mad_std(bootSlopes)
+        int_bootNstd=astropy.stats.mad_std(bootNums)
+        interimfactor=fit_lin.intercept.value*(1-int_bootNstd)
+        bootNstd=(qrot_partfunc*10**(interimfactor)).value
         
 
         #pdb.set_trace()
         linemod_euks=np.linspace(min(eukstofit),max(mastereuks),100)
         #print('Model fit complete')
         #print('Compute obsTex and obsNtot')
-        obsTrot=-np.log10(np.e)/(fit_lin.slope)
+        #obsTrot=-np.log10(np.e)/(fit_lin.slope)
         #obsTrotcf=-np.log10(np.e)/popt[0]
         #print(f'cf Trot: {obsTrotcf}')
-        obsNtot=qrot_partfunc*10**(np.log10(nugsmap[0,y,x])+fit_lin.slope*eukstofit[0])#eukstofit[0] is '5(1)-4(2)E1vt=0', eupper 55.87102 K
+        bogusobsNtot=qrot_partfunc*10**(np.log10(nugsmap[0,y,x])+fit_lin.slope*eukstofit[0])#eukstofit[0] is '5(1)-4(2)E1vt=0', eupper 55.87102 K
         altNtot=qrot_partfunc*10**(fit_lin.intercept)
         print(f'Alt Ntot: {altNtot}')
+        obsNtot=altNtot
         
+        upper=fit_lin.intercept.value+int_bootNstd
+        lower=fit_lin.intercept.value-int_bootNstd
+        upperNtot=qrot_partfunc*10**(upper)
+        lowerNtot=qrot_partfunc*10**(lower)
+        upperdiff=upperNtot-obsNtot
+        lowerdiff=obsNtot-lowerNtot
+        upperfrac=upperdiff/obsNtot
+        lowerfrac=lowerdiff/obsNtot
         #pdb.set_trace()
 
         A=np.stack((eukstofit,np.ones_like(eukstofit)),axis=1)
@@ -233,17 +260,18 @@ for px in pixellist:
         val_ntot=round(np.log10(obsNtot.value),2)#round((obsNtot.value/(1*10**int(np.log10(obsNtot.value)))),(len(str(round(snr.value)))-1))
 
         plt.errorbar(eukstofit,np.log10(nupperstofit),yerr=log10nuerr,fmt='o')
-        plt.plot(linemod_euks,fit_lin(linemod_euks),label=(f'{tk}: {round(obsTrot, 2)} $\pm$ {round(bootTstd,2)} K\n{ntot}: {val_ntot} $\pm$ {val_dntot} '))
+        plt.plot(linemod_euks,fit_lin(linemod_euks),label=(f'{tk}: {round(obsTrot, 2)} $\pm$ {round(bootTstd,2)} K\n{ntot}: {val_ntot} $\pm$ {round(int_bootNstd,2)}'))
         #plt.errorbar(eukstofit,np.log10(nupperstofit),yerr=log10nuerr,fmt='o')
         #plt.plot(linemod_euks,fit_lin(linemod_euks),label=(f'obsTex: {round(obsTrot, 4)} $\pm$ {round(dobsTrot.value, 2)*u.K}\nobsNtot: {round(obsNtot.value,3)/u.cm**2}'))
         for linmod in bootlines:
-            plt.plot(linemod_euks,linmod(linemod_euks),color='black',alpha=0.002,zorder=0)
+            plt.plot(linemod_euks,linmod(linemod_euks),color='black',alpha=0.03,zorder=0)
         #plt.scatter(excludedeuks,np.log10(excludednuppers),marker='v',color='red')
         #plt.title(f'field{fnum} {source} pixel ({y},{x}) CH$_3$OH Rotational Diagram')
         plt.xlabel(r'E$_u$ (K)')
         plt.ylabel(r'log$_{10}$(N$_u$/g$_u$)')
         plt.legend()
-        plt.savefig(rotdiagpath+f'contfix_bootstrap_{y}_{x}.png')
+        plt.savefig(f'debuggingrotationaldiagrams/JPLqrot_contfix_bootstrap_interr_{y}_{x}.png')
+        #rotdiagpath+f'contfix_bootstrap_interr_{y}_{x}.png')
         plt.show()
         
         plt.figure(2)
@@ -259,7 +287,8 @@ for px in pixellist:
         plt.ylabel('Number of fits')
         plt.legend()
         plt.xlim(xmin=0,xmax=750)
-        plt.savefig(rotdiagpath+f'contfix_trothist_bootstrap_{y}_{x}.png')
+        plt.savefig(f'debuggingrotationaldiagrams/JPLqrot_contfix_trothist_bootstrap_interr_{y}_{x}.png')
+        #rotdiagpath+f'contfix_trothist_bootstrap_interr_{y}_{x}.png')
         plt.show()
         print('Done.')
     continue

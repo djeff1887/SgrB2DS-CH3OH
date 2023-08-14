@@ -59,7 +59,7 @@ def powerlaw_profile(x,a,n):
 def round_to_1(x):
     return round(x, -int(math.floor(math.log10(abs(x)))))
     
-source='SgrB2S'
+source=os.getenv('SOURCE')#'SgrB2S'
 fielddict={'SgrB2S':1,'DSi':10,'DSii':10,'DSiii':10,'DSiv':10,'DSv':10,'DSVI':2,'DSVII':3,'DSVIII':3,'DSIX':7}
 fnum=fielddict[source]
 print(f'Source: {source}')
@@ -224,6 +224,7 @@ centrtopix=(rr[mask]*pixtophysicalsize).value
 yinradius=rr[0]
 xinradius=rr[1]
 texinradius=texmapdata[rr<r].value
+texerrinradius=texerrdata[rr<r].value
 snrsinradius=snrs[rr<r]/5
 abundinradius=abunds[rr2<r]
 abundsnrinradius=snr_abund[rr2<r]
@@ -244,7 +245,7 @@ S_masserrinradius=h2masserr[S_rr<r].value
 lookformax=texmapdata[rr<10**0.5].value
 lookformax_err=texerrdata[rr<10**0.5].value
 
-teststack=np.stack((centrtopix,massinradius,snrsinradius,lumsinradius,nh2inradius,nh2errorinradius,texinradius,lumerrinradius,masserrinradius),axis=1)
+teststack=np.stack((centrtopix,massinradius,snrsinradius,lumsinradius,nh2inradius,nh2errorinradius,texinradius,lumerrinradius,masserrinradius,abundinradius),axis=1)
 teststack=teststack[teststack[:,0].argsort()]
 set_centrtopix=set(teststack[:,0])
 listordered_centrtopix=list(set_centrtopix)
@@ -260,6 +261,10 @@ avginversesigma=[]
 radialmaxtex=[]
 radialmintex=[]
 radialmasserr=[]
+radialabun=[]
+
+onlymassinteriorandradius=False
+massinterior_radius=[]
 
 totalmass=np.nansum(teststack[:,1])
 sanitycheckmass=0
@@ -277,6 +282,7 @@ for bin in listordered_centrtopix:
     massesinterior=[]
     masserrinterior=[]
     tempmasserr=[]
+    tempabun=[]
     for data in teststack:
         #print(f'Bin: {bin} AU')
         if bin == data[0]:
@@ -287,6 +293,7 @@ for bin in listordered_centrtopix:
                 tempmass.append(data[1])
                 tempmasssnr.append(data[1]/data[8])
                 tempmasserr.append(data[8])
+                tempabun.append(data[9])
                 if np.isnan(data[6])==False:
                     if np.isinf(data[2])==False:
                         truesnr=data[2]*5
@@ -352,6 +359,7 @@ for bin in listordered_centrtopix:
                 pass
         else:
             pass
+        avgabuninrad=np.nanmean(tempabun)
 
         avglist.append(avg)
         avgtexlist.append(avgtex)
@@ -362,7 +370,15 @@ for bin in listordered_centrtopix:
         radialdensitylist.append(numberdensityinbin.value)
         mrcubedlist.append(mrcubed.value)
         err_radialdens.append(err_binnumberdensity.value)
+        radialabun.append(avgabuninrad)
+        
+        massinterior_radius.append((massinteriorsum.value,masserrinteriorsum.value,bin))
     #pdb.set_trace()
+
+if onlymassinteriorandradius:
+    outlist=np.array(massinterior_radius)
+    np.savetxt(f'{source}_massinterior_radius.txt',outlist)
+    sys.exit()
 
 if edge == None:#for hot sources where T never falls below 150 K
     mintemp=np.nanmin(avgtexlist)
@@ -418,6 +434,25 @@ if source == 'SgrB2S':#Selects masses,luminosities, nh2s, distances, and tempera
     #pdb.set_trace()
     #print(f'New error: {propmasserr}')
 #else:
+
+onlytexabund=False
+
+if onlytexabund:
+    if source == 'SgrB2S':
+        np.savetxt(f'contfix_{source}_abuns.txt',abundinradius)
+        np.savetxt(f'contfix_{source}_errabuns.txt',(np.array(abundinradius)/np.array(abundsnrinradius)))
+        np.savetxt(f'contfix_{source}_tex.txt',trotsforabunds)
+        np.savetxt(f'contfix_{source}_errtex.txt',(texerrinradius))
+        print('Done')
+        sys.exit()
+    else:
+        np.savetxt(f'contfix_{source}_abuns.txt',abundinradius)
+        np.savetxt(f'contfix_{source}_errabuns.txt',(np.array(abundinradius)/np.array(abundsnrinradius)))
+        np.savetxt(f'contfix_{source}_tex.txt',texinradius)
+        np.savetxt(f'contfix_{source}_errtex.txt',(texerrinradius))
+        print('Done')
+        sys.exit()
+        
 for data2 in teststack:
     if data2[0] <= edge:
         massestosum.append(data2[1])
@@ -581,7 +616,7 @@ if onlydens:
 else:
     pass
 
-#pdb.set_trace()
+onlyradabun=True
 if source == 'SgrB2S':
     plt.figure()
     plt.scatter(trotsforabunds,abundinradius,s=5,c=nh2inradius,norm=mpl.colors.LogNorm())
@@ -597,15 +632,21 @@ if source == 'SgrB2S':
     plt.show()
 
     plt.figure()
-    plt.scatter(rr2_sgrb2s,abundinradius,s=5,c=nh2inradius,norm=mpl.colors.LogNorm())
+    plt.scatter(listordered_centrtopix,radialabun,s=5,)#c=nh2inradius,norm=mpl.colors.LogNorm())#abundinradius
     plt.yscale('log')
     plt.xlabel('$r$ (AU)',fontsize=14)
     plt.ylabel('X(CH$_3$OH)',fontsize=14)
     plt.colorbar(pad=0,label='N(H$_2$) (cm$^{-2}$)')#'T$_K$ (K)')
-    figsavepath=figpath+f'radialavgabundiag_contsanitycheck_r{r}px_rphys{int(pixtophysicalsize.value)}AU_smoothed.png'
+    figsavepath=figpath+f'real_radialavgabundiag_contsanitycheck_r{r}px_rphys{int(pixtophysicalsize.value)}AU_smoothed.png'
     #pdb.set_trace()
     plt.savefig(figsavepath,bbox_inches='tight',overwrite=True)
     plt.show()
+    
+    savetxt=np.array([listordered_centrtopix,radialabun])
+    np.savetxt(f'{source}_radialavgabun.txt',savetxt)
+
+    if onlyradabun:
+        sys.exit()
 
     plt.figure()
     plt.scatter(rr2_sgrb2s,nh2inradius,s=5,c=texinradius,vmax=plottexmax,cmap='inferno')
@@ -631,14 +672,20 @@ else:
     plt.show()
 
     plt.figure()
-    plt.scatter(centrtopix,abundinradius,s=5,c=nh2inradius,norm=mpl.colors.LogNorm())
+    plt.scatter(listordered_centrtopix,radialabun,s=5)#,c=nh2inradius,norm=mpl.colors.LogNorm())#abundinradius
     plt.yscale('log')
     plt.xlabel('$r$ (AU)',fontsize=14)
     plt.ylabel('X(CH$_3$OH)',fontsize=14)
-    plt.colorbar(pad=0,label='N(H$_2$) (cm$^{-2}$)')#'T$_K$ (K)')
-    figsavepath=figpath+f'radialavgabundiag_contsanitycheck_r{r}px_rphys{int(pixtophysicalsize.value)}AU_smoothed.png'
+    #plt.colorbar(pad=0,label='N(H$_2$) (cm$^{-2}$)')#'T$_K$ (K)')
+    figsavepath=figpath+f'real_radialavgabundiag_contsanitycheck_r{r}px_rphys{int(pixtophysicalsize.value)}AU_smoothed.png'
     plt.savefig(figsavepath,bbox_inches='tight',overwrite=True)
     plt.show()
+
+    savetxt=np.array([listordered_centrtopix,radialabun])
+    np.savetxt(f'{source}_radialavgabun.txt',savetxt)
+
+    if onlyradabun:
+        sys.exit()
     
     plt.figure()
     plt.scatter(centrtopix,nh2inradius,s=5,c=texinradius,vmax=plottexmax,cmap='inferno')
@@ -787,7 +834,7 @@ print(f'norm error: {pcov[0,0]**0.5}')
 print(f'index initial guess: {lowerbound_initialguess[source]}')
 print(f'index error: {pcov[1,1]**0.5}')
 '''
-onlypowerlaw=False
+onlypowerlaw=True
 powerlawpath='/blue/adamginsburg/d.jeff/imaging_results/SgrB2DS-CH3OH/contsanitycheck_powerlawtable_bootmasked.fits'
 pwrlwprams=[(round(fit_pl.alpha_1.value,2)*u.dimensionless_unscaled),(round(perr[2],2)*u.dimensionless_unscaled),(round(fit_pl.alpha_2.value,2)*u.dimensionless_unscaled),(round(perr[3],2)*u.dimensionless_unscaled),(round(fit_pl.x_break.value)*u.AU),(round(perr[1])*u.AU)]
 powerlawparams=QTable(rows=[pwrlwprams],names=['alpha_1','alpha_1 error','alpha_2','alpha_2 error','x_break','x_break error'])

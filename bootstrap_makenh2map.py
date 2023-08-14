@@ -81,22 +81,22 @@ notreproj_cntmimage=fits.open(cntminfile)
 print(f'Continuum image: {cntminfile}')
 restfreq=notreproj_cntmimage[0].header['RESTFRQ']*u.Hz
 
-source='SgrB2S'#os.getenv('envsource')
+source=os.getenv('envsource')
 assert source is not None; 'os.getenv didn\'t work'
 print(f'Source: {source}')
 
 fielddict={'SgrB2S':1,'DSi':10,'DSii':10,'DSiii':10,'DSiv':10,'DSv':10,'DSVI':2,'DSVII':3,'DSVIII':3,'DSIX':7}
 fnum=fielddict[source]
 
-sourcedict={'SgrB2S':'/nov2022continuumsanitycheck_limitvt1lines_centeronlinepeak_repline20-20/','DSi':'/nov2022continuumsanitycheck/','DSii':'/nov2022continuumsanitycheck/','DSiii':'/nov2022continuumsanitycheck/','DSiv':'/nov2022contniuumsanitycheck/','DSv':f'/nov2022contniuumsanitycheck/','DSVI':'/nov2022continuumsanitycheck/','DSVII':f'/nov2022contniuumsanitycheck/','DSVIII':f'/nov2022contniuumsanitycheck/','DSIX':f'/nov2022contniuumsanitycheck/'}#{'SgrB2S':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/SgrB2S/new_testingstdfixandontheflyrepstuff_K_OctReimage_restfreqfix_newvelmask_newpeakamp/",'DSi':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSi/Kfield10originals_trial7_field10errors_newexclusion_matchslabwidthtorep/",'DSii':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSii/Kfield10originals_noexclusions/",'DSiii':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSiii/Kfield10originals_noexclusions/",'DSiv':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSiv/Kfield10originals_noexclusions/",'DSv':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSv/Kfield10originals_noexclusions_include4-3_150K_trial2/",'DSVI':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field2/CH3OH/DSVI/Kfield2originals_trial3_8_6-8_7excluded/",'DSVII':'/blue/adamginsburg/d.jeff/SgrB2DSreorg/field3/CH3OH/DSVII/Kfield3originals_200K_trial1_noexclusions/','DSVIII':'/blue/adamginsburg/d.jeff/SgrB2DSreorg/field3/CH3OH/DSVIII/Kfield3originals_175K_trial1_noexclusions/','DSIX':'/blue/adamginsburg/d.jeff/SgrB2DSreorg/field7/CH3OH/DSIX/Kfield7originals_150K_trial1_noexclusions/','DSX':'/blue/adamginsburg/d.jeff/SgrB2DSreorg/field7/CH3OH/DSX/Kfield7originals_100K_trial1_noexclusions/'}
+sourcedict={'SgrB2S':'/aug2023qrotfix/','DSi':'/aug2023qrotfix/','DSii':'/aug2023qrotfix/','DSiii':'/aug2023qrotfix/','DSiv':'/aug2023qrotfix/','DSv':f'/aug2023qrotfix/','DSVI':'/aug2023qrotfix/','DSVII':f'/aug2023qrotfix/','DSVIII':f'/aug2023qrotfix/','DSIX':f'/aug2023qrotfix/'}
 sourcepath=f'/blue/adamginsburg/d.jeff/SgrB2DSreorg/field{fnum}/CH3OH/{source}'+sourcedict[source]
 
 texmap=fits.open(sourcepath+'texmap_0transmask_3sigma_allspw_withnans_weighted.fits')
-texerrfits=fits.open(sourcepath+'error_trot_boostrap1000_nonegativeslope.fits')
+texerrfits=fits.open(sourcepath+'test_error_trot_boostrap10000_nonegativeslope.fits')
 
 ntotfits=fits.open(sourcepath+'ntotmap_allspw_withnans_weighted_useintercept_3sigma.fits')
 ntotmap=ntotfits[0].data*u.cm**-2
-ntoterrfits=fits.open(sourcepath+'error_ntot_boostrap1000_nonegativeslope.fits')
+ntoterrfits=fits.open(sourcepath+'error_ntot_intstd_boostrap1000_nonegativeslope.fits')
 ntoterrmap=np.squeeze(ntoterrfits[0].data)*u.cm**-2
 ch3ohSigmam_map=ntotmap*molweight_ch3oh
 
@@ -212,10 +212,10 @@ bmintophyssize=(np.tan(bmin)*d).to('AU')
 '''Can probably simplify beamarea_phys to d(np.tan(bmaj)*np.tan(bmin))'''
 beamarea_phys=cntmbeam.beam_projected_area(d).to('AU2')#np.pi*(bmajtophyssize/2)*(bmintophyssize/2)#Added divide by 2 on 2/1/2022, it was missing prior to this date
 #calcdomega=np.pi*(bmaj/2)*(bmin/2)
-sys.exit()
+
 geomeanbeamarea=np.sqrt((bmajtophyssize*bmintophyssize)/2)
 print(f'Geometric mean beam radius (continuum): {geomeanbeamarea}')
-
+#sys.exit()
     
 cntmwcs=WCS(cntmimage[0].header)
 texwcs=WCS(texmap[0].header)
@@ -223,7 +223,7 @@ texwcs=WCS(texmap[0].header)
 equiv=u.brightness_temperature(cntmimage[0].header['RESTFRQ']*u.Hz)
 
 rms_1mm_K=(cntmstd/beamarea_sr).to(u.K,equivalencies=equiv)
-sys.exit()
+
 snr=3
 
 #pdb.set_trace()

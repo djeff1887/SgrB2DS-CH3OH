@@ -21,6 +21,8 @@ mpl.interactive(True)
 
 plt.close('all')
 
+plt.rcParams['figure.dpi']=300
+
 mu=2.8*u.Dalton
 
 def circle(data,ycenter,xcenter,rad):
@@ -59,20 +61,31 @@ def powerlaw_profile(x,a,n):
 def round_to_1(x):
     return round(x, -int(math.floor(math.log10(abs(x)))))
     
-source='DSIX'#os.getenv('SOURCE')#
+source='DSiv'#os.getenv('SOURCE')#
 fielddict={'SgrB2S':1,'DSi':10,'DSii':10,'DSiii':10,'DSiv':10,'DSv':10,'DSVI':2,'DSVII':3,'DSVIII':3,'DSIX':7}
 fnum=fielddict[source]
 print(f'Source: {source}')
 base=f'/blue/adamginsburg/d.jeff/SgrB2DSreorg/field{fnum}/CH3OH/{source}/'
-homedict={'SgrB2S':'/nov2022continuumsanitycheck_limitvt1lines_centeronlinepeak_repline20-20/','DSi':'/nov2022continuumsanitycheck/','DSii':'/nov2022continuumsanitycheck/','DSiii':'/nov2022continuumsanitycheck/','DSiv':'/nov2022contniuumsanitycheck/','DSv':f'/nov2022contniuumsanitycheck/','DSVI':'/nov2022continuumsanitycheck/','DSVII':f'/nov2022contniuumsanitycheck/','DSVIII':f'/nov2022contniuumsanitycheck/','DSIX':f'/nov2022contniuumsanitycheck/'}#{'SgrB2S':"new_testingstdfixandontheflyrepstuff_K_OctReimage_restfreqfix_newvelmask_newpeakamp/",'DSi':"Kfield10originals_trial7_field10errors_newexclusion_matchslabwidthtorep/",'DSii':"Kfield10originals_noexclusions/",'DSiii':"Kfield10originals_noexclusions/",'DSiv':"Kfield10originals_noexclusions/",'DSv':"Kfield10originals_noexclusions_include4-3_150K_trial2/",'DSVI':"Kfield2originals_trial3_8_6-8_7excluded/",'DSVII':'Kfield3originals_200K_trial1_noexclusions/','DSVIII':'Kfield3originals_175K_trial1_noexclusions/','DSIX':'Kfield7originals_150K_trial1_noexclusions/'}#base+'field10originals_z0_000186431_5-6mhzwidth_stdfixes/'
+homedict={'SgrB2S':'/aug2023qrotfix/','DSi':'/aug2023qrotfix/','DSii':'/aug2023qrotfix/','DSiii':'/aug2023qrotfix/','DSiv':'/aug2023qrotfix/','DSv':f'/aug2023qrotfix/','DSVI':'/aug2023qrotfix/','DSVII':f'/aug2023qrotfix/','DSVIII':f'/aug2023qrotfix/','DSIX':f'/aug2023qrotfix/'}
 home=base+homedict[source]
 fighome=f'/blue/adamginsburg/d.jeff/repos/CH3OHTemps/figures/{source}/'
 figpath=fighome+homedict[source]
+
+dataversion=homedict[source].replace('/','')
+datadir=f'/blue/adamginsburg/d.jeff/imaging_results/SgrB2DS-CH3OH/{dataversion}/'
+
 if not os.path.exists(figpath):
     os.makedirs(figpath)
     print(f'Creating figpath {figpath}')
 else:
     print(f'Figpath {figpath} already exists.')
+    
+if not os.path.exists(datadir):
+    print(f'Creating data directory {datadir}')
+    os.mkdir(datadir)
+    print('Done')
+else:
+    print(f'Data directory {datadir} already exists.')
 
 #notransmask=['DSv','DSVI','DSVII','DSVIII','DSIX']
 #if source == 'SgrB2S':
@@ -80,11 +93,11 @@ texmap=home+"bootstrap_texmap_3sigma_allspw_withnans_weighted.fits"
 #else:
 #texmap=home+"texmap_5transmask_3sigma_allspw_withnans_weighted.fits"
 
-texerrmap=home+'error_trot_boostrap1000_nonegativeslope.fits'#"texmap_error_allspw_withnans_weighted.fits"
+texerrmap=home+'test_error_trot_boostrap10000_nonegativeslope.fits'#'error_trot_boostrap1000_nonegativeslope.fits'#"texmap_error_allspw_withnans_weighted.fits"
 #snrmap=home+"texmap_snr_allspw_weighted.fits"
-abunmap=home+'bootstrap_ch3ohabundance_3sigma_ntotintercept_intstd_bolocamfeather_smoothedtobolocam.fits'#'bootstrap_ch3ohabundance_ntotnh2mask_ntotintercept_bolocamfeather_smoothedtobolocam.fits'
-ntotnh2_abunerrpath=home+'bootstrap_ch3ohabundance_error_ntotnh2mask_ntotintercept_bolocamfeather_smoothedtobolocam.fits'
-abunsnrmap=home+'bootstrap_ch3ohabundance_snr_intstd_ntotintercept_bolocamfeather_smoothedtobolocam.fits'#'bootstrap_ch3ohabundance_snr_ntotintercept_bolocamfeather_smoothedtobolocam.fits'
+abunmap=home+'bootstrap_ch3ohabundance_3sigma_ntotintercept_bolocamfeather_smoothedtobolocam.fits'#'bootstrap_ch3ohabundance_ntotnh2mask_ntotintercept_bolocamfeather_smoothedtobolocam.fits'
+#ntotnh2_abunerrpath=home+'bootstrap_ch3ohabundance_error_ntotnh2mask_ntotintercept_bolocamfeather_smoothedtobolocam.fits'
+abunsnrmap=home+'bootstrap_ch3ohabundance_snr_ntotintercept_bolocamfeather_smoothedtobolocam.fits'#'bootstrap_ch3ohabundance_snr_ntotintercept_bolocamfeather_smoothedtobolocam.fits'
 nh2map=home+'bootstrap_nh2map_3sigma_bolocamfeather_smoothedtobolocam.fits'
 nh2errormap=home+'bootstrap_nh2map_error_bolocamfeather_smoothedtobolocam.fits'
 lummap=home+'bootstrap_boltzmannlum_3sigma_bolocamfeather_smoothedtobolocam.fits'
@@ -96,14 +109,14 @@ h2masserrmap=home+'bootstrap_h2massmap_error_bolocamfeather_smoothedtobolocam.fi
 smoothedtroterrmap=home+'bootstrap_smoothed_trot_err.fits'
 smoothedtrotmap=home+'bootstrap_smoothed_trot_to_bolocamfeathercont.fits'
 
-
+'Removed stopgap during initial qrot fix'
 texmap=fits.open(texmap)
 texmapdata=texmap[0].data*u.K
 texerrdata=np.squeeze(fits.getdata(texerrmap))*u.K
 snrs=(texmapdata/texerrdata).value#fits.getdata(snrmap)
 abunds=np.squeeze(fits.getdata(abunmap))
-stopgap_errabun=np.squeeze(fits.getdata(ntotnh2_abunerrpath))
-snr_abund=abunds/stopgap_errabun#fits.getdata(abunsnrmap)
+#stopgap_errabun=np.squeeze(fits.getdata(ntotnh2_abunerrpath))
+snr_abund=fits.getdata(abunsnrmap)#abunds/stopgap_errabun#fits.getdata(abunsnrmap)
 nh2s=fits.getdata(nh2map)*u.cm**-2
 nh2s_error=fits.getdata(nh2errormap)*u.cm**-2
 lums=fits.getdata(lummap)*u.solLum
@@ -172,7 +185,7 @@ beamarea_phys=trotbeam.beam_projected_area(dGC)#np.pi*bmajtophyssize*bmintophyss
 cntmbmaj=cntmbeam.major#3.629587176773e-05*u.deg
 cntmbmajtoAU=(np.tan(cntmbmaj)*dGC).to('AU')
 
-pixdict={'SgrB2S':(26,14),'DSi':(36,42),'DSii':(22,24),'DSiii':(24,24),'DSiv':(32,31),'DSv':(19,19),'DSVI':(62,62),'DSVII':(75,75),'DSVIII':(50,50),'DSIX':(34,35)}#y,x; DSiii was 24,24;S was 73,54 - contfix S was 69,58
+pixdict={'SgrB2S':(26,14),'DSi':(36,40),'DSii':(22,24),'DSiii':(24,24),'DSiv':(32,31),'DSv':(19,19),'DSVI':(62,62),'DSVII':(75,75),'DSVIII':(50,50),'DSIX':(34,35)}#y,x; DSiii was 24,24;S was 73,54 - contfix S was 69,58/'DSi':(36,42)
 sgrb2scentralpix=(25,25)#contfix pix, prefinal was (66,70)
 #SgrB2S tpeak is 73,54
 #nh2dict={'DSiii':(27,27)}
@@ -456,17 +469,17 @@ onlytexabund=False
 
 if onlytexabund:
     if source == 'SgrB2S':
-        np.savetxt(f'intstd_{source}_abuns.txt',abundinradius)
-        np.savetxt(f'intstd_{source}_errabuns.txt',(np.array(abundinradius)/np.array(abundsnrinradius)))
-        np.savetxt(f'intstd_{source}_tex.txt',trotsforabunds)
-        np.savetxt(f'intstd_{source}_errtex.txt',(texerrinradius))
+        np.savetxt(datadir+f'{source}_abuns.txt',abundinradius)
+        np.savetxt(datadir+f'{source}_errabuns.txt',(np.array(abundinradius)/np.array(abundsnrinradius)))
+        np.savetxt(datadir+f'{source}_tex.txt',trotsforabunds)
+        np.savetxt(datadir+f'{source}_errtex.txt',(texerrinradius))
         print('Done')
         sys.exit()
     else:
-        np.savetxt(f'intstd_{source}_abuns.txt',abundinradius)
-        np.savetxt(f'intstd_{source}_errabuns.txt',(np.array(abundinradius)/np.array(abundsnrinradius)))
-        np.savetxt(f'intstd_{source}_tex.txt',texinradius)
-        np.savetxt(f'intstd_{source}_errtex.txt',(texerrinradius))
+        np.savetxt(datadir+f'{source}_abuns.txt',abundinradius)
+        np.savetxt(datadir+f'{source}_errabuns.txt',(np.array(abundinradius)/np.array(abundsnrinradius)))
+        np.savetxt(datadir+f'{source}_tex.txt',texinradius)
+        np.savetxt(datadir+f'{source}_errtex.txt',(texerrinradius))
         print('Done')
         sys.exit()
         
@@ -487,27 +500,44 @@ proplumerr=np.sqrt(np.nansum(np.square(lumerrtoprop)))*np.sqrt(pixperbeam)#np.su
 nh2mean=np.nanmean(nh2tomean)
 nh2errormean=np.nanmean(nh2errortomean)
 
-powerlaw_normpairs={'SgrB2S':(275,3500),'DSi':(210,3500),'DSii':(130,5000),'DSiii':(150,3000),'DSiv':(150,4500),'DSv':(160,2000),'DSVI':(130,4000),'DSVII':(200,2000),'DSVIII':(75,5000),'DSIX':(160,2500)}#7-75,4000
+'''ds1 was 210'''
+powerlaw_normpairs={'SgrB2S':(275,3500),'DSi':(210,3500),'DSii':(130,5000),'DSiii':(150,3000),'DSiv':(150,4500),'DSv':(160,2000),'DSVI':(130,4000),'DSVII':(200,2000),'DSVIII':(75,5000),'DSIX':(250,1600)}#7-75,4000
 powerlawpair=powerlaw_normpairs[source]
 fiducial_index=0.75
 fiducial_norm=powerlawpair[0]*(powerlawpair[1]/pixtophysicalsize)**fiducial_index
 lowerbound_initialguess={'SgrB2S':0.25,'DSi':0.25,'DSii':0.1,'DSiii':0.25,'DSiv':0.25,'DSv':0.25,'DSVI':0.25,'DSVII':0.25,'DSVIII':0.25,'DSIX':0.25}
-bpl_alpha2_initialguess={'SgrB2S':0.25,'DSi':0.5,'DSii':0.5,'DSiii':0.25,'DSiv':0.25,'DSv':0.25,'DSVI':0.25,'DSVII':0.25,'DSVIII':0.25,'DSIX':0.25}
-
+bpl_alpha2_initialguess={'SgrB2S':0.25,'DSi':0.5,'DSii':0.5,'DSiii':0.25,'DSiv':0.5,'DSv':0.25,'DSVI':0.25,'DSVII':0.5,'DSVIII':0.25,'DSIX':0.6}
+#ds9 was 0.25
 if source == 'DSVII':
-    inputamp=150
+    inputamp=250#150
 elif source == 'DSIX':
     inputamp=100
 elif source == 'SgrB2S':
     inputamp=300
 #elif source == 'DSv':
 #    inputamp=250
+elif source == 'DSIX':
+    inputamp=250
 else:
     inputamp=100
+    
+if source == 'DSIX':
+    a1guess=0.01
+    xbreakguess=1000
+elif source == 'DSiv':
+    a1guess=0.25
+    xbreakguess=1000
+elif source == 'DSVII':
+    a1guess=-0.25
+    xbreakguess=1000
+else:
+    a1guess=1
+    xbreakguess=1000
 
 fitter=fitting.LevMarLSQFitter()
 fitter2=fitting.LevMarLSQFitter()
-base_bpl=powerlaws.BrokenPowerLaw1D(amplitude=inputamp,x_break=1000,alpha_1=-1,alpha_2=bpl_alpha2_initialguess[source])#lowerbound_initialguess[source])#amp=150,xbreak=1500 for ds7
+fitter3=fitting.LevMarLSQFitter()
+base_bpl=powerlaws.BrokenPowerLaw1D(amplitude=inputamp,x_break=xbreakguess,alpha_1=a1guess,alpha_2=bpl_alpha2_initialguess[source])#original was -1 for all
 base_spl=powerlaws.PowerLaw1D(amplitude=np.mean(radialdensitylist[1:]))
 
 if source=='DSIX':
@@ -516,11 +546,15 @@ if source=='DSIX':
 
 elif source=='DSiv':
     innerradius=1
-    outerradius=197
+    outerradius=193
 
 elif source=='DSVII':
     innerradius=1
     outerradius=None
+
+elif source == 'DSi':
+    innerradius=1
+    outerradius=119
 
 else:
     innerradius=1
@@ -533,12 +567,16 @@ weightstofit=avginversesigma[innerradius:outerradius]
 denstofit=radialdensitylist[innerradius:outerradius]#[innerradius:outerradius]
 densweightstofit=1/(np.array(err_radialdens[innerradius:outerradius]))
 
-popt,pcov=cf(powerlaw_profile,radiustofit,textofit,sigma=texerrtofit,bounds=([0,lowerbound_initialguess[source]],[1000,1.25]))#[1:197] for ds4 (some nans may be present further out),[5:] for ds7, [9:] for ds9
+fit_spl=fitter3(base_spl, radiustofit, textofit,weights=weightstofit)
+splperr=np.sqrt(np.diag(fitter3.fit_info['param_cov']))
+#popt,pcov=cf(powerlaw_profile,radiustofit,textofit,sigma=texerrtofit,bounds=([0,lowerbound_initialguess[source]],[1000,1.25]))#[1:197] for ds4 (some nans may be present further out),[5:] for ds7, [9:] for ds9
 fit_pl=fitter(base_bpl,radiustofit,textofit,weights=weightstofit)
 perr=np.sqrt(np.diag(fitter.fit_info['param_cov']))
 
 if source == 'DSiv'or 'DSv':
     fit_dens=fitter2(base_spl,radiustofit[:(len(radiustofit)-1)],denstofit[:(len(radiustofit)-1)],weights=densweightstofit[:(len(radiustofit)-1)])
+#elif source == 'DSiv':
+
 else:
     fit_dens=fitter2(base_spl,radiustofit,denstofit,weights=densweightstofit)
 derr=np.sqrt(np.diag(fitter2.fit_info['param_cov']))
@@ -552,31 +590,21 @@ maxtexindex=np.where(lookformax==np.nanmax(lookformax))
 maxtexerror=lookformax_err[maxtexindex]
 print(f'Max Tex: {np.max(lookformax)} +/- {float(maxtexerror)} K')
 
-#copy_centrtopix=np.copy(centrtopix)*u.AU
-copy_centrtopix=np.copy(listordered_centrtopix)#np.linspace(0,r_phys.value,num=len(avgtexlist))*u.AU
-#copy_centrtopix.sort()
-lineartex=[]
-quadrtex=[]
-sublinhalftex=[]
-sublinmidtex=[]
-fittedtex=[]
-#pdb.set_trace()
-for dist in copy_centrtopix:
-    lineartex.append(linear_profile(dist).value)
-    quadrtex.append(quadratic_profile(dist).value)
-    sublinhalftex.append(sublinear_profile(dist).value)
-    sublinmidtex.append(submid_profile(dist).value)
-    fittedtex.append((popt[0]*((dist/pixtophysicalsize.value)**-popt[1])))#.value)
 
-#pdb.set_trace()
+copy_centrtopix=np.copy(listordered_centrtopix)
+fittedtex=[]
+
+#for dist in copy_centrtopix:
+    #fittedtex.append((popt[0]*((dist/pixtophysicalsize.value)**-popt[1])))#.value)
     
-plt.rcParams["figure.dpi"]=150
+plt.rcParams["figure.dpi"]=300
 
 sourcenamesfortable={'SgrB2S':'SgrB2S','DSi':'DS1','DSii':'DS2','DSiii':'DS3','DSiv':'DS4','DSv':'DS5','DSVI':'DS6','DSVII':'DS7','DSVIII':'DS8','DSIX':'DS9'}
 
 densalpha=fit_dens.alpha.value
 errdensalpha=round_to_1(derr[2])
 onlydens=False
+
 plt.figure()
 if source == 'DSiv':
     plt.errorbar(listordered_centrtopix,radialdensitylist,yerr=err_radialdens,label='Data',fmt='o')
@@ -597,12 +625,12 @@ else:
     plt.ylabel('$n$ (cm$^{-3}$)',fontsize=14)
     plt.legend()
 
-    densplotpath=figpath+'contsanitycheck_densityprofile_trotntotbootmasked.png'
+    densplotpath=figpath+f'{dataversion}_densityprofile_trotntotbootmasked.png'
     print(f'\nSaving to {densplotpath}')
     plt.savefig(densplotpath)#,overwrite=True)
     plt.show()
 
-densityslopepath='contsanitycheck_densityslopes_bootmasked.fits'
+densityslopepath=datadir+f'densityslopes_bootmasked.fits'
 
 if os.path.exists(densityslopepath):
     dtable=QTable.read(densityslopepath)
@@ -616,7 +644,7 @@ if os.path.exists(densityslopepath):
         print('Appending complete.')
         #pdb.set_trace()
         print(f'Saving to {densityslopepath}')
-        densstack.write(densityslopepath)#,overwrite=True)
+        densstack.write(densityslopepath, overwrite=True)
         print('Done')
 else:
     print('No density table found')
@@ -633,7 +661,7 @@ if onlydens:
 else:
     pass
 
-onlyradabun=True
+onlyradabun=False
 if source == 'SgrB2S':
     plt.figure()
     plt.scatter(trotsforabunds,abundinradius,s=5,c=nh2inradius,norm=mpl.colors.LogNorm())
@@ -643,7 +671,7 @@ if source == 'SgrB2S':
     plt.xlim(xmax=plottexmax,xmin=80)
     #plt.colorbar(pad=0,label='Luminosity (Lsun)')
     plt.colorbar(pad=0,label='N(H$_2$) (cm$^{-2}$)')#'N(CH$_3$OH) (cm$^{-2}$)')##
-    figsavepath=figpath+f'texabundiag_contsanitycheck_r{r}px_rphys{int(pixtophysicalsize.value)}AU_smoothed.png'
+    figsavepath=figpath+f'{dataversion}_texabundiag_r{r}px_rphys{int(pixtophysicalsize.value)}AU_smoothed.png'
     #pdb.set_trace()
     plt.savefig(figsavepath,bbox_inches='tight',)#overwrite=True)
     plt.show()
@@ -654,7 +682,7 @@ if source == 'SgrB2S':
     plt.xlabel('$r$ (AU)',fontsize=14)
     plt.ylabel('X(CH$_3$OH)',fontsize=14)
     plt.colorbar(pad=0,label='N(H$_2$) (cm$^{-2}$)')#'T$_K$ (K)')
-    figsavepath=figpath+f'real_radialavgabundiag_contsanitycheck_r{r}px_rphys{int(pixtophysicalsize.value)}AU_smoothed.png'
+    figsavepath=figpath+f'{dataversion}_real_radialavgabundiag_r{r}px_rphys{int(pixtophysicalsize.value)}AU_smoothed.png'
     #pdb.set_trace()
     plt.savefig(figsavepath,bbox_inches='tight',)#overwrite=True)
     plt.show()
@@ -671,7 +699,7 @@ if source == 'SgrB2S':
     plt.xlabel('$r$ (AU)',fontsize=14)
     plt.ylabel('N(H$_2$) (cm$^{-2}$)',fontsize=14)
     plt.colorbar(pad=0,label='T$_{rot}$ (K)')#'T$_K$ (K)')
-    figsavepath=figpath+f'radialavgnh2s_contsanitycheck_r{r}px_rphys{int(pixtophysicalsize.value)}AU_smoothed.png'
+    figsavepath=figpath+f'{dataversion}_radialavgnh2s_r{r}px_rphys{int(pixtophysicalsize.value)}AU_smoothed.png'
     #pdb.set_trace()
     plt.savefig(figsavepath,bbox_inches='tight',)#overwrite=True)
     plt.show()
@@ -684,7 +712,7 @@ else:
     plt.xlim(xmax=plottexmax)
     #plt.colorbar(pad=0,label='Luminosity (Lsun)')
     plt.colorbar(pad=0,label='N(H$_2$) (cm$^{-2}$)')#'N(CH$_3$OH) (cm$^{-2}$)')##
-    figsavepath=figpath+f'texabundiag_contsanitycheck_r{r}px_rphys{int(pixtophysicalsize.value)}AU_smoothed.png'
+    figsavepath=figpath+f'{dataversion}_texabundiag_r{r}px_rphys{int(pixtophysicalsize.value)}AU_smoothed.png'
     plt.savefig(figsavepath,bbox_inches='tight',)#overwrite=True)
     plt.show()
 
@@ -694,12 +722,12 @@ else:
     plt.xlabel('$r$ (AU)',fontsize=14)
     plt.ylabel('X(CH$_3$OH)',fontsize=14)
     #plt.colorbar(pad=0,label='N(H$_2$) (cm$^{-2}$)')#'T$_K$ (K)')
-    figsavepath=figpath+f'real_radialavgabundiag_contsanitycheck_r{r}px_rphys{int(pixtophysicalsize.value)}AU_smoothed.png'
+    figsavepath=figpath+f'{dataversion}_real_radialavgabundiag_r{r}px_rphys{int(pixtophysicalsize.value)}AU_smoothed.png'
     plt.savefig(figsavepath,bbox_inches='tight',)#overwrite=True)
     plt.show()
 
     savetxt=np.array([listordered_centrtopix,radialabun])
-    np.savetxt(f'{source}_intstd_radialavgabun.txt',savetxt)
+    np.savetxt(f'{dataversion}_{source}_radialavgabun.txt',savetxt)
 
     if onlyradabun:
         sys.exit()
@@ -710,7 +738,7 @@ else:
     plt.xlabel('$r$ (AU)',fontsize=14)
     plt.ylabel('N(H$_2$) (cm$^{-2}$)',fontsize=14)
     plt.colorbar(pad=0,label='T$_{rot}$ (K)')#'T$_K$ (K)')
-    figsavepath=figpath+f'radialavgnh2s_contsanitycheck_r{r}px_rphys{int(pixtophysicalsize.value)}AU_smoothed.png'
+    figsavepath=figpath+f'{dataversion}_radialavgnh2s_r{r}px_rphys{int(pixtophysicalsize.value)}AU_smoothed.png'
     plt.savefig(figsavepath,bbox_inches='tight',)#overwrite=True)
     plt.show()
 
@@ -728,7 +756,7 @@ ax0=fig.add_subplot(spec[0])
 ax1=fig.add_subplot(spec[1],sharex=ax0)
 
 residual_bpl=list( map(sub,avgtexlist,fit_pl(listordered_centrtopix)))
-residual_spl=list( map(sub,avgtexlist,fittedtex))
+residual_spl=list( map(sub,avgtexlist,fit_spl(listordered_centrtopix)))#fittedtex))
 avgsnr=np.array(list( map(truediv,avgtexlist,avgtexerrlist)))
 avgsnrforplot=avgsnr/2
 
@@ -739,7 +767,7 @@ if source == 'DSiv':
     ax0.scatter(listordered_centrtopix,avgtexlist)#[:197] for ds4
     ax0.fill_between(listordered_centrtopix[:197],upperfill[:197],lowerfill[:197],alpha=0.2,color='blue')#[:197] for ds
 
-    ax0.plot(copy_centrtopix,fittedtex,color='orange',label=f'$\\alpha$={round(popt[1],2)} \u00B1 {round(pcov[1,1]**0.5,2)}',zorder=1)
+    ax0.plot(copy_centrtopix,fit_spl(copy_centrtopix),color='orange',label=f'$\\alpha$={round(popt[1],2)} \u00B1 {round(pcov[1,1]**0.5,2)}',zorder=1)
     ax0.plot(copy_centrtopix,fit_pl(copy_centrtopix),color='red',ls='-',zorder=2,label=f'$\\alpha_1$={round(fit_pl.alpha_1.value,2)} \u00B1 {round(perr[2],2)}\n$\\alpha_2$={round(fit_pl.alpha_2.value,2)} \u00B1 {round(perr[3],2)}\n$r_{{break}}$={round(fit_pl.x_break.value)} \u00B1 {round(perr[1])}')#[1:] for ds7
     ax1.set_xlabel('$r$ (AU)',fontsize=14)
     ax0.set_ylabel('T$_{rot}$ (K)',fontsize=14)
@@ -749,7 +777,7 @@ if source == 'DSiv':
     ax0.tick_params(direction='in')
     ax0.tick_params(axis='x',labelcolor='w')
     ax1.tick_params(axis='x',top=True,direction='in')
-    figsavepath=figpath+f'radialavgtex_contsanitycheck_r{r}px_rphys{int(pixtophysicalsize.value)}AU_smoothed.png'
+    figsavepath=figpath+f'{dataversion}_radialavgtex_r{r}px_rphys{int(pixtophysicalsize.value)}AU_smoothed.png'
 
     plt.tight_layout()
 
@@ -773,7 +801,7 @@ elif source == 'DSVII':
     ax0.tick_params(direction='in')
     ax0.tick_params(axis='x',labelcolor='w')
     ax1.tick_params(axis='x',top=True,direction='in')
-    figsavepath=figpath+f'radialavgtex_contsanitycheck_r{r}px_rphys{int(pixtophysicalsize.value)}AU_smoothed.png'
+    figsavepath=figpath+f'{dataversion}_radialavgtex_r{r}px_rphys{int(pixtophysicalsize.value)}AU_smoothed.png'
 
     plt.tight_layout()
 
@@ -799,13 +827,15 @@ else:
     ax0.tick_params(direction='in')
     ax0.tick_params(axis='x',labelcolor='w')
     ax1.tick_params(axis='x',top=True,direction='in')
-    figsavepath=figpath+f'radialavgtex_contsanitycheck_r{r}px_rphys{int(pixtophysicalsize.value)}AU_smoothed.png'
+    figsavepath=figpath+f'{dataversion}_radialavgtex_LMLSQ_r{r}px_rphys{int(pixtophysicalsize.value)}AU_smoothed.png'
 
     plt.tight_layout()
 
     plt.savefig(figsavepath,overwrite=True)
 
     plt.show()
+    
+#sys.exit()    
 if source=='SgrB2S':
     plt.figure()
     plt.scatter(nh2inradius,ntotsinradius,s=5,c=texinradius,vmax=plottexmax,cmap='inferno')
@@ -821,7 +851,7 @@ if source=='SgrB2S':
     plt.colorbar(pad=0,label='T$_{rot}$ (K)')
     plt.xlabel('N(H$_2$) (cm$^{-2}$)')
     plt.ylabel('N(CH$_3$OH) (cm$^{-2}$)')
-    figsavepath=figpath+'nch3ohvsnh2_contsanitycheck_smoothed.png'
+    figsavepath=figpath+f'{dataversion}_nch3ohvsnh2_smoothed.png'
     plt.savefig(figsavepath,overwrite=True)
     plt.show()
 
@@ -840,11 +870,9 @@ else:
     plt.colorbar(pad=0,label='T$_{rot}$ (K)')
     plt.xlabel('N(H$_2$) (cm$^{-2}$)')
     plt.ylabel('N(CH$_3$OH) (cm$^{-2}$)')
-    figsavepath=figpath+'nch3ohvsnh2_contsanitycheck_smoothed.png'
+    figsavepath=figpath+f'{dataversion}_nch3ohvsnh2_smoothed.png'
     plt.savefig(figsavepath,overwrite=True)
     plt.show()
-
-sys.exit()
 '''
 print(f'Norm initial guess: {fiducial_norm}')
 print(f'norm error: {pcov[0,0]**0.5}')
@@ -852,8 +880,8 @@ print(f'norm error: {pcov[0,0]**0.5}')
 print(f'index initial guess: {lowerbound_initialguess[source]}')
 print(f'index error: {pcov[1,1]**0.5}')
 '''
-onlypowerlaw=True
-powerlawpath='/blue/adamginsburg/d.jeff/imaging_results/SgrB2DS-CH3OH/contsanitycheck_powerlawtable_bootmasked.fits'
+onlypowerlaw=False
+powerlawpath=datadir+'/powerlawtable_bootmasked.fits'
 pwrlwprams=[(round(fit_pl.alpha_1.value,2)*u.dimensionless_unscaled),(round(perr[2],2)*u.dimensionless_unscaled),(round(fit_pl.alpha_2.value,2)*u.dimensionless_unscaled),(round(perr[3],2)*u.dimensionless_unscaled),(round(fit_pl.x_break.value)*u.AU),(round(perr[1])*u.AU)]
 powerlawparams=QTable(rows=[pwrlwprams],names=['alpha_1','alpha_1 error','alpha_2','alpha_2 error','x_break','x_break error'])
 
@@ -888,7 +916,7 @@ if onlypowerlaw:
 else:
     pass
 
-sumtablepath=f'contsanitycheck_hotcoresummarytable_postreprojsmooth_t{trad}radius_bootmasked.fits'
+sumtablepath=datadir+f'hotcoresummarytable.fits'
 if os.path.exists(sumtablepath):
     print('\nUpdating summary table with new values')
     sumtable=QTable.read(sumtablepath)

@@ -17,6 +17,7 @@ from scipy.optimize import curve_fit as cf
 from math import log10, floor
 from astropy.stats import bootstrap
 import astropy.stats
+from pyspeckit.spectrum.models.lte_molecule import get_molecular_parameters
 
 mpl.interactive(True)
 
@@ -44,13 +45,18 @@ R_i=1
 f=1
 Tbg=2.7355*u.K
 
+Jfreqs, Jaij, Jdeg, JEU, qrot = get_molecular_parameters('CH3OH',
+                                                         catalog='JPL',
+                                                         fmin=150*u.GHz,
+                                                         fmax=300*u.GHz)
+
 source=os.getenv('envsource')#'DSIX'#os.getenv('envsource')#SgrB2S
 fielddict={'SgrB2S':1,'DSi':10,'DSii':10,'DSiii':10,'DSiv':10,'DSv':10,'DSVI':2,'DSVII':3,'DSVIII':3,'DSIX':7}
 fnum=fielddict[source]
 
 base=f'/blue/adamginsburg/d.jeff/SgrB2DSreorg/field{fnum}/CH3OH/{source}'
 
-sourcedict={'SgrB2S':'/nov2022continuumsanitycheck_limitvt1lines_centeronlinepeak_repline20-20/','DSi':'/nov2022continuumsanitycheck/','DSii':'/nov2022continuumsanitycheck/','DSiii':'/nov2022continuumsanitycheck/','DSiv':'/nov2022contniuumsanitycheck/','DSv':f'/nov2022contniuumsanitycheck/','DSVI':'/nov2022continuumsanitycheck/','DSVII':f'/nov2022contniuumsanitycheck/','DSVIII':f'/nov2022contniuumsanitycheck/','DSIX':f'/nov2022contniuumsanitycheck/'}#{'SgrB2S':'/new_testingstdfixandontheflyrepstuff_K_OctReimage_restfreqfix_newvelmask_newpeakamp/','DSi':'/Kfield10originals_trial7_field10errors_newexclusion_matchslabwidthtorep/','DSii':'/Kfield10originals_noexclusions/','DSiii':'/Kfield10originals_noexclusions/','DSiv':'/Kfield10originals_noexclusions/','DSv':f'/Kfield10originals_noexclusions_include4-3_150K_trial2/','DSVI':'/Kfield2originals_trial3_8_6-8_7excluded/','DSVII':'/Kfield3originals_200K_trial1_noexclusions/','DSVIII':'/Kfield3originals_175K_trial1_noexclusions/','DSIX':f'/Kfield7originals_150K_trial1_noexclusions/'}
+sourcedict={'SgrB2S':'/aug2023qrotfix/','DSi':'/aug2023qrotfix/','DSii':'/aug2023qrotfix/','DSiii':'/aug2023qrotfix/','DSiv':'/aug2023qrotfix/','DSv':f'/aug2023qrotfix/','DSVI':'/aug2023qrotfix/','DSVII':f'/aug2023qrotfix/','DSVIII':f'/aug2023qrotfix/','DSIX':f'/aug2023qrotfix/'}
 
 sourcepath=sourcedict[source]
 
@@ -77,9 +83,9 @@ infile=open(home+'ch3ohlinesdict.obj','rb')#open(origsourcepath+'ch3ohlinesdict.
 spwdict=pickle.load(infile)
 
 fulltexmap=fits.getdata(home+'texmap_3sigma_allspw_withnans_weighted.fits')
-trotdict={'SgrB2S':300*u.K,'DSi':300*u.K,'DSii':150*u.K,'DSiii':150*u.K,'DSiv':150*u.K,'DSv':150*u.K,'DSVI':300*u.K,'DSVII':200*u.K,'DSVIII':175*u.K,'DSIX':150*u.K}
-testT=trotdict[source]
-qrot_partfunc=Q_rot_asym(testT).to('')
+#trotdict={'SgrB2S':300*u.K,'DSi':300*u.K,'DSii':150*u.K,'DSiii':150*u.K,'DSiv':150*u.K,'DSv':150*u.K,'DSVI':300*u.K,'DSVII':200*u.K,'DSVIII':175*u.K,'DSIX':150*u.K}
+#testT=trotdict[source]
+#qrot_partfunc=qrot(obsTrot)#Q_rot_asym(testT).to('')
 
 print('Setting up and executing model fit')
 testyshape=np.shape(fulltexmap)[0]
@@ -172,6 +178,8 @@ for y in np.arange(testyshape):
                 errstofit.append(temperrfit)
                 
             fit_lin=fit(linemod,eukstofit,np.log10(nupperstofit), weights=errstofit)
+            obsTrot=-np.log10(np.e)/(fit_lin.slope)
+            qrot_partfunc=qrot(obsTrot)*u.dimensionless_unscaled
             #popt,pcov=cf(line,eukstofit,np.log10(nupperstofit),sigma=errstofit)
             #perr = np.sqrt(np.diag(pcov))
             
@@ -214,7 +222,7 @@ for y in np.arange(testyshape):
             linemod_euks=np.linspace(min(eukstofit),max(mastereuks),100)
             #print('Model fit complete')
             #print('Compute obsTex and obsNtot')
-            obsTrot=-np.log10(np.e)/(fit_lin.slope)
+            #obsTrot=-np.log10(np.e)/(fit_lin.slope)
             #obsTrotcf=-np.log10(np.e)/popt[0]
             #print(f'cf Trot: {obsTrotcf}')
             #obsNtot=qrot_partfunc*10**(np.log10(nugsmap[0,y,x])+fit_lin.slope*eukstofit[0])#eukstofit[0] is '5(1)-4(2)E1vt=0', eupper 55.87102 K
@@ -296,7 +304,7 @@ bootntothdul2=fits.HDUList([bootntotphdu2])
 bootntothdul2.writeto(home+'bootstrap_ntot_intstd_boostrap1000_nonegativeslope.fits',overwrite=True) 
 print(f'Saved Ntot for {source} at {home}ntot_intstd_boostrap1000_nonegativeslope.fits')
 
-'''#Removed for ntot fix
+#Removed for ntot fix
 boottexphdu=fits.PrimaryHDU([texerrormap])
 boottexphdu.header=templateheader
 boottexphdu.header['BTYPE']='Rotational temperature error (bootstrap)'
@@ -304,7 +312,7 @@ boottexphdu.header['BUNIT']='K'
 boottexhdul=fits.HDUList([boottexphdu])
 boottexhdul.writeto(home+'test_error_trot_boostrap10000_nonegativeslope.fits',overwrite=True)#'error_trot_boostrap1000_nonegativeslope.fits',overwrite=True)
 print(f'Saved Trot error for {source} at {home}test_error_trot_boostrap10000_nonegativeslope.fits')
-'''
+
 
             
 '''
