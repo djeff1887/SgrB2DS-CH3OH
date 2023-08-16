@@ -20,6 +20,7 @@ import astropy.stats
 from pyspeckit.spectrum.models.lte_molecule import get_molecular_parameters
 from utilities import *
 import sys
+from pyspeckit.spectrum.models import lte_molecule
 
 mpl.interactive(True)
 plt.rcParams["figure.dpi"]=150
@@ -30,7 +31,33 @@ def line(x,slope,intercept):
 
 def round_to_1(x):
     return round(x, -int(floor(log10(abs(x)))))
+
+def testntot(n_upper, g, q, euj, tex):
+    return n_upper*(q/g)*np.exp(euj/(k*tex))
     
+def nupper_of_ntot(Ntot, eupper, tex, Q_rot, degeneracy=1):
+    """ Given an N_tot, E_upper, tex, Q_rot, and degeneracy for a single state, give N_upper
+
+    Mangum & Shirley 2015 eqn 31
+
+    .. math::
+
+        N_{tot}/N_u = Q_{rot} / g_u \\exp(E_u/k T_{ex})
+
+    Example:
+        >>> import astropy.units as u
+        >>> tex = 50*u.K
+        >>> kkms = 100*u.K*u.km/u.s
+        >>> from pyspeckit.spectrum.models import lte_molecule
+        >>> freqs, aij, deg, EU, partfunc = lte_molecule.get_molecular_parameters(molecule_name='HNCO v=0', molecule_name_jpl='HNCO', fmin=87*u.GHz, fmax=88*u.GHz)
+        >>> nupper = lte_molecule.nupper_of_kkms(kkms, freqs, 10**aij)
+        >>> ntot = lte_molecule.ntot_of_nupper(nupper, EU*u.erg, tex, Q_rot=partfunc(tex), degeneracy=deg)
+    """
+
+    const = (Q_rot/degeneracy) * np.exp(eupper / (k*tex))
+    nupper = Ntot / const
+
+    return nupper
 '''Collect constants and CH3OH-specific quantum parameters'''
 print('Setting constants')
 c=cnst.c*u.m/u.s
@@ -90,6 +117,13 @@ freqmin=216.8*u.GHz
 freqmax=233.4*u.GHz
                      
 nuppers=[]
+radnuppers=[]
+error_radnuppers=[]
+trads=[]
+pynuppers=[]
+adamnuppers=[]
+
+testntots=[]
 
 Jfreqs, Jaij, Jdeg, JEU, qrot = get_molecular_parameters('CH3OH',
                                                          catalog='JPL',
@@ -101,41 +135,73 @@ minmethtable=utils.minimize_table(methanol_table)
 mlines=((minmethtable['Freq']*10**9)/(1+z)*u.Hz).to('GHz')
 mqns=minmethtable['QNs']
 meuks=minmethtable['EU_K']*u.K
-meujs=[]
+meujs=meuks*k
+'''
 for euk in meuks:
     meujs.append(KtoJ(euk))
+'''
 mdegs=methanol_table['Upper State Degeneracy']
 mlog10aijs=minmethtable['log10_Aij']
 maijs=10**mlog10aijs*u.s**-1
 
-for line,deg,euj,aij,qn in zip(mlines,mdegs,meujs,maijs,mqns):
-    est_nupper=nupper_estimated(nch3oh,deg,modelqrot_partfunc,euj,testT).to('cm-2')
-    nuppers.append(est_nupper.value)
+restlines=mlines*(1+z)
+brightness=80*u.K
+linewidth=5*u.km/u.s
+trad=brightness*linewidth
+error_trad=trad/3
 
-#nuperrors=np.ones(len(nuppers))*(1e13*u.cm**-2)
+for line,deg,euj,aij,qn in zip(restlines,mdegs,meujs,maijs,mqns):
+    est_nupper=nupper_estimated(nch3oh,deg,modelqrot_partfunc,euj,testT).to('cm-2')
+    adam_nupper=nupper_of_ntot(nch3oh,euj,testT,modelqrot_partfunc,deg).to('cm-2')
+    temp_ntot=testntot(est_nupper,deg,modelqrot_partfunc,euj,testT).to('cm-2')
+    
+    linewidthghz=velocitytofreq(linewidth,line)
+    phi_nu=lineprofile(linewidthghz,line,line)
+    intertau=lte_molecule.line_tau(testT, nch3oh, modelqrot_partfunc, deg, line, euj, aij)
+    est_tau=(intertau*phi_nu).to('')
+    trad=t_rad(f,est_tau,line,testT).to('K')
+    velintK=trad*linewidth
+    error_velintK=velintK/3
+    test_nupper,test_nuppererror=N_u(line,aij,velintK,error_velintK)
+    py_nupper=lte_molecule.nupper_of_kkms(velintK,line,aij)
+    
+    nuppers.append(est_nupper.value)
+    radnuppers.append(test_nupper.value)
+    error_radnuppers.append(test_nuppererror.value)
+    trads.append(trad.value)
+    pynuppers.append(py_nupper.value)
+    testntots.append(temp_ntot.value)
+    adamnuppers.append(adam_nupper.value)
+    
+plt.figure()
+plt.scatter(meuks.value,testntots)
+plt.yscale('log')
+plt.xlabel(r'$E_U$ [K]')
+plt.ylabel(r'$N_{tot}$ [cm$^{-2}$]')
+plt.show()
+#sys.exit()
+
+
+plt.figure()
+plt.title(fr'Debugging rotational diagrams: T={int(testT.value)} K; Ntot={nch3oh}')
+plt.scatter(meuks.value,(nuppers/mdegs),label='Desmond\'s Ntot-Nupper function (Mangum and Shirley)')
+plt.scatter(meuks.value,(radnuppers/mdegs),color='orange',label='Ntot-Brightness-Desmond\'s nupper_of_kkms')
+plt.scatter(meuks.value,(pynuppers/mdegs),color='green',label='pyspeckit nupper_of_kkms')
+plt.scatter(meuks.value,(adamnuppers/mdegs),color='purple',marker='*',label='Adam\'s Mangum and Shirley')
+plt.yscale('log')
+plt.xlim(xmax=1000)
+plt.ylabel(r'$N_{upper}/g$ [cm$^{-2}$]')
+plt.xlabel(r'$E_U$ [K]')
+plt.legend()
+plt.show()
+
+plt.figure()
+plt.scatter(meuks.value,trads)
+plt.xlim(xmax=1000)
+plt.ylim(ymin=0.1)
+plt.show()
 
 print('Setting up and executing model fit')
-testyshape=np.shape(fulltexmap)[0]
-testxshape=np.shape(fulltexmap)[1]
-
-texmap=np.empty((testyshape,testxshape))
-ntotmap=np.empty((testyshape,testxshape))
-texerrormap=np.empty((testyshape,testxshape))
-
-'''
-allmaster=np.loadtxt(home+'mastereuksqnsfreqsdegens.txt',dtype=str)
-mastereuks=[]
-masterdegens=[]
-masterqns=[]
-eukshape=np.shape(mastereuks)
-for master in range(len(allmaster[:,0])):
-    mastereuks.append(float(allmaster[master,0]))
-    masterdegens.append(float(allmaster[master,3]))
-    masterqns.append(allmaster[master,1])
-#masterdegens=np.loadtxt(home+'masterdegens.txt')
-'''
-
-testzshape=len(meuks)
 
 y=pixel[0]
 x=pixel[1]
@@ -143,33 +209,21 @@ print(f'Fitting pixel y={y} x={x}')
 linemod=models.Linear1D(slope=1.0,intercept=14)
 fit=fitting.LinearLSQFitter()
 eukstofit=[]
-qnsfitted=[]
-excludedqns=[]
-excludednuppers=[]
-excludedeuks=[]
 nuperrors=[]
 
 log10nuerr=[]
 log10variances=[]
 errstofit=[]
 
-for nup in nuppers:#,nuperrors,eukstofit,qnsfitted):
+nugs=nuppers/mdegs
+
+for nug in nugs:
     #pdb.set_trace()
-    sigma3all=(nup/3)*u.cm**-2
+    sigma3all=(nug/3)*u.cm**-2
     nuperrors.append(sigma3all.value)
     
-    templog10=sigma3all/(nup*u.cm**-2)
-    '''
-    if templog10 == 1:
-    print(f'Excluded line detected, log10(N/S)={templog10}')
-    print(f'Excluded line: {qnsfitted[num]}')
-    print('Removing from list of to-fit values')
-    nupperstofit.remove(originalnupperstofit[num])
-    qnsfitted.remove(qnsfitted[num])
-    eukstofit.remove(eukstofit[num])
-    #nuperrors.remove(nuperrors[num])
-    else:
-    '''
+    templog10=sigma3all/(nug*u.cm**-2)
+    
     temperrfit=1/templog10
     #if np.isnan(templog10) or np.isnan(temperrfit):
     #    pdb.set_trace()
@@ -177,12 +231,14 @@ for nup in nuppers:#,nuperrors,eukstofit,qnsfitted):
     log10variances.append(templog10**2)
     errstofit.append(temperrfit.value)
 
-fit_lin=fit(linemod,meuks.value,np.log10(nuppers), weights=errstofit)
+fit_lin=fit(linemod,meuks.value,np.log10(nugs), weights=errstofit)
 obsTrot=-np.log10(np.e)/(fit_lin.slope)
+print(f'slope: {fit_lin.slope}, obsTrot: {obsTrot}')
+
 qrot_partfunc=qrot(obsTrot*u.K)*u.dimensionless_unscaled#9473.271845042498*u.dimensionless_unscaled
 
 bslist=[]
-for nug,euk,weight,var in zip(np.log10(nuppers),meuks,errstofit,log10variances):
+for nug,euk,weight,var in zip(np.log10(nugs),meuks,errstofit,log10variances):
     bslist.append((nug,euk.value,weight,var))
 
 numboots=1000
@@ -251,12 +307,8 @@ print(f'dobsNtot: {dobsNtot.to("cm-2")}')
 print(f'Ntot S/N: {obsNtot/dobsNtot.value}')
 snr=obsNtot/bootNstd#dobsNtot
 
-texmap[y,x]=obsTrot
-ntotmap[y,x]=obsNtot
-texerrormap[y,x]=dobsTrot.to('K').value
-
-plt.figure(1)
-plt.clf()
+plt.figure()
+#plt.clf()
 print('Begin plotting')
 tk='$T_{rot}$'
 ntot='log$_{10}(N_{tot})$'
@@ -265,7 +317,7 @@ cm2='cm$^{-2}$'
 val_dntot=round((np.log10(bootNstd)/np.log10(obsNtot.value)),2)
 val_ntot=round(np.log10(obsNtot.value),2)#round((obsNtot.value/(1*10**int(np.log10(obsNtot.value)))),(len(str(round(snr.value)))-1))
 
-plt.errorbar(meuks.value,np.log10(nuppers),yerr=log10nuerr,fmt='o')
+plt.errorbar(meuks.value,np.log10(nugs),yerr=log10nuerr,fmt='o')
 plt.plot(linemod_euks,fit_lin(linemod_euks),label=(f'{tk}: {round(obsTrot, 2)} $\pm$ {round(bootTstd,2)} K\n{ntot}: {val_ntot} $\pm$ {round(int_bootNstd,2)}'))
 #plt.errorbar(eukstofit,np.log10(nupperstofit),yerr=log10nuerr,fmt='o')
 #plt.plot(linemod_euks,fit_lin(linemod_euks),label=(f'obsTex: {round(obsTrot, 4)} $\pm$ {round(dobsTrot.value, 2)*u.K}\nobsNtot: {round(obsNtot.value,3)/u.cm**2}'))
@@ -280,8 +332,8 @@ plt.legend()
 #rotdiagpath+f'contfix_bootstrap_interr_{y}_{x}.png')
 plt.show()
 
-plt.figure(2)
-plt.clf()
+plt.figure()
+#plt.clf()
 plt.hist(bootTrots,bins=np.linspace(0,np.max(bootTrots),100))
 plt.axvline(obsTrot,color='red',label=r'Observed $T_{rot}$')
 plt.axvline(np.median(bootTrots),color='cyan',label=r'Median $T_{rot}$')

@@ -550,7 +550,7 @@ stdhome=stdhomedict[fnum]
 
 #cubemaskarray=maskeddatacube.get_mask_array()
 
-sourcelocs={'SgrB2S':'/aug2023qrotfix/','DSi':'/aug2023fulloverhaul/','DSii':'/adjustntotinitguess/','DSiii':'/aug2023qrotfix/','DSiv':'/aug2023qrotfix/','DSv':f'/aug2023qrotfix/','DSVI':'/aug2023qrotfix/','DSVII':f'/aug2023qrotfix/','DSVIII':f'/aug2023qrotfix/','DSIX':f'/aug2023qrotfix/','DS10':'/march2023discovery_5kmslw/','DS11':f'/march2023discovery_5kmslw_{int(testT.value)}K/','DSX':f'/Kfield7originals_{int(testT.value)}K_trial1_noexclusions/'}#'/Kfield10originals_trial7_field10errors_newexclusion_matchslabwidthtorep/'
+sourcelocs={'SgrB2S':'/aug2023qrotfix/','DSi':'/aug2023categoricaloverhaul/','DSii':'/adjustntotinitguess/','DSiii':'/aug2023qrotfix/','DSiv':'/aug2023qrotfix/','DSv':f'/aug2023qrotfix/','DSVI':'/aug2023qrotfix/','DSVII':f'/aug2023qrotfix/','DSVIII':f'/aug2023qrotfix/','DSIX':f'/aug2023qrotfix/','DS10':'/march2023discovery_5kmslw/','DS11':f'/march2023discovery_5kmslw_{int(testT.value)}K/','DSX':f'/Kfield7originals_{int(testT.value)}K_trial1_noexclusions/'}#'/Kfield10originals_trial7_field10errors_newexclusion_matchslabwidthtorep/'
 
 origsourcelocs={'SgrB2S':'/new_testingstdfixandontheflyrepstuff_K_OctReimage_restfreqfix_newvelmask_newpeakamp/','DSi':'/Kfield10originals_trial7_field10errors_newexclusion_matchslabwidthtorep/','DSii':'/Kfield10originals_noexclusions/','DSiii':'/Kfield10originals_noexclusions/','DSiv':'/Kfield10originals_noexclusions/','DSv':f'/Kfield10originals_noexclusions_include4-3_150K_trial2/','DSVI':'/Kfield2originals_trial3_8_6-8_7excluded/','DSVII':f'/Kfield3originals_{int(testT.value)}K_trial1_noexclusions/','DSVIII':f'/Kfield3originals_{int(testT.value)}K_trial1_noexclusions/','DSIX':f'/Kfield7originals_{int(testT.value)}K_trial1_noexclusions/','DSX':f'/Kfield7originals_{int(testT.value)}K_trial1_noexclusions/'}#
 
@@ -814,9 +814,7 @@ for imgnum in range(len(datacubes)):
     #vel_lines=vradio(lines,spw1restfreq)
     qns=maintable['QNs']
     euks=maintable['EU_K']*u.K
-    eujs=[]
-    for eupper_K in euks:
-        eujs.append(KtoJ(eupper_K))
+    eujs=euks*k
     degeneracies=sparetable['Upper State Degeneracy']
     log10aijs=maintable['log10_Aij']
     aijs=10**log10aijs*u.Hz
@@ -950,7 +948,9 @@ for key in spwdictkeys:
                     if nuperrorimgexists:
                         n_uerr.append((tempnuerr[y,x])/transdict[transitionkeys[transkey]]['degen'])
                     else:
-                        tempnupper,tempnuerr=N_u(transdict[transitionkeys[transkey]]['freq'],transdict[transitionkeys[transkey]]['aij'],intensities[transitionkeys[transkey]][y,x],transdict[transitionkeys[transkey]]['mom0err'][y,x])#kkmsstddict[key][y,x])
+                        tempnupper=lte_molecule.nupper_of_kkms(intensities[transitionkeys[transkey]][y,x],transdict[transitionkeys[transkey]]['freq'],transdict[transitionkeys[transkey]]['aij'])#kkmsstddict[key][y,x])
+                        tempnuerr=tempnupper*(transdict[transitionkeys[transkey]]['mom0err'][y,x]/intensities[transitionkeys[transkey]][y,x])
+                        #pdb.set_trace()
                         n_us.append((tempnupper.to('cm-2')*u.cm**2)/transdict[transitionkeys[transkey]]['degen'])
                         n_uerr.append((tempnuerr.to('cm-2')*u.cm**2)/transdict[transitionkeys[transkey]]['degen'])  
                 nugsmap[y,:,pixelzcoord_nupper]=n_us
@@ -981,30 +981,7 @@ for key in spwdictkeys:
         #print(n_us)
         #print(n_uerr)
       
-print('pixels looped, Nupper calcs complete\n')  
-
-'''
-for key in spwdictkeys:
-    transitionkeys=list(spwdict[key])
-    for transkey in range(len(transitionkeys)):
-        nupperimage_filepath=filepath2+'CH3OH~'+transitionkeys[transkey]+'.fits'
-        nuperrorimage_filepath=filepath2+'CH3OH~'+transitionkeys[transkey]+'error.fits'
-        if os.path.isfile(nupperimage_filepath):
-            print(f'{nupperimage_filepath} already exists')
-        elif os.path.isfile(nupperimage_filepath)==False:
-            nupperimgdata=nugsmap[:,:,transkey]
-            primaryhdu=fits.PrimaryHDU(nupperimgdata)
-            primaryhdu.header['UNIT']='cm-2'
-            hdul.writeto(nupperimage_filepath,overwrite=True)
-            hdul=fits.HDUList([primaryhdu])
-        elif os.path.isfile(nuperrorimage_filepath):
-            print(f'{nuperrorimage_filepath} already exists')
-        elif os.path.isfile(nuperrorimage_filepath)==False:
-            primaryhduerr=fits.PrimaryHDU(nuperrorimgdata)
-            primaryhduerr.header['UNIT']='cm-2'
-            hdulerr=fits.HDUList([primaryhduerr])
-            hdulerr.writeto(nuperrorimage_filepath)
-'''
+    print('pixels looped, Nupper calcs complete\n')  
 
 print('Setting up and executing model fit')
 texmap=np.empty((testyshape,testxshape))
