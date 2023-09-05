@@ -11,8 +11,10 @@ import radio_beam
 import regions
 import math
 
+Splatalogue.QUERY_URL= 'https://splatalogue.online/c_export.php'
+
 plt.close('all')
-files=glob.glob('/ufrc/adamginsburg/d.jeff/imaging_results/*.fits')
+files=glob.glob('/blue/adamginsburg/d.jeff/imaging_results/*.fits')
 z=0.0002333587
 
 contaminants=[' CH3OCHO ',' HOONO ',' C3H6O2 ',' g-CH3CH2OH ',' HNCO ']

@@ -17,14 +17,11 @@ from scipy.optimize import curve_fit as cf
 from math import log10, floor
 from astropy.stats import bootstrap
 import astropy.stats
-#from pyspeckit.spectrum.models.lte_molecule import get_molecular_parameters
+from pyspeckit.spectrum.models.lte_molecule import get_molecular_parameters
 
 mpl.interactive(True)
 plt.rcParams["figure.dpi"]=150
 plt.close('all')
-
-def Q_rot_asym(T):#Eq 58, (Magnum & Shirley 2015); sigma=1, defined in Table 1 of M&S 2015
-    return np.sqrt(m*np.pi*((k*T)/(h*b_0))**3)
     
 def line(x,slope,intercept):
     return slope*x+intercept
@@ -47,19 +44,20 @@ R_i=1
 f=1
 Tbg=2.7355*u.K
 
-'''
+
 Jfreqs, Jaij, Jdeg, JEU, qrot = get_molecular_parameters('CH3OH',
                                                          catalog='JPL',
                                                          fmin=150*u.GHz,
                                                          fmax=300*u.GHz)
-'''
 
-source='DSi'
+
+source='DSiii'
 fielddict={'SgrB2S':1,'DSi':10,'DSii':10,'DSiii':10,'DSiv':10,'DSv':10,'DSVI':2,'DSVII':3,'DSVIII':3,'DSIX':7}
 fnum=fielddict[source]
 
 origsourcedict={'SgrB2S':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/SgrB2S/new_testingstdfixandontheflyrepstuff_K_OctReimage_restfreqfix_newvelmask_newpeakamp/",'DSi':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSi/Kfield10originals_trial7_field10errors_newexclusion_matchslabwidthtorep/",'DSii':'/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSii/field10originals_noexclusions/','DSiii':'/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSiii/Kfield10originals_noexclusions/','DSiv':'/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSiv/Kfield10originals_noexclusions/','DSv':'/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSv/Kfield10originals_noexclusions_include4-3_trial1/','DSVI':'/blue/adamginsburg/d.jeff/SgrB2DSreorg/field2/CH3OH/DSVI/Kfield2originals_trial2_16_6-16_7excluded/','DSVII':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field3/CH3OH/DSVII/Kfield3originals_trial1_noexclusions/",'DSVIII':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field3/CH3OH/DSVIII/Kfield3originals_175K_trial1_noexclusions/",'DSIX':'/blue/adamginsburg/d.jeff/SgrB2DSreorg/field7/CH3OH/DSIX/Kfield7originals_150K_trial1_noexclusions/'}
-sourcedict={'SgrB2S':'/nov2022continuumsanitycheck/','DSi':'/nov2022continuumsanitycheck/','DSii':'/nov2022continuumsanitycheck/','DSiii':'/nov2022continuumsanitycheck/','DSiv':'/nov2022contniuumsanitycheck/','DSv':f'/nov2022contniuumsanitycheck/','DSVI':'/nov2022continuumsanitycheck/','DSVII':f'/nov2022contniuumsanitycheck/','DSVIII':f'/nov2022contniuumsanitycheck/','DSIX':f'/nov2022contniuumsanitycheck/'}#{'SgrB2S':'/new_testingstdfixandontheflyrepstuff_K_OctReimage_restfreqfix_newvelmask_newpeakamp/','DSi':'/Kfield10originals_trial7_field10errors_newexclusion_matchslabwidthtorep/','DSii':'/Kfield10originals_noexclusions/','DSiii':'/Kfield10originals_noexclusions/','DSiv':'/Kfield10originals_noexclusions/','DSv':f'/Kfield10originals_noexclusions_include4-3_150K_trial2/','DSVI':'/Kfield2originals_trial3_8_6-8_7excluded/','DSVII':'/Kfield3originals_200K_trial1_noexclusions/','DSVIII':'/Kfield3originals_175K_trial1_noexclusions/','DSIX':f'/Kfield7originals_150K_trial1_noexclusions/'}
+sourcedict={'SgrB2S':'/nov2022continuumsanitycheck/','DSi':'/aug2023fulloverhaul/','DSii':'/lateaug2023corrected_real/','DSiii':'/lateaug2023corrected/','DSiv':'/nov2022contniuumsanitycheck/','DSv':f'/nov2022contniuumsanitycheck/','DSVI':'/nov2022continuumsanitycheck/','DSVII':f'/nov2022contniuumsanitycheck/','DSVIII':f'/nov2022contniuumsanitycheck/','DSIX':f'/nov2022contniuumsanitycheck/'}
+pixdict={'SgrB2S':(26,14),'DSi':(36,40),'DSii':(22,24),'DSiii':(24,24),'DSiv':(32,31),'DSv':(19,19),'DSVI':(62,62),'DSVII':(75,75),'DSVIII':(50,50),'DSIX':(34,35)}
 sourcepath=sourcedict[source]
 origsourcepath=f'/blue/adamginsburg/d.jeff/SgrB2DSreorg/field{fnum}/CH3OH/{source}/{sourcepath}'#origsourcedict[source]
 
@@ -68,6 +66,8 @@ savefighome=savefigbase+sourcepath
 
 home=origsourcepath
 rotdiagpath=savefighome+'pixelwiserotationaldiagrams/'
+
+debuglabel=sourcepath.replace('/','')
 
 if os.path.isdir(rotdiagpath):
     print(f'Rotational diagram folder {rotdiagpath} already exists.')
@@ -107,8 +107,8 @@ for master in range(len(allmaster[:,0])):
     
 testzshape=len(mastereuks)
 
-ypix=36#37#69#36dsi#73#70#int(input('y coord:'))61 dsiring:36
-xpix=42#41#58#40dsi#54#55#int(input('x coord:'))64 dsiring:35
+ypix=pixdict[source][0]#20#37#69#36dsi#73#70#int(input('y coord:'))61 dsiring:36
+xpix=pixdict[source][1]#24#41#58#40dsi#54#55#int(input('x coord:'))64 dsiring:35
 pixel=(ypix,xpix)
 pixellist=list([pixel])
 
@@ -172,7 +172,7 @@ for px in pixellist:
         
         fit_lin=fit(linemod,eukstofit,np.log10(nupperstofit), weights=errstofit)
         obsTrot=-np.log10(np.e)/(fit_lin.slope)
-        qrot_partfunc=9473.271845042498*u.dimensionless_unscaled#qrot(obsTrot*u.K).to('')
+        qrot_partfunc=qrot(obsTrot*u.K)*u.dimensionless_unscaled#9473.271845042498*u.dimensionless_unscaled
         
         bslist=[]
         for nug,euk,weight,var in zip(np.log10(nupperstofit),eukstofit,errstofit,log10variances):
@@ -270,7 +270,7 @@ for px in pixellist:
         plt.xlabel(r'E$_u$ (K)')
         plt.ylabel(r'log$_{10}$(N$_u$/g$_u$)')
         plt.legend()
-        plt.savefig(f'debuggingrotationaldiagrams/JPLqrot_contfix_bootstrap_interr_{y}_{x}.png')
+        plt.savefig(f'debuggingrotationaldiagrams/{source}_{debuglabel}_bootstrap_interr_{y}_{x}.png')
         #rotdiagpath+f'contfix_bootstrap_interr_{y}_{x}.png')
         plt.show()
         
@@ -287,7 +287,7 @@ for px in pixellist:
         plt.ylabel('Number of fits')
         plt.legend()
         plt.xlim(xmin=0,xmax=750)
-        plt.savefig(f'debuggingrotationaldiagrams/JPLqrot_contfix_trothist_bootstrap_interr_{y}_{x}.png')
+        plt.savefig(f'debuggingrotationaldiagrams/{source}_{debuglabel}_trothist_bootstrap_interr_{y}_{x}.png')
         #rotdiagpath+f'contfix_trothist_bootstrap_interr_{y}_{x}.png')
         plt.show()
         print('Done.')

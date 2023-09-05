@@ -25,7 +25,9 @@ from astropy.table import Table
 
 mpl.interactive(True)
 
-source='DSiii'
+#plt.rcParams['figure.dpi']=300
+
+source='DSv'
 print(f'Source: {source}\n')
 fields={'SgrB2S':1,'DSi':10,'DSii':10,'DSiii':10,'DSiv':10,'DSv':10,'DSVI':2,'DSVII':3,'DSVIII':3,'DSIX':7}
 romannums={'DSi':'DSI','DSii':'DSii'}
@@ -41,10 +43,7 @@ sourcelocs={'SgrB2S':'/nov2022continuumsanitycheck_limitvt1lines_centeronlinepea
 sourcepath=f'/blue/adamginsburg/d.jeff/SgrB2DSreorg/field{fnum}/CH3OH/{source}/'+sourcelocs[source]
 mom0path=sourcepath+'mom0/*_masked.fits'
 
-if source == 'DSi':
-    savefighome=f'/blue/adamginsburg/d.jeff/repos/CH3OHTemps/figures/{romannums[source]}/'+sourcelocs[source]
-else:
-    savefighome=f'/blue/adamginsburg/d.jeff/repos/CH3OHTemps/figures/{source}/'+sourcelocs[source]
+savefighome=f'/blue/adamginsburg/d.jeff/repos/CH3OHTemps/figures/{source}/'+sourcelocs[source]
 
 if os.path.exists(savefighome):
     print(f'Figure directory {savefighome} already exists.')
@@ -102,7 +101,7 @@ for (qn,plotqn) in zip(sortedoldqns,sortedqns):
             #print(qn_replace(qn))
             continue
             
-figsizes={'DSi':(11,9),'DSiii':(16,5)}
+figsizes={'DSi':(11,9),'DSiii':(16,5),'DSv':(8,3),'DSVI':(12,7),'DSVII':(12,10),'DSVIII':(12,11),'DSIX':(12,11)}
 if source in figsizes.keys():
     fs=figsizes[source]
 else:
@@ -125,9 +124,9 @@ imgdims=np.shape(sortedmom0[0])
 #gs1.update(wspace=0.025, hspace=0.05)
 
 #brightestline={'SgrB2S':600,'DSi':450,'DSii':0,'DSiii':0,'DSiv':0,'DSv':0,'DSVI':0,'DSVII':0,'DSVIII':0}
-sourcewspace={'SgrB2S':0,'DSi':0,'DSii':0,'DSiii':-0.61,'DSiv':0,'DSv':0,'DSVI':0,'DSVII':0,'DSVIII':0,'DSIX':0}
-sourcehspace={'SgrB2S':-0.72,'DSi':0,'DSii':-0.77,'DSiii':0,'DSiv':-0.72,
-              'DSv':-0.67,'DSVI':-0.602,'DSVII':-0.72,'DSVIII':-0.72,'DSIX':-0.72}
+sourcewspace={'SgrB2S':0,'DSi':0,'DSii':0,'DSiii':-0.59,'DSiv':0,'DSv':-0.28,'DSVI':-0.16,'DSVII':0,'DSVIII':0,'DSIX':0}
+sourcehspace={'SgrB2S':-0.72,'DSi':-0.05,'DSii':-0.77,'DSiii':0,'DSiv':-0.77,
+              'DSv':0,'DSVI':0,'DSVII':-0.6825,'DSVIII':-0.72,'DSIX':-0.72}
 i=0
 for row in np.arange(numrows):
     for col in np.arange(numcols):
@@ -145,7 +144,7 @@ for row in np.arange(numrows):
                 ax[row,col].tick_params(direction='in')
                 ax[row,col].set_xticks([])
                 ax[row,col].set_yticks([])
-                ax[row,col].annotate(f'{qnstoplot[i]}',xy=(0,0),xytext=((imgdims[0]/20),(imgdims[1]/1.2)),fontsize=12)
+                ax[row,col].annotate(f'{qnstoplot[i]}',xy=(0,0),xytext=((imgdims[0]/20),(imgdims[1]/1.2)),fontsize=10)#12
                 #print(f'{sortedmom0str[i]},{qnstoplot[i]}')
                 firstpanel=False
                 i+=1
@@ -156,13 +155,13 @@ for row in np.arange(numrows):
                 ax[row,col].tick_params(direction='in')
                 ax[row,col].set_xticks([])
                 ax[row,col].set_yticks([])
-                ax[row,col].annotate(f'{qnstoplot[i]}',xy=(0,0),xytext=((imgdims[0]/20),(imgdims[1]/1.2)),fontsize=12)
+                ax[row,col].annotate(f'{qnstoplot[i]}',xy=(0,0),xytext=((imgdims[0]/20),(imgdims[1]/1.2)),fontsize=10)#12
                 #print(f'{sortedmom0str[i]}, {qnstoplot[i]}')
                 i+=1
                 #if row == (numrows-1) and col == (numcols-1):
 
-heights={'SgrB2S':'290%','DSi':'400%','DSii':'200%','DSiii':'100%','DSiv':'225%','DSv':'70%','DSVI':'132%','DSVII':'225%','DSVIII':'220%'}
-bboxparams={'SgrB2S':(1.05,0,1,1),'DSi':(1.05,0,1,1),'DSiii':(1.05,0.26,1,1),'DSv':(1.05,0.34,1,1),'DSVI':(1.05,0.25,1,1),'DSVII':(1.05,-0.1,1,1)}
+heights={'SgrB2S':'293.5%','DSi':'383%','DSii':'200.5%','DSiii':'200%','DSiv':'200.5%','DSv':'200%','DSVI':'300%','DSVII':'200%','DSVIII':'199.5%','DSIX':'199.5%'}
+bboxparams={'SgrB2S':(1,0,1,1),'DSi':(1,0,1,1),'DSiii':(0.69,0,1,1),'DSiv':(1,0,1,1),'DSv':(0.845,0,1,1),'DSVI':(0.9,0,1,1),'DSVII':(1,0,1,1)}
 if source in heights:
     strheight=heights[source]
 else:
@@ -172,7 +171,7 @@ if source in bboxparams.keys():
     a=bboxparams[source]#
     lowercorner=ax[(numrows-1),(numcols-1)]#[1,4]
 else:
-    a=(1.05,0,1,1)#(1.05,-0.1,1,1)
+    a=(1,0,1,1)#(1.05,-0.1,1,1)
     lowercorner=ax[(numrows-1),(numcols-1)]
 axins=inset_axes(lowercorner,width='5%',height=strheight,loc='lower left', bbox_to_anchor=a,bbox_transform=lowercorner.transAxes,borderpad=0)#div=make_axes_locatable(ax[(numrows-1),(numcols-1)])
 #cax=div.append_axes("right",size='10%',pad=0.1)#plt.axes([0.78, 0.11, 0.05, 0.77])
@@ -186,7 +185,7 @@ for ax in fig.get_axes():
     ax.spines.left.set_visible(ss.is_first_col())
     ax.spines.right.set_visible(ss.is_last_col())
 '''
-plt.savefig(savefigpath,dpi=150)
+plt.savefig(savefigpath,dpi=300)
 #plt.tight_layout()
 #gs1.tight_layout(fig,pad=1)
 plt.show()

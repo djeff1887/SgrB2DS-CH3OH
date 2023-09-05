@@ -39,8 +39,8 @@ def make_scalebar(ax, left_side, length, color='black', linestyle='-', label='',
                  zorder=2,bbox=dict(facecolor='white', alpha=0.6))
     ax.axis(axlims)
     return lines,txt
-set=4
-colordict={0:('trot','inferno','texmap_3sigma_allspw_withnans_weighted.fits'),1:('mom0','bone',"CH3OH~5_1-4_2E1vt0_masked.fits"),2:('nupper','Blues_r'),3:('detections','CMRmap',"ch3ohdetections5_3sigma_allspw_withnans_weighted.fits"),4:('abundance','viridis','ch3ohabundance_3sigma_ntotintercept_bolocamfeather_smoothedtobolocam.fits')}
+set=0
+colordict={0:('trot','inferno','bootstrap_texmap_3sigma_allspw_withnans_weighted.fits'),1:('mom0','bone',"CH3OH~5_1-4_2E1vt0_masked.fits"),2:('nupper','Blues_r'),3:('detections','CMRmap',"ch3ohdetections0_3sigma_allspw_withnans_weighted.fits"),4:('abundance','viridis','bootstrap_ch3ohabundance_3sigma_ntotintercept_bolocamfeather_smoothedtobolocam.fits')}
 mode=colordict[set][0]
 color=colordict[set][1]
 pathsuffix=colordict[set][2]
@@ -49,17 +49,17 @@ print(f'Mode: {mode}')
 cm= copy.copy(mpl.cm.get_cmap(color))#mom0 bone, temperature inferno, nupper Blues_r, detections CMRmap, abundance cividis
 cm.set_bad('black')
 dGC=8.34*u.kpc#per Meng et al. 2019 https://www.aanda.org/articles/aa/pdf/2019/10/aa35920-19.pdf
-source='DSi'
+source=os.getenv('SOURCE')#'DSIX'
 print(f'Source: {source}\n')
 fields={'SgrB2S':1,'DSi':10,'DSii':10,'DSiii':10,'DSiv':10,'DSv':10,'DSVI':2,'DSVII':3,'DSVIII':3,'DSIX':7}
 fnum=fields[source]
 
 home=f'/blue/adamginsburg/d.jeff/SgrB2DSreorg/field{fnum}/CH3OH/'
-sourcepath=home+f'{source}/field10originals_z0_000186431_5-6mhzwidth_stdfixes/'+'figures/'
+#sourcepath=home+f'{source}/field10originals_z0_000186431_5-6mhzwidth_stdfixes/'+'figures/'
 
-cntrfile='/blue/adamginsburg/d.jeff/imaging_results/adamcleancontinuum/Sgr_B2_DS_B6_uid___A001_X1290_X46_continuum_merged_12M_robust0_selfcal4_finaliter.image.tt0.pbcor.fits'#'/orange/adamginsburg/sgrb2/2017.1.00114.S/imaging_results/Sgr_B2_DS_B6_uid___A001_X1290_X46_continuum_merged_12M_robust2_selfcal4_finaliter_feathered_with_bolocam.fits'
+cntrfile='/orange/adamginsburg/sgrb2/2017.1.00114.S/imaging_results/Sgr_B2_DS_B6_uid___A001_X1290_X46_continuum_merged_12M_robust2_selfcal4_finaliter_feathered_with_bolocam.fits'#'/blue/adamginsburg/d.jeff/imaging_results/adamcleancontinuum/Sgr_B2_DS_B6_uid___A001_X1290_X46_continuum_merged_12M_robust0_selfcal4_finaliter.image.tt0.pbcor.fits'#'/orange/adamginsburg/sgrb2/2017.1.00114.S/imaging_results/Sgr_B2_DS_B6_uid___A001_X1290_X46_continuum_merged_12M_robust2_selfcal4_finaliter_feathered_with_bolocam.fits'
 
-sourcedict={'SgrB2S':'/new_testingstdfixandontheflyrepstuff_K_OctReimage_restfreqfix_newvelmask_newpeakamp/','DSi':'/Kfield10originals_trial7_field10errors_newexclusion_matchslabwidthtorep/','DSii':'/Kfield10originals_noexclusions/','DSiii':'/Kfield10originals_noexclusions/','DSiv':'/Kfield10originals_noexclusions/','DSv':f'/Kfield10originals_noexclusions_include4-3_150K_trial2/','DSVI':'/Kfield2originals_trial3_8_6-8_7excluded/','DSVII':'/Kfield3originals_200K_trial1_noexclusions/','DSVIII':'/Kfield3originals_175K_trial1_noexclusions/','DSIX':f'/Kfield7originals_150K_trial1_noexclusions/'}
+sourcedict={'SgrB2S':'/nov2022continuumsanitycheck_limitvt1lines_centeronlinepeak_repline20-20/','DSi':'/nov2022continuumsanitycheck/','DSii':'/nov2022continuumsanitycheck/','DSiii':'/nov2022continuumsanitycheck/','DSiv':'/nov2022contniuumsanitycheck/','DSv':f'/nov2022contniuumsanitycheck/','DSVI':'/nov2022continuumsanitycheck/','DSVII':f'/nov2022contniuumsanitycheck/','DSVIII':f'/nov2022contniuumsanitycheck/','DSIX':f'/nov2022contniuumsanitycheck/'}#{'SgrB2S':'/new_testingstdfixandontheflyrepstuff_K_OctReimage_restfreqfix_newvelmask_newpeakamp/','DSi':'/Kfield10originals_trial7_field10errors_newexclusion_matchslabwidthtorep/','DSii':'/Kfield10originals_noexclusions/','DSiii':'/Kfield10originals_noexclusions/','DSiv':'/Kfield10originals_noexclusions/','DSv':f'/Kfield10originals_noexclusions_include4-3_150K_trial2/','DSVI':'/Kfield2originals_trial3_8_6-8_7excluded/','DSVII':'/Kfield3originals_200K_trial1_noexclusions/','DSVIII':'/Kfield3originals_175K_trial1_noexclusions/','DSIX':f'/Kfield7originals_150K_trial1_noexclusions/'}
 
 infile=home+source+'/'+sourcedict[source]+pathsuffix
 
@@ -104,7 +104,7 @@ for y in range(cntrshape[0]):
 assert upperntot not in cntrhdu.data, 'Unphysical values in Ntot image'
 '''
 cntrrms=0.0002#mjy, np.nanstd(cntrhdu.data)
-cntrlist=cntrrms*np.array([3,6,8,16,32])
+cntrlist=cntrrms*np.array([5,9,27,81,128,281])
 
 cntrdata=np.squeeze(cntrhdu.data)
 
@@ -122,7 +122,7 @@ plt.rcParams['figure.dpi'] = 150
 ra=ax.coords[0]
 dec=ax.coords[1]
 if mode == 'trot':
-    vmaxdict={'SgrB2S':520,'DSi':320,'DSii':225,'DSiii':300,'DSiv':313,'DSv':281,'DSVI':378,'DSVII':250,'DSVIII':225,'DSIX':223}
+    vmaxdict={'SgrB2S':575,'DSi':377,'DSii':232,'DSiii':339,'DSiv':325,'DSv':337,'DSVI':441,'DSVII':263,'DSVIII':259,'DSIX':275}
     img=ax.imshow(np.squeeze(hdu.data),vmax=vmaxdict[source],vmin=25,interpolation=None, cmap=cm)#, norm=mpl.colors.LogNorm())#vmaxcntm=0.005, vmaxdsi=300 (no min value),vmaxsgrb2s=605 tmin=10 (try no min value), ntotmax=6.26e17, dsintotmax=2.21e17
 elif mode == 'abundance':
     abundadjust={'DSiii':1e-9,'DSiv':1e-9,'DSVI':1e-8,'DSVII':1e-8,'DSVIII':1e-8,'DSIX':1e-8}

@@ -9,12 +9,12 @@ from astropy.io import fits
 import glob
 import radio_beam
 import regions
-
+plt.close('all')
 files=glob.glob('/ufrc/adamginsburg/d.jeff/imaging_results/*.fits')
 z=0.0002333587
 #chem= input('Molecule?: ')
 #chem=(' '+chem+' ')
-contaminants=[' CH3OCHO ',' HOONO ',' C3H6O2 ',' g-CH3CH2OH ',' HNCO ']
+contaminants=[' CH3OCHO ',' HOONO ',' C3H6O2 ',' g-CH3CH2OH ',' HNCO ',' DCN ',' H2CO ']
 colors=cm.rainbow(np.linspace(0,1,len(contaminants)))
 
 linelist=['JPL','SLAIM','CDMS']#input('Linelist? (Lovas, SLAIM, JPL, CDMS, ToyoMA, OSU, Recomb, Lisa, RFI): ')

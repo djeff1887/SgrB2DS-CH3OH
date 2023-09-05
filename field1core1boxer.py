@@ -5,13 +5,16 @@ import astropy.units as u
 from astropy.io import fits
 import pdb
 
-inpath='/blue/adamginsburg/d.jeff/imaging_results/data/OctReimage/'
+inpath='/orange/adamginsburg/sgrb2/d.jeff/data/field10originalimages/'
+#inpath='/blue/adamginsburg/d.jeff/imaging_results/data/OctReimage/'
 beamcubes=glob.glob(inpath+'*.fits')
-home='/blue/adamginsburg/d.jeff/imaging_results/products/OctReimage/'
+home='/orange/adamginsburg/sgrb2/d.jeff/products/field10originalimages/'
+#home='/blue/adamginsburg/d.jeff/imaging_results/products/OctReimage/'
 cubes=glob.glob(home+'*pbcor_line.fits')
-region='fk5; box(266.8353410,-28.3962005,0.0016806,0.0016806)'#box(266.8333438, -28.3966103, 0.0014028, 0.0014028)'#box(266.8315833, -28.3971867, 0.0006528, 0.0006528)' 
-outpath='/blue/adamginsburg/d.jeff/SgrB2DSminicubes/SgrB2S/OctReimage/'#imaging_results/DSii_iiibox1/'
-statfixpath='/blue/adamginsburg/d.jeff/SgrB2DSstatcontfix/SgrB2S/OctReimage/'
+region='fk5; box(266.8316387, -28.3971867, 0.0010556, 0.0010556)'#DSi-large
+#region='fk5; box(266.8353410,-28.3962005,0.0016806,0.0016806)'#box(266.8333438, -28.3966103, 0.0014028, 0.0014028)'#box(266.8315833, -28.3971867, 0.0006528, 0.0006528)' 
+outpath='/blue/adamginsburg/d.jeff/SgrB2DSminicubes/DSi/field10originals/'#imaging_results/DSii_iiibox1/'
+statfixpath='/blue/adamginsburg/d.jeff/SgrB2DSstatcontfix/field10originals/'
 
 cubestobox=[]
 

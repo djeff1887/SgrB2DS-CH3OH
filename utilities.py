@@ -1,6 +1,7 @@
 import astropy.units as u
 import scipy.constants as cnst
 import numpy as np
+from pyspeckit.spectrum.models.lte_molecule import get_molecular_parameters
 
 c=cnst.c*u.m/u.s
 k=cnst.k*u.J/u.K
@@ -13,6 +14,11 @@ m=b_0**2/(a_0*c_0)
 R_i=1
 f=1
 Tbg=2.7355*u.K
+
+Jfreqs, Jaij, Jdeg, JEU, qrot = get_molecular_parameters('CH3OH',
+                                                         catalog='JPL',
+                                                         fmin=150*u.GHz,
+                                                         fmax=300*u.GHz)
 
 '''Hot core locations'''
 sourcedict={'SgrB2S':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/SgrB2S/new_testingstdfixandontheflyrepstuff_K_OctReimage_restfreqfix_newvelmask_newpeakamp/",'DSi':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSi/Kfield10originals_trial7_field10errors_newexclusion_matchslabwidthtorep/",'DSii':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSii/Kfield10originals_noexclusions/",'DSiii':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSiii/Kfield10originals_noexclusions/",'DSiv':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSiv/Kfield10originals_noexclusions/",'DSv':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSv/Kfield10originals_noexclusions_include4-3_150K_trial2/",'DSVI':"/blue/adamginsburg/d.jeff/SgrB2DSreorg/field2/CH3OH/DSVI/Kfield2originals_trial3_8_6-8_7excluded/",'DSVII':'/blue/adamginsburg/d.jeff/SgrB2DSreorg/field3/CH3OH/DSVII/Kfield3originals_200K_trial1_noexclusions/','DSVIII':'/blue/adamginsburg/d.jeff/SgrB2DSreorg/field3/CH3OH/DSVIII/Kfield3originals_175K_trial1_noexclusions/','DSIX':'/blue/adamginsburg/d.jeff/SgrB2DSreorg/field7/CH3OH/DSIX/Kfield7originals_150K_trial1_noexclusions/'}
@@ -52,7 +58,7 @@ def rjequivtemp(nu,T_ex):
 def N_u(nu,Aij,velocityintegrated_intensity_K,velint_intK_err):#(ntot,qrot,gu,eu_J,T_ex):#taken from pyspeckit documentation https://pyspeckit.readthedocs.io/en/latest/lte_molecule_model.html?highlight=Aij#lte-molecule-model
     nuppercalc=((8*np.pi*k*nu**2)/(h*c**3*Aij))*velocityintegrated_intensity_K
     nuppererr=((8*np.pi*k*nu**2)/(h*c**3*Aij))*velint_intK_err#(velint_intK_err.to('K km s-1')/velocityintegrated_intensity_K.to('K km s-1'))*nuppercalc
-    return nuppercalc,nuppererr#ntot/(qrot*np.exp(eu_J/(k*T_ex)))
+    return nuppercalc.to('cm-2'),nuppererr.to('cm-2')#ntot/(qrot*np.exp(eu_J/(k*T_ex)))
     
 def KtoJ(T):#Convert from excitation temperature (Kelvin) to energy (Joules)
     return (3/2)*k*T
@@ -90,5 +96,11 @@ def qn_replace(string):
     string=string.replace('=','')
     string=string.replace('(','_')
     string=string.replace(')','')
+    string=string.replace(',','&')
     return string
     
+def lineprofile(sigma,nu_0,nu):
+    return (1/(np.sqrt(2*np.pi)*sigma))*np.exp(-(nu-nu_0)**2/(2*sigma**2))
+
+def Ctau(tau):
+    return tau/(1-np.exp(-tau))

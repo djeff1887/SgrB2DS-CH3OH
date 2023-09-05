@@ -31,7 +31,7 @@ Splatalogue.QUERY_URL= 'https://splatalogue.online/c_export.php'
 print('Cube-->Core-->Tex start\n')
 print('Begin Jy/beam-to-K and region subcube conversion\n')
 
-source='DSi'
+source='DSiii'
 print(f'Source: {source}\n')
 fields={'SgrB2S':1,'DSi':10,'DSii':10,'DSiii':10,'DSiv':10,'DSv':10,'DSVI':2,'DSVII':3,'DSVIII':3,'DSIX':7,'DS10':1,'DS11':1,'DSXI':8}
 fnum=fields[source]
@@ -193,9 +193,9 @@ z=dopplershifts[source]
 print(f'Doppler shift: {z} / {(z*c).to("km s-1")}\n')
 
 print('Setting input LTE parameters')
-trotdict={'SgrB2S':300*u.K,'DSi':300*u.K,'DSii':150*u.K,'DSiii':150*u.K,'DSiv':150*u.K,'DSv':150*u.K,'DSVI':300*u.K,'DSVII':200*u.K,'DSVIII':175*u.K,'DSIX':150*u.K,'DS10':150*u.K,'DS11':100*u.K,'DSX':100*u.K}#old dsv - 1e16, 150K
+trotdict={'SgrB2S':300*u.K,'DSi':400*u.K,'DSii':200*u.K,'DSiii':300*u.K,'DSiv':150*u.K,'DSv':150*u.K,'DSVI':300*u.K,'DSVII':200*u.K,'DSVIII':175*u.K,'DSIX':150*u.K,'DS10':150*u.K,'DS11':100*u.K,'DSX':100*u.K}#old dsv - 1e16, 150K
 testT=trotdict[source]#500*u.K
-ntotdict={'SgrB2S':1e17*u.cm**-2,'DSi':5e18*u.cm**-2,'DSii':1e17*u.cm**-2,'DSiii':1e17*u.cm**-2,'DSiv':1e17*u.cm**-2,'DSv':5e16*u.cm**-2,'DSVI':1e17*u.cm**-2,'DSVII':1e16*u.cm**-2,'DSVIII':1e16*u.cm**-2,'DSIX':1e16*u.cm**-2,'DS10':1e16*u.cm**-2,'DS11':1e16*u.cm**-2,'DSX':1e15*u.cm**-2}
+ntotdict={'SgrB2S':1e18*u.cm**-2,'DSi':1e18*u.cm**-2,'DSii':1e17*u.cm**-2,'DSiii':1e17*u.cm**-2,'DSiv':1e18*u.cm**-2,'DSv':1e17*u.cm**-2,'DSVI':1e17*u.cm**-2,'DSVII':1e16*u.cm**-2,'DSVIII':1e16*u.cm**-2,'DSIX':1e16*u.cm**-2,'DS10':1e16*u.cm**-2,'DS11':1e16*u.cm**-2,'DSX':1e15*u.cm**-2}
 testntot=ntotdict[source]
 print(f'Input Tex: {testT}\nInput Ntot: {testntot}')
     
@@ -299,15 +299,10 @@ def linelooplte(line_list,line_width,iterations,quantum_numbers):
         #slabstart=time.time()
         slab=cube.spectral_slab(nu_upper,nu_lower)
         oldstyleslab=cube.spectral_slab((nu_upper-nu_offset),(nu_lower+nu_offset))
-        #slabend=time.time()-slabstart
-        #print(f'{quantum_numbers[i]} spectral slab done in {time.strftime("%H:%M:%S", time.gmtime(slabend))}')
-        #pdb.set_trace()
         peakchannel=slab.closest_spectral_channel(line)
         print(f'Peak channel: {peakchannel}')
         slabbeams=(slab.beams.value)*u.sr/u.beam
-        #print(f'slabbeams: {slabbeams}')
-        slab_K=slab[:,pixycrd,pixxcrd]#JybeamtoK(slabbeams,)
-        #print(f'slab_K: {slab_K}')
+        slab_K=slab[:,pixycrd,pixxcrd]
         mulu2=(mulu(aijs[i],line)).to('cm5 g s-2')
         linewidth_vel=vradio(singlecmpntwidth,line)
         tbthick=Tbthick(testntot,restline,linewidth_vel,mulu2,degeneracies[i],qrot_partfunc,eujs[i],testT).to('K')
@@ -320,17 +315,13 @@ def linelooplte(line_list,line_width,iterations,quantum_numbers):
         
         est_nupper=nupper_estimated(testntot,degeneracies[i],qrot_partfunc,eujs[i],testT).to('cm-2')
         intertau=lte_molecule.line_tau(testT,testntot,qrot_partfunc,degeneracies[i],restline,eujs[i],aijs[i])
-        phi_nu=lineprofile(linewidth_freq,restline,restline)
+        phi_nu=lineprofile(linewidth_sigma,restline,restline)
         est_tau=(intertau*phi_nu).to('')
-        #opticaldepth(aijs[i],restline,testT,est_nupper,originallinewidth).to('')
-        trad=t_rad(f,est_tau,restline,testT).to('K')
-        #if quantum_numbers[i] == '16(6)-16(7)E1vt=1':
-        #pdb.set_trace()
+        trad=t_rad(tau_nu=est_tau,ff=f,nu=restline,T_ex=testT).to('K')
+        
         print('LTE params calculated')
         print(f'tbthick: {tbthick}\n targetspecK_stddev: {targetspecK_stddev}\n peak_amplitude: {peak_amplitude}')
         print(f'est_nupper: {est_nupper}\n est_tau: {est_tau}\n trad: {trad}')
-        #if tbthick >= targetspecK_stddev:
-        #    print(f'\n est tau from data at {testT}: {(peak_amplitude/trad).to("")}')
         print('Slicing quantum numbers')
         transition=qn_replace(quantum_numbers[i])
         moment0filename=home+'CH3OH~'+transition+'_raw.fits'
@@ -341,8 +332,6 @@ def linelooplte(line_list,line_width,iterations,quantum_numbers):
         maskedslabfn=slabpath+'CH3OH~'+transition+'_maskedslab.fits'
         maskfn=slabpath+'CH3OH~'+transition+'_mask.fits'
         peakintfn=home+'CH3OH~'+transition+'_peakint.fits'
-        #print('Done')
-        #print('Moment 0')
         if os.path.isfile(maskedmom0fn):
             print(f'{moment0filename} already exists.')
             isfilemom0=fits.getdata(maskedmom0fn)*u.K*u.km/u.s
@@ -441,7 +430,12 @@ def linelooplte(line_list,line_width,iterations,quantum_numbers):
 
                 contmom0=reprojcont_K*slabfwhm#continuum sanity check
 
-                maskslabmom0=maskedslab.moment0()+contmom0
+                if transition in doublet:
+                    maskslabmom0=(maskedslab.moment0()+contmom0)/2
+                    print(f'\nDoublet line identified: {quantum_numbers[i]}')
+                    print(f'Value divided in half to compensate for line blending.\n')
+                else:
+                    maskslabmom0=maskedslab.moment0()+contmom0
                 #momend=time.time()-momstart
                 #print(f'{quantum_numbers[i]} elapsed time: {time.strftime("%H:%M:%S", time.gmtime(momend))}')
                 print('\nComputing masking residuals')
@@ -550,7 +544,7 @@ stdhome=stdhomedict[fnum]
 
 #cubemaskarray=maskeddatacube.get_mask_array()
 
-sourcelocs={'SgrB2S':'/aug2023qrotfix/','DSi':'/aug2023categoricaloverhaul/','DSii':'/adjustntotinitguess/','DSiii':'/aug2023qrotfix/','DSiv':'/aug2023qrotfix/','DSv':f'/aug2023qrotfix/','DSVI':'/aug2023qrotfix/','DSVII':f'/aug2023qrotfix/','DSVIII':f'/aug2023qrotfix/','DSIX':f'/aug2023qrotfix/','DS10':'/march2023discovery_5kmslw/','DS11':f'/march2023discovery_5kmslw_{int(testT.value)}K/','DSX':f'/Kfield7originals_{int(testT.value)}K_trial1_noexclusions/'}#'/Kfield10originals_trial7_field10errors_newexclusion_matchslabwidthtorep/'
+sourcelocs={'SgrB2S':'/lateaug2023corrected/','DSi':'/lateaug2023corrected/','DSii':'/lateaug2023corrected_real_removecontaminants/','DSiii':'/sep2023phi_nu&doublet/','DSiv':'/lateaug2023corrected/','DSv':f'/lateaug2023corrected/','DSVI':'/aug2023qrotfix/','DSVII':f'/aug2023qrotfix/','DSVIII':f'/aug2023qrotfix/','DSIX':f'/aug2023qrotfix/','DS10':'/march2023discovery_5kmslw/','DS11':f'/march2023discovery_5kmslw_{int(testT.value)}K/','DSX':f'/Kfield7originals_{int(testT.value)}K_trial1_noexclusions/'}#'/Kfield10originals_trial7_field10errors_newexclusion_matchslabwidthtorep/'
 
 origsourcelocs={'SgrB2S':'/new_testingstdfixandontheflyrepstuff_K_OctReimage_restfreqfix_newvelmask_newpeakamp/','DSi':'/Kfield10originals_trial7_field10errors_newexclusion_matchslabwidthtorep/','DSii':'/Kfield10originals_noexclusions/','DSiii':'/Kfield10originals_noexclusions/','DSiv':'/Kfield10originals_noexclusions/','DSv':f'/Kfield10originals_noexclusions_include4-3_150K_trial2/','DSVI':'/Kfield2originals_trial3_8_6-8_7excluded/','DSVII':f'/Kfield3originals_{int(testT.value)}K_trial1_noexclusions/','DSVIII':f'/Kfield3originals_{int(testT.value)}K_trial1_noexclusions/','DSIX':f'/Kfield7originals_{int(testT.value)}K_trial1_noexclusions/','DSX':f'/Kfield7originals_{int(testT.value)}K_trial1_noexclusions/'}#
 
@@ -657,7 +651,9 @@ masterfluxes=[]
 masterbeams=[]
 masterstddevs=[]
 
-excludedlines={'SgrB2S':['7_6-7_7E1vt1','14_6-14_7E1vt1','11_6-11_7E1vt1','15_6-15_7E1vt1','9_6-9_7E1vt1','13_6-13_7E1vt1','12_6-12_7E1vt1','8_6-8_7E1vt1'],'DSi':['11_6-11_7E1vt1','25_3-24_4E1vt0','14_6-14_7E1vt1','7_6-7_7E1vt1','13_3--14_4-vt2','13_3+-14_4+vt2','15_6-15_7E1vt1','16_6-16_7E1vt1'],'DSii':'','DSiii':'','DSiv':'','DSv':'','DSVI':["6_1--7_2-vt1",'14_6-14_7E1vt1','10_6-10_7E1vt1','9_6-9_7E1vt1','11_6-11_7E1vt1','13_6-13_7E1vt1','12_6-12_7E1vt1','13_3--14_4-vt2','13_3+-14_4+vt2','7_6-7_7E1vt1','16_6-16_7E1vt1','8_6-8_7E1vt1'],'DSVII':'','DSVIII':'','DSIX':'','DS10':'','DS11':'','DSX':''}
+doublet=['15_6+-16_5+vt1','15_6--16_5-vt1']
+
+excludedlines={'SgrB2S':['7_6-7_7E1vt1','14_6-14_7E1vt1','11_6-11_7E1vt1','15_6-15_7E1vt1','9_6-9_7E1vt1','13_6-13_7E1vt1','12_6-12_7E1vt1','8_6-8_7E1vt1'],'DSi':['11_6-11_7E1vt1','25_3-24_4E1vt0','14_6-14_7E1vt1','7_6-7_7E1vt1','13_3--14_4-vt2','13_3+-14_4+vt2','15_6-15_7E1vt1','16_6-16_7E1vt1'],'DSii':['7_6-7_7E1vt1','9_6-9_7E1vt1','14_6-14_7E1vt1','10_6-10_7E1vt1','13_6-13_7E1vt1','11_6-11_7E1vt1','23_5-22_6E1vt0'],'DSiii':'','DSiv':'','DSv':'','DSVI':["6_1--7_2-vt1",'14_6-14_7E1vt1','10_6-10_7E1vt1','9_6-9_7E1vt1','11_6-11_7E1vt1','13_6-13_7E1vt1','12_6-12_7E1vt1','13_3--14_4-vt2','13_3+-14_4+vt2','7_6-7_7E1vt1','16_6-16_7E1vt1','8_6-8_7E1vt1'],'DSVII':'','DSVIII':'','DSIX':'','DS10':'','DS11':'','DSX':''}
 restfreq_representativeline={'SgrB2S':217.88650400*u.GHz,'DSi':220.07856100*u.GHz,'DSii':220.07856100*u.GHz,'DSiii':231.28111000*u.GHz,'DSiv':217.88650400*u.GHz,'DSv':220.07856100*u.GHz,'DSVI':220.07856100*u.GHz,'DSVII':220.07856100*u.GHz,'DSVIII':220.07856100*u.GHz,'DSIX':220.07856100*u.GHz,'DS10':231.28111000*u.GHz,'DS11':220.07856100*u.GHz,'DSX':220.07856100*u.GHz}#All taken from Splatalogue;  oldS 218.44006300
 representative_filename_base=sourcepath+representativelines[source]+'repline_'
 rep_mom1=representative_filename_base+'mom1.fits'
@@ -722,12 +718,9 @@ for imgnum in range(len(datacubes)):
     cube_unmasked=velcube.unmasked_data
     
     cube_w=cube.wcs
-    stdwcs=WCS(stdimage[0].header)#WCS(stdimage[0].header)
+    stdwcs=WCS(stdimage[0].header)
     
-    #targetworldcrd=[[0,0,0],[266.8324225,-28.3954419,0]]#DSiv
-    targetworldcrd=targetworldcrds[source]#[[0,0,0],[266.8316149,-28.3972040,0]] #DSi
-    #targetworldcrd=[[0,0,0],[2.66835339e+02, -2.83961660e+01, 0]] #SgrB2S
-    #[[0,0,0],[266.8332569, -28.3969, 0]] #DSii/iii
+    targetworldcrd=targetworldcrds[source]
     targetpixcrd=cube_w.all_world2pix(targetworldcrd,1,ra_dec_order=True)
     fullsize_targetpixcrd=stdwcs.wcs_world2pix(targetworldcrd,1,ra_dec_order=True)
     stdpixxcrd,stdpixycrd=int(round(fullsize_targetpixcrd[1][0])),int(round(fullsize_targetpixcrd[1][1]))
@@ -787,9 +780,8 @@ for imgnum in range(len(datacubes)):
 
     #pdb.set_trace()
     
-    freq_min=freqs[0]*(1+z)#215*u.GHz
-    #print(freq_max)
-    freq_max=freqs[(len(freqs)-1)]*(1+z)#235*u.GHz
+    freq_min=freqs[0]*(1+z)
+    freq_max=freqs[(len(freqs)-1)]*(1+z)
     
     assert freq_max > freq_min, 'Inverted spectral axis'
     print('Passed increasing spectral axis check')
@@ -810,8 +802,6 @@ for imgnum in range(len(datacubes)):
     
     print('Gathering Splatalogue table parameters')    
     lines=maintable['Freq']*10**9*u.Hz/(1+z)#Redshifted to source
-    #masterlines.append(lines)
-    #vel_lines=vradio(lines,spw1restfreq)
     qns=maintable['QNs']
     euks=maintable['EU_K']*u.K
     eujs=euks*k
@@ -819,14 +809,10 @@ for imgnum in range(len(datacubes)):
     log10aijs=maintable['log10_Aij']
     aijs=10**log10aijs*u.Hz
     
-    '''
-    for i in range(len(test)):
-        plt.axvline(x=test[i],color='red')
-    plt.show()
-    '''
     singlecmpntwidth=(0.00485/8)*u.GHz
     linewidth=fwhm_representative[pixycrd,pixxcrd]#representativelws[source]#10*u.km/u.s#8*u.MHz
     linewidth_freq=velocitytofreq(linewidth,restfreq_representativeline[source])
+    linewidth_sigma=linewidth_freq/(2*np.sqrt(2*np.log(2)))
     oldwideslabwidth=(15.15*u.MHz)
     originallinewidth=(11231152.36688232*u.Hz/2)#0.005*u.GHz####0.5*0.0097*u.GHz#from small line @ 219.9808GHz# 0.0155>>20.08km/s 
     nu_offset=oldwideslabwidth-originallinewidth
@@ -907,16 +893,15 @@ pixelzcoord_nuperr=0
 master_transkeys=[]
 spws_with_detections=[]
 for key in spwdictkeys:
-    transdict=spwdict[key]
+    transdict=spwdict[key]#Dictionary of transitions in a given spw
     #print(f'transdict: {transdict}')
-    transitionkeys=list(spwdict[key])
+    transitionkeys=list(spwdict[key])#Trandition QNs
     master_transkeys.append(transitionkeys)
     if len(transitionkeys) > 0:
         spws_with_detections.append(transdict)
     else:
         pass
-    #print(f'transitionkeys: {transitionkeys}')
-    for transkey in range(len(transitionkeys)):#Need to figure out way to store the n_us per pixel, per moment map. possibly append in 3D array
+    for transkey in range(len(transitionkeys)):
         print(f'Transition: {transitionkeys[transkey]}/Nupper array z-coord: {pixelzcoord_nupper}')
         nupperimage_filepath=nupperpath+'CH3OH~'+transitionkeys[transkey]+'data.fits'
         nuperrorimage_filepath=nupperpath+'CH3OH~'+transitionkeys[transkey]+'error.fits'
@@ -951,8 +936,9 @@ for key in spwdictkeys:
                         tempnupper=lte_molecule.nupper_of_kkms(intensities[transitionkeys[transkey]][y,x],transdict[transitionkeys[transkey]]['freq'],transdict[transitionkeys[transkey]]['aij'])#kkmsstddict[key][y,x])
                         tempnuerr=tempnupper*(transdict[transitionkeys[transkey]]['mom0err'][y,x]/intensities[transitionkeys[transkey]][y,x])
                         #pdb.set_trace()
-                        n_us.append((tempnupper.to('cm-2')*u.cm**2)/transdict[transitionkeys[transkey]]['degen'])
-                        n_uerr.append((tempnuerr.to('cm-2')*u.cm**2)/transdict[transitionkeys[transkey]]['degen'])  
+                        n_us.append((tempnupper.value)/transdict[transitionkeys[transkey]]['degen'])
+                        n_uerr.append((tempnuerr.value)/transdict[transitionkeys[transkey]]['degen'])
+                        #pdb.set_trace()
                 nugsmap[y,:,pixelzcoord_nupper]=n_us
                 nugserrormap[y,:,pixelzcoord_nuperr]=n_uerr
             if not nupperimgexists:
@@ -1055,8 +1041,6 @@ for y in range(testyshape):
             #pdb.set_trace()
             fit_lin=fit(linemod,eukstofit,np.log10(nupperstofit),weights=errstofit)
             linemod_euks=np.linspace(min(eukstofit),max(mastereuks),100)
-            #print('Model fit complete')
-            #print('Compute obsTex and obsNtot')
             obsTrot=-np.log10(np.e)/(fit_lin.slope)
             qrot_partfunc=qrot(obsTrot)
             

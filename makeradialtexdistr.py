@@ -1,7 +1,7 @@
 from astropy.io import fits
 import numpy as np
 import astropy.units as u
-import math
+import math 
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 from astropy import visualization
@@ -11,7 +11,7 @@ from scipy.optimize import curve_fit as cf
 from astropy.modeling import powerlaws, fitting
 from operator import add,sub,truediv
 from matplotlib import gridspec
-from astropy.table import QTable, vstack
+from astropy.table import QTable, vstack, hstack
 import radio_beam
 import sys
 
@@ -53,8 +53,11 @@ def quadratic_profile(r):
 
 def powerlaw_profile(x,a,n):
     return a*((x/pixtophysicalsize.value)**-n)
+
+def round_to_1(x):
+    return round(x, -int(math.floor(math.log10(abs(x)))))
     
-source='DSVI'
+source='DSiii'
 fielddict={'SgrB2S':1,'DSi':10,'DSii':10,'DSiii':10,'DSiv':10,'DSv':10,'DSVI':2,'DSVII':3,'DSVIII':3,'DSIX':7}
 fnum=fielddict[source]
 print(f'Source: {source}')
@@ -131,10 +134,13 @@ bmintophyssize=(np.tan(bmin)*dGC).to('AU')
 '''Can probably simplify beamarea_phys to d(np.tan(bmaj)*np.tan(bmin))'''
 beamarea_phys=trotbeam.beam_projected_area(dGC)#np.pi*bmajtophyssize*bmintophyssize
 
+pdb.set_trace()
+
 cntmbmaj=cntmbeam.major#3.629587176773e-05*u.deg
 cntmbmajtoAU=(np.tan(cntmbmaj)*dGC).to('AU')
 
 pixdict={'SgrB2S':(73,54),'DSi':(36,42),'DSii':(22,24),'DSiii':(24,24),'DSiv':(32,31),'DSv':(19,19),'DSVI':(62,62),'DSVII':(75,75),'DSVIII':(50,50),'DSIX':(34,35)}#y,x; DSiii was 24,24
+sgrb2scentralpix=(66,70)
 #SgrB2S tpeak is 73,54
 #nh2dict={'DSiii':(27,27)}
 #ntotdict={'SgrB2S':(63,71)'}
@@ -171,7 +177,6 @@ nh2inradius=[]
 lumsinradius=[]
 massinradius=[]
 ntotsinradius=[]
-
 lookformax=[]
 
 yy,xx=np.indices(texmapdata.shape)
@@ -180,7 +185,9 @@ mask=rr<r
 
 yy2,xx2=np.indices(smooth_trot.shape)
 rr2=((xx2-texpeakpix[1])**2+(yy2-texpeakpix[0])**2)**0.5
+S_rr=((xx2-sgrb2scentralpix[1])**2+(yy2-sgrb2scentralpix[0])**2)**0.5
 mask2=rr2<r
+S_mask=S_rr<r
 
 centrtopix=(rr[mask]*pixtophysicalsize).value
 yinradius=rr[0]
@@ -198,6 +205,9 @@ ntotsinradius=ntots[rr2<r].value
 massinradius=h2mass[rr2<r].value#(nh2s[rr<r]*mu*beamarea_phys).to('solMass').value
 masserrinradius=h2masserr[rr2<r].value#(nh2s_error[rr<r]*mu*beamarea_phys).to('solMass').value
 
+S_massinradius=h2mass[S_rr<r].value
+S_masserrinradius=h2masserr[S_rr<r].value
+
 #pdb.set_trace()
 
 lookformax=texmapdata[rr<10**0.5].value
@@ -211,6 +221,7 @@ listordered_centrtopix.sort()
 
 avglist=[]
 radialdensitylist=[]
+err_radialdens=[]
 mrcubedlist=[]
 avgtexlist=[]
 avgtexerrlist=[]
@@ -232,6 +243,7 @@ for bin in listordered_centrtopix:
     temptexerr=[]
     tempinvsig=[]
     massesinterior=[]
+    masserrinterior=[]
     tempmasserr=[]
     for data in teststack:
         #print(f'Bin: {bin} AU')
@@ -253,6 +265,7 @@ for bin in listordered_centrtopix:
                     tempsnr.append(truesnr)
         if bin >= data[0]:
             massesinterior.append(data[1])
+            masserrinterior.append(data[8])
         else:
             pass
     if len(tempmass)==0:
@@ -260,9 +273,16 @@ for bin in listordered_centrtopix:
     else:
         avg=np.average(tempmass,weights=tempmasssnr)
         massinbin=np.nansum(tempmass)*u.solMass
+        masserrinbin=np.sqrt(np.sum(np.square(tempmasserr)))
         binvolume=(4/3)*np.pi*(bin*u.AU)**3
-        rawdensityinbin=massinbin/binvolume
+
+        massinteriorsum=np.nansum(massesinterior)*u.solMass
+        masserrinteriorsum=np.sqrt(np.nansum(np.square(masserrinterior)))*u.solMass
+        rawdensityinbin=massinteriorsum/binvolume
+        err_binrawdensity=np.sqrt(masserrinteriorsum/binvolume)**2#np.sqrt(binvolume**-1*masserrinbin*u.solMass)**2
         numberdensityinbin=(rawdensityinbin/mu).to('cm-3')
+        err_binnumberdensity=(np.sqrt(mu**-1*err_binrawdensity)**2).to('cm-3')
+
         mrcubed=((massinbin/mu).to(''))/((bin*u.AU).to('cm'))**3
         avgtex=np.average(temptex,weights=tempsnr)
         avgtexerr=np.sqrt(np.sum(np.square(temptexerr)))#np.average(temptexerr)
@@ -271,15 +291,14 @@ for bin in listordered_centrtopix:
         tempmaxtex=np.nanmax(temptex)
         tempmintex=np.nanmin(temptex)
 
-        massinteriorsum=np.nansum(massesinterior)
-        if massinteriorsum >= 0.5*totalmass:
+        if avgtex<=150:#massinteriorsum >= 0.5*totalmass:
             if edge == None:
-                if source == 'DSii' or source == 'DSVI':
-                    sanitycheckmass=massinteriorsum
-                    localminmass=True
-                else:
-                    edge=bin
-                    sanitycheckmass=massinteriorsum
+                #if source == 'DSii' or source == 'DSVI':
+                #    sanitycheckmass=massinteriorsum
+                #    localminmass=True
+                #else:
+                edge=bin
+                sanitycheckmass=massinteriorsum
             else:
                 pass
         else:
@@ -293,6 +312,7 @@ for bin in listordered_centrtopix:
         radialmintex.append(tempmintex)
         radialdensitylist.append(numberdensityinbin.value)
         mrcubedlist.append(mrcubed.value)
+        err_radialdens.append(err_binnumberdensity.value)
     #pdb.set_trace()
 
 if localminmass == True:
@@ -358,7 +378,9 @@ else:
     inputamp=100
 
 fitter=fitting.LevMarLSQFitter()
+fitter2=fitting.LevMarLSQFitter()
 base_bpl=powerlaws.BrokenPowerLaw1D(amplitude=inputamp,x_break=1000,alpha_1=-1,alpha_2=bpl_alpha2_initialguess[source])#lowerbound_initialguess[source])#amp=150,xbreak=1500 for ds7
+base_spl=powerlaws.PowerLaw1D(amplitude=np.mean(radialdensitylist[1:]))
 
 if source=='DSIX':
     innerradius=9
@@ -380,10 +402,20 @@ radiustofit=listordered_centrtopix[innerradius:outerradius]
 textofit=avgtexlist[innerradius:outerradius]
 texerrtofit=avgtexerrlist[innerradius:outerradius]
 weightstofit=avginversesigma[innerradius:outerradius]
+denstofit=radialdensitylist[innerradius:outerradius]#[innerradius:outerradius]
+densweightstofit=1/(np.array(err_radialdens[innerradius:outerradius]))
 
 popt,pcov=cf(powerlaw_profile,radiustofit,textofit,sigma=texerrtofit,bounds=([0,lowerbound_initialguess[source]],[1000,1.25]))#[1:197] for ds4 (some nans may be present further out),[5:] for ds7, [9:] for ds9
 fit_pl=fitter(base_bpl,radiustofit,textofit,weights=weightstofit)
 perr=np.sqrt(np.diag(fitter.fit_info['param_cov']))
+
+if source == 'DSiv':
+    fit_dens=fitter2(base_spl,radiustofit[:(len(radiustofit)-1)],denstofit[:(len(radiustofit)-1)],weights=densweightstofit[:(len(radiustofit)-1)])
+else:
+    fit_dens=fitter2(base_spl,radiustofit,denstofit,weights=densweightstofit)
+derr=np.sqrt(np.diag(fitter2.fit_info['param_cov']))
+
+#pdb.set_trace()
 
 print(f'Sum: {masssum} +/- {propmasserr} Msun')
 print(f'Core radius: {edge} +/- {cntmbmajtoAU}')
@@ -433,6 +465,7 @@ plt.show()
 
 plt.close()
 '''
+'''
 ax=plt.subplot(111)
 plt.scatter(centrtopix,texinradius,s=snrsinradius,c=abundinradius,norm=mpl.colors.LogNorm(),cmap='viridis')#,alpha=0.7)
 
@@ -457,19 +490,64 @@ figsavepath=figpath+f'radialtexdiag_r{r}px_rphys{int(pixtophysicalsize.value)}AU
 plt.savefig(figsavepath,bbox_inches='tight',overwrite=True)
 
 plt.show()
+'''
+sourcenamesfortable={'SgrB2S':'SgrB2S','DSi':'DS1','DSii':'DS2','DSiii':'DS3','DSiv':'DS4','DSv':'DS5','DSVI':'DS6','DSVII':'DS7','DSVIII':'DS8','DSIX':'DS9'}
 
+densalpha=fit_dens.alpha.value
+errdensalpha=round_to_1(derr[2])
+onlydens=True
 plt.figure()
 if source == 'DSiv':
-    plt.plot(listordered_centrtopix,radialdensitylist)
-    plt.axvline(edge,ls='--')
+    plt.errorbar(listordered_centrtopix,radialdensitylist,yerr=err_radialdens,label='Data')
+    plt.plot(listordered_centrtopix,fit_dens(listordered_centrtopix),label=f'$p$={round(densalpha,(len(str(errdensalpha))-2))} \u00B1 {errdensalpha}',zorder=5)
+    plt.axvline(edge,ls='--',label='$R_{150}$',color='black')
     plt.yscale('log')
+    plt.xlabel('$r$ (AU)',fontsize=14)
+    plt.ylabel('$n$ (cm$^{-3}$)',fontsize=14)
+    plt.legend()
     plt.show()
 
 else:
-    plt.plot(listordered_centrtopix,radialdensitylist)
-    plt.axvline(edge,ls='--')
+    plt.errorbar(listordered_centrtopix,radialdensitylist,yerr=err_radialdens,label='Data')
+    plt.plot(listordered_centrtopix,fit_dens(listordered_centrtopix),label=f'$p$={round(densalpha,(len(str(errdensalpha))-2))} \u00B1 {errdensalpha}',zorder=5)
+    plt.axvline(edge,ls='--',label='$R_{150}$',color='black')
     plt.yscale('log')
+    plt.xlabel('$r$ (AU)',fontsize=14)
+    plt.ylabel('$n$ (cm$^{-3}$)',fontsize=14)
+    plt.legend()
+
+    densplotpath=figpath+'densityprofile_may3.png'
+    print(f'\nSaving to {densplotpath}')
+    plt.savefig(densplotpath,overwrite=True)
     plt.show()
+
+densityslopepath='densityslopes.fits'
+if onlydens:
+    if os.path.exists(densityslopepath):
+        dtable=QTable.read(densityslopepath)
+        if densalpha in dtable['density_alpha']:
+            print(f'alpha value {densalpha} already exists in table.')
+        else:
+            print(f'Appending alpha {densalpha} +/- {errdensalpha} to table.')
+            densalpha=[densalpha,errdensalpha]
+            preinsert=QTable(rows=[densalpha],names=['density_alpha','err_densityalpha'])
+            densstack=vstack([dtable,preinsert])
+            print('Appending complete.')
+            #pdb.set_trace()
+            print(f'Saving to {densityslopepath}')
+            densstack.write(densityslopepath,overwrite=True)
+            print('Done')
+        sys.exit()
+    else:
+        print('No density table found')
+        print('Creating density table')
+        densalpha=[densalpha,errdensalpha]
+        dtable=QTable(rows=[densalpha],names=['density_alpha','err_densityalpha'])
+        print('Table created')
+        print(f'Writing to {densityslopepath}')
+        dtable.write(densityslopepath)
+        print('Done')
+        sys.exit()
 
 #pdb.set_trace()
 
@@ -655,8 +733,7 @@ if onlypowerlaw:
 else:
     pass
 
-sourcenamesfortable={'SgrB2S':'SgrB2S','DSi':'DS1','DSii':'DS2','DSiii':'DS3','DSiv':'DS4','DSv':'DS5','DSVI':'DS6','DSVII':'DS7','DSVIII':'DS8','DSIX':'DS9'}
-sumtablepath='hotcoresummarytable_postreprojsmooth.fits'
+sumtablepath='hotcoresummarytable_postreprojsmooth_t150radius.fits'
 if os.path.exists(sumtablepath):
     print('\nUpdating summary table with new values')
     sumtable=QTable.read(sumtablepath)

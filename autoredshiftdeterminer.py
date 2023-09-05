@@ -34,10 +34,10 @@ R_i=1
 kappa=((2*b_0)-a_0-c_0)/(a_0-c_0)
 f=1
 
-source='DSVIII'
+source='DSIX'
 print(f'Source: {source}\n')
 
-filesdict={'SgrB2S':'/blue/adamginsburg/d.jeff/SgrB2DSminicubes/SgrB2S/OctReimage_K/*.fits','DSi':"/blue/adamginsburg/d.jeff/SgrB2DSminicubes/DSi/field10originals_K/*.fits",'DSii':"/blue/adamginsburg/d.jeff/SgrB2DSminicubes/DSii/field10originals_K/*.fits",'DSiii':"/blue/adamginsburg/d.jeff/SgrB2DSminicubes/DSiii/field10originals_K/*.fits",'DSiv':"/blue/adamginsburg/d.jeff/SgrB2DSminicubes/DSiv/field10originals_K/*.fits",'DSv':"/blue/adamginsburg/d.jeff/SgrB2DSminicubes/DSv/field10originals_K/*.fits",'DSVI':"/blue/adamginsburg/d.jeff/SgrB2DSminicubes/DSVI/field2originals_K/*.fits",'DSVII':"/blue/adamginsburg/d.jeff/SgrB2DSminicubes/DSVII/field3originals_K/*.fits",'DSVIII':"/blue/adamginsburg/d.jeff/SgrB2DSminicubes/DSVIII/field3originals_K/*.fits"}
+filesdict={'SgrB2S':'/blue/adamginsburg/d.jeff/SgrB2DSminicubes/SgrB2S/OctReimage_K/*.fits','DSi':"/blue/adamginsburg/d.jeff/SgrB2DSminicubes/DSi/field10originals_K/*.fits",'DSii':"/blue/adamginsburg/d.jeff/SgrB2DSminicubes/DSii/field10originals_K/*.fits",'DSiii':"/blue/adamginsburg/d.jeff/SgrB2DSminicubes/DSiii/field10originals_K/*.fits",'DSiv':"/blue/adamginsburg/d.jeff/SgrB2DSminicubes/DSiv/field10originals_K/*.fits",'DSv':"/blue/adamginsburg/d.jeff/SgrB2DSminicubes/DSv/field10originals_K/*.fits",'DSVI':"/blue/adamginsburg/d.jeff/SgrB2DSminicubes/DSVI/field2originals_K/*.fits",'DSVII':"/blue/adamginsburg/d.jeff/SgrB2DSminicubes/DSVII/field3originals_K/*.fits",'DSVIII':"/blue/adamginsburg/d.jeff/SgrB2DSminicubes/DSVIII/field3originals_K/*.fits",'DSIX':"/blue/adamginsburg/d.jeff/SgrB2DSminicubes/DSIX/field7originals_K/*.fits"}
 #files=glob.glob('/blue/adamginsburg/d.jeff/SgrB2DSstatcontfix/field10originals/*.fits')
 #files=glob.glob('/blue/adamginsburg/d.jeff/SgrB2DSminicubes/SgrB2S/OctReimage_K/*.fits')
 files=glob.glob(filesdict[source])
@@ -51,7 +51,8 @@ files=glob.glob(filesdict[source])
 #z=0.000234806#<<<avg of the two to the left#0.000236254#0.0002333587 SgrB2S
 #z=0.0001683701460060292#DSVI test
 #z=0.00016375916278648755#DSVII test
-z=0.0001661546432045067#DSVIII test
+#z=0.0001661546432045067#DSVIII test
+z=0.00015453732389175085#DS9 test
 imgnames=['spw0','spw1','spw2','spw3']
 
 datacubes=[]
@@ -177,8 +178,8 @@ def kkms(beams,data):
         #intensitylist.append(velflux_T)
     return t_bright
     
-imgnum=0#1#0
-testline=4#13#11,4
+imgnum=1#1#0
+testline=13#13#11,4
 print('Getting ready - '+imgnames[imgnum])
 cube=sc.read(datacubes[imgnum])
 
@@ -189,7 +190,7 @@ if 'medsub' or '_line' in datacubes[imgnum]:
 else:
     contsub=False
 
-worldcrddict={'SgrB2S':[[0,0,0],[2.66835339e+02, -2.83961660e+01, 0]],'DSi':[[0,0,0],[266.8316149,-28.3972040,0]],'DSii':[[0,0,0],[266.8335363,-28.3963158,0]],'DSiii':[[0,0,0],[266.8332758,-28.3969269,0]],'DSiv':[[0,0,0],[266.8323834, -28.3954424,0]],'DSv':[[0,0,0],[266.8321331, -28.3976585, 0]],'DSVI':[[0,0,0],[266.8380037, -28.4050741,0]],'DSVII':[[0,0,0],[266.8426074, -28.4094401,0]],'DSVIII':[[0,0,0],[266.8418408, -28.4118242, 0]]}
+worldcrddict={'SgrB2S':[[0,0,0],[2.66835339e+02, -2.83961660e+01, 0]],'DSi':[[0,0,0],[266.8316149,-28.3972040,0]],'DSii':[[0,0,0],[266.8335363,-28.3963158,0]],'DSiii':[[0,0,0],[266.8332758,-28.3969269,0]],'DSiv':[[0,0,0],[266.8323834, -28.3954424,0]],'DSv':[[0,0,0],[266.8321331, -28.3976585, 0]],'DSVI':[[0,0,0],[266.8380037, -28.4050741,0]],'DSVII':[[0,0,0],[266.8426074, -28.4094401,0]],'DSVIII':[[0,0,0],[266.8418408, -28.4118242, 0]],'DSIX':[[0,0,0],[266.8477371, -28.4311386,0]]}
 targetworldcrd=worldcrddict[source]#[[0,0,0],[266.8335363,-28.3963158,0]]#DSii sample pixel
 #targetworldcrd=[[0,0,0],[266.8316149,-28.3972040,0]]#DSi
 #targetworldcrd=[[0,0,0],[266.8321311,-28.3976633,0]]#DSv

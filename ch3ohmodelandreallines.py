@@ -13,7 +13,7 @@ import regions
 import math
 
 plt.close('all')
-files=glob.glob('/ufrc/adamginsburg/d.jeff/imaging_results/*.fits')
+files=glob.glob('/blue/adamginsburg/d.jeff/imaging_results/*.fits')
 z=0.0002333587
 c=cnst.c*u.m/u.s
 k=cnst.k*u.J/u.K
