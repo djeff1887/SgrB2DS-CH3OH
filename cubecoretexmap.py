@@ -31,7 +31,7 @@ Splatalogue.QUERY_URL= 'https://splatalogue.online/c_export.php'
 print('Cube-->Core-->Tex start\n')
 print('Begin Jy/beam-to-K and region subcube conversion\n')
 
-source='DSiii'
+source='DSIX'
 print(f'Source: {source}\n')
 fields={'SgrB2S':1,'DSi':10,'DSii':10,'DSiii':10,'DSiv':10,'DSv':10,'DSVI':2,'DSVII':3,'DSVIII':3,'DSIX':7,'DS10':1,'DS11':1,'DSXI':8}
 fnum=fields[source]
@@ -184,7 +184,7 @@ Jfreqs, Jaij, Jdeg, JEU, qrot = get_molecular_parameters('CH3OH',
                                                          fmin=150*u.GHz,
                                                          fmax=300*u.GHz)
 
-dopplershifts={'SgrB2S':0.000234806,'DSi':0.0001842772437139578,'DSii':0.00016236367659115043,'DSiii':0.00017500261911843952,'DSiv':0.00018225233186845314,'DSv':0.0001838576164010067,'DSVI':0.0001661613132158407,'DSVII':0.00016320118280935546,'DSVIII':0.0001661546432045067,'DSIX':0.00015453732389175085,'DS10':0.00015794099431186572,'DS11':0.00016667684485037162,'DSX':0.00016375916278648755}#:0.000190713}/old doppler S: 0.0002306756533745274/old doppler I: 0.000186431
+dopplershifts={'SgrB2S':0.00023099669803283718,'DSi':0.00018761288466593936,'DSii':0.00016236367659115043,'DSiii':0.000176,'DSiv':0.00018225233186845314,'DSv':0.0001838576164010067,'DSVI':0.0001661613132158407,'DSVII':0.00016236727257136008,'DSVIII':0.0001661546432045067,'DSIX':0.00015787296484373237,'DS10':0.00015794099431186572,'DS11':0.00016667684485037162,'DSX':0.00016375916278648755}#:0.000190713}/old doppler S: 0.0002306756533745274/old doppler I: 0.000186431
 
 z=dopplershifts[source]
 #z=0.00017594380066803095 #SgrB2DSII?
@@ -195,7 +195,7 @@ print(f'Doppler shift: {z} / {(z*c).to("km s-1")}\n')
 print('Setting input LTE parameters')
 trotdict={'SgrB2S':300*u.K,'DSi':400*u.K,'DSii':200*u.K,'DSiii':300*u.K,'DSiv':150*u.K,'DSv':150*u.K,'DSVI':300*u.K,'DSVII':200*u.K,'DSVIII':175*u.K,'DSIX':150*u.K,'DS10':150*u.K,'DS11':100*u.K,'DSX':100*u.K}#old dsv - 1e16, 150K
 testT=trotdict[source]#500*u.K
-ntotdict={'SgrB2S':1e18*u.cm**-2,'DSi':1e18*u.cm**-2,'DSii':1e17*u.cm**-2,'DSiii':1e17*u.cm**-2,'DSiv':1e18*u.cm**-2,'DSv':1e17*u.cm**-2,'DSVI':1e17*u.cm**-2,'DSVII':1e16*u.cm**-2,'DSVIII':1e16*u.cm**-2,'DSIX':1e16*u.cm**-2,'DS10':1e16*u.cm**-2,'DS11':1e16*u.cm**-2,'DSX':1e15*u.cm**-2}
+ntotdict={'SgrB2S':1e18*u.cm**-2,'DSi':1e18*u.cm**-2,'DSii':1e17*u.cm**-2,'DSiii':1e17*u.cm**-2,'DSiv':1e18*u.cm**-2,'DSv':1e17*u.cm**-2,'DSVI':1e18*u.cm**-2,'DSVII':1e17*u.cm**-2,'DSVIII':1e17*u.cm**-2,'DSIX':1e17*u.cm**-2,'DS10':1e16*u.cm**-2,'DS11':1e16*u.cm**-2,'DSX':1e15*u.cm**-2}
 testntot=ntotdict[source]
 print(f'Input Tex: {testT}\nInput Ntot: {testntot}')
     
@@ -544,12 +544,12 @@ stdhome=stdhomedict[fnum]
 
 #cubemaskarray=maskeddatacube.get_mask_array()
 
-sourcelocs={'SgrB2S':'/lateaug2023corrected/','DSi':'/lateaug2023corrected/','DSii':'/lateaug2023corrected_real_removecontaminants/','DSiii':'/sep2023phi_nu&doublet/','DSiv':'/lateaug2023corrected/','DSv':f'/lateaug2023corrected/','DSVI':'/aug2023qrotfix/','DSVII':f'/aug2023qrotfix/','DSVIII':f'/aug2023qrotfix/','DSIX':f'/aug2023qrotfix/','DS10':'/march2023discovery_5kmslw/','DS11':f'/march2023discovery_5kmslw_{int(testT.value)}K/','DSX':f'/Kfield7originals_{int(testT.value)}K_trial1_noexclusions/'}#'/Kfield10originals_trial7_field10errors_newexclusion_matchslabwidthtorep/'
+sourcelocs={'SgrB2S':'/sep2023-5removelasttorsionalline/','DSi':'/sep2023-5addvt2linesbackin/','DSii':'/sep2023-2widerrefslab/','DSiii':'/sep2023-3vt2doublet/','DSiv':'/sep2023-4nextinline/','DSv':f'/sep2023phi_nu&doublet/','DSVI':'/sep2023-2removenewvt1line/','DSVII':f'/sep2023phi_nu&doublet/','DSVIII':f'/sep2023phi_nu&doublet/','DSIX':f'/sep2023phi_nu&doublet/'}#,'DS10':'/march2023discovery_5kmslw/','DS11':f'/march2023discovery_5kmslw_{int(testT.value)}K/','DSX':f'/Kfield7originals_{int(testT.value)}K_trial1_noexclusions/'}#'/Kfield10originals_trial7_field10errors_newexclusion_matchslabwidthtorep/'
 
 origsourcelocs={'SgrB2S':'/new_testingstdfixandontheflyrepstuff_K_OctReimage_restfreqfix_newvelmask_newpeakamp/','DSi':'/Kfield10originals_trial7_field10errors_newexclusion_matchslabwidthtorep/','DSii':'/Kfield10originals_noexclusions/','DSiii':'/Kfield10originals_noexclusions/','DSiv':'/Kfield10originals_noexclusions/','DSv':f'/Kfield10originals_noexclusions_include4-3_150K_trial2/','DSVI':'/Kfield2originals_trial3_8_6-8_7excluded/','DSVII':f'/Kfield3originals_{int(testT.value)}K_trial1_noexclusions/','DSVIII':f'/Kfield3originals_{int(testT.value)}K_trial1_noexclusions/','DSIX':f'/Kfield7originals_{int(testT.value)}K_trial1_noexclusions/','DSX':f'/Kfield7originals_{int(testT.value)}K_trial1_noexclusions/'}#
 
 representativelines={'SgrB2S':'20_1-20_0vt=0','DSi':'8_1-7_0vt=0','DSii':'8_1-7_0vt=0','DSiii':'10_2--9_3-vt=0','DSiv':'20_1-20_0vt=0','DSv':'8_1-7_0vt=0','DSVI':'8_1-7_0vt=0','DSVII':'8_1-7_0vt=0','DSVIII':'8_1-7_0vt=0','DSIX':'8_1-7_0vt=0','DS10':'10_2--9_3-vt=0','DS11':'8_1-7_0vt=0','DSX':'8_1-7_0vt=0'}#oldS 4_2-3_1vt=0
-representativelws={'SgrB2S':(10*u.km/u.s),'DSi':(3*u.km/u.s),'DSii':(3*u.km/u.s),'DSiii':(3*u.km/u.s),'DSiv':(4*u.km/u.s),'DSv':(4*u.km/u.s),'DSVI':(3*u.km/u.s),'DSVII':(2.5*u.km/u.s),'DSVIII':(2.5*u.km/u.s),'DSIX':(5*u.km/u.s),'DS10':(5*u.km/u.s),'DS11':(5*u.km/u.s),'DSX':(4*u.km/u.s)}#{'SgrB2S':8*u.MHz,'DSi':3.6*u.MHz}#11MHz for ~10 km/s
+representativelws={'SgrB2S':(6*u.km/u.s),'DSi':(3*u.km/u.s),'DSii':(4*u.km/u.s),'DSiii':(3*u.km/u.s),'DSiv':(5*u.km/u.s),'DSv':(4*u.km/u.s),'DSVI':(3*u.km/u.s),'DSVII':(2.5*u.km/u.s),'DSVIII':(2.5*u.km/u.s),'DSIX':(5*u.km/u.s),'DS10':(5*u.km/u.s),'DS11':(5*u.km/u.s),'DSX':(4*u.km/u.s)}#{'SgrB2S':8*u.MHz,'DSi':3.6*u.MHz}#11MHz for ~10 km/s
 representativecubes={'SgrB2S':0,'DSi':1,'DSii':1,'DSiii':2,'DSiv':0,'DSv':1,'DSVI':1,'DSVII':1,'DSVIII':1,'DSIX':1,'DS10':2,'DS11':1,'DSX':1}#spwnumber
 
 sourcepath=f'/blue/adamginsburg/d.jeff/SgrB2DSreorg/field{fnum}/CH3OH/{source}/'+sourcelocs[source]
@@ -651,9 +651,9 @@ masterfluxes=[]
 masterbeams=[]
 masterstddevs=[]
 
-doublet=['15_6+-16_5+vt1','15_6--16_5-vt1']
+doublet=['15_6+-16_5+vt1','15_6--16_5-vt1','13_3--14_4-vt2','13_3+-14_4+vt2']
 
-excludedlines={'SgrB2S':['7_6-7_7E1vt1','14_6-14_7E1vt1','11_6-11_7E1vt1','15_6-15_7E1vt1','9_6-9_7E1vt1','13_6-13_7E1vt1','12_6-12_7E1vt1','8_6-8_7E1vt1'],'DSi':['11_6-11_7E1vt1','25_3-24_4E1vt0','14_6-14_7E1vt1','7_6-7_7E1vt1','13_3--14_4-vt2','13_3+-14_4+vt2','15_6-15_7E1vt1','16_6-16_7E1vt1'],'DSii':['7_6-7_7E1vt1','9_6-9_7E1vt1','14_6-14_7E1vt1','10_6-10_7E1vt1','13_6-13_7E1vt1','11_6-11_7E1vt1','23_5-22_6E1vt0'],'DSiii':'','DSiv':'','DSv':'','DSVI':["6_1--7_2-vt1",'14_6-14_7E1vt1','10_6-10_7E1vt1','9_6-9_7E1vt1','11_6-11_7E1vt1','13_6-13_7E1vt1','12_6-12_7E1vt1','13_3--14_4-vt2','13_3+-14_4+vt2','7_6-7_7E1vt1','16_6-16_7E1vt1','8_6-8_7E1vt1'],'DSVII':'','DSVIII':'','DSIX':'','DS10':'','DS11':'','DSX':''}
+excludedlines={'SgrB2S':['7_6-7_7E1vt1','14_6-14_7E1vt1','11_6-11_7E1vt1','15_6-15_7E1vt1','9_6-9_7E1vt1','13_6-13_7E1vt1','12_6-12_7E1vt1','8_6-8_7E1vt1','16_6-16_7E1vt1','10_6-10_7E1vt1'],'DSi':['11_6-11_7E1vt1','25_3-24_4E1vt0','23_5-22_6E1vt0','14_6-14_7E1vt1','7_6-7_7E1vt1','15_6-15_7E1vt1','16_6-16_7E1vt1','9_6-9_7E1vt1','10_6-10_7E1vt1','11_6-11_7E1vt1','12_6-12_7E1vt1','13_6-13_7E1vt1'],'DSii':['7_6-7_7E1vt1','9_6-9_7E1vt1','14_6-14_7E1vt1','10_6-10_7E1vt1','13_6-13_7E1vt1','11_6-11_7E1vt1','23_5-22_6E1vt0'],'DSiii':'','DSiv':['8_6-8_7E1vt1','7_6-7_7E1vt1','9_6-9_7E1vt1','10_6-10_7E1vt1','11_6-11_7E1vt1','12_6-12_7E1vt1','13_6-13_7E1vt1','14_6-14_7E1vt1','6_1--7_2-vt1'],'DSv':'','DSVI':["6_1--7_2-vt1",'14_6-14_7E1vt1','10_6-10_7E1vt1','9_6-9_7E1vt1','11_6-11_7E1vt1','13_6-13_7E1vt1','12_6-12_7E1vt1','13_3--14_4-vt2','13_3+-14_4+vt2','7_6-7_7E1vt1','16_6-16_7E1vt1','8_6-8_7E1vt1','17_6-17_7E1vt1'],'DSVII':["6_1--7_2-vt1"],'DSVIII':'','DSIX':'','DS10':'','DS11':'','DSX':''}
 restfreq_representativeline={'SgrB2S':217.88650400*u.GHz,'DSi':220.07856100*u.GHz,'DSii':220.07856100*u.GHz,'DSiii':231.28111000*u.GHz,'DSiv':217.88650400*u.GHz,'DSv':220.07856100*u.GHz,'DSVI':220.07856100*u.GHz,'DSVII':220.07856100*u.GHz,'DSVIII':220.07856100*u.GHz,'DSIX':220.07856100*u.GHz,'DS10':231.28111000*u.GHz,'DS11':220.07856100*u.GHz,'DSX':220.07856100*u.GHz}#All taken from Splatalogue;  oldS 218.44006300
 representative_filename_base=sourcepath+representativelines[source]+'repline_'
 rep_mom1=representative_filename_base+'mom1.fits'

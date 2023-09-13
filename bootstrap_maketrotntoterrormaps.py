@@ -56,7 +56,7 @@ fnum=fielddict[source]
 
 base=f'/blue/adamginsburg/d.jeff/SgrB2DSreorg/field{fnum}/CH3OH/{source}'
 
-sourcedict={'SgrB2S':'/aug2023qrotfix/','DSi':'/aug2023qrotfix/','DSii':'/aug2023qrotfix/','DSiii':'/aug2023qrotfix/','DSiv':'/aug2023qrotfix/','DSv':f'/aug2023qrotfix/','DSVI':'/aug2023qrotfix/','DSVII':f'/aug2023qrotfix/','DSVIII':f'/aug2023qrotfix/','DSIX':f'/aug2023qrotfix/'}
+sourcedict={'SgrB2S':'/sep2023-5removelasttorsionalline/','DSi':'/sep2023-5addvt2linesbackin/','DSii':'/sep2023-2widerrefslab/','DSiii':'/sep2023-3vt2doublet/','DSiv':'/sep2023-4nextinline/','DSv':f'/sep2023phi_nu&doublet/','DSVI':'/sep2023-2removenewvt1line/','DSVII':f'/sep2023phi_nu&doublet/','DSVIII':f'/sep2023phi_nu&doublet/','DSIX':f'/sep2023phi_nu&doublet/'}
 
 sourcepath=sourcedict[source]
 
@@ -110,11 +110,6 @@ for master in range(len(allmaster[:,0])):
     
 testzshape=len(mastereuks)
 
-#ypix=61#int(input('y coord:'))
-#xpix=64#int(input('x coord:'))
-#pixel=(ypix,xpix)
-#pixellist=list([pixel])
-
 for y in np.arange(testyshape):
     print(f'Begin row: {y}')
     for x in np.arange(testxshape):
@@ -159,17 +154,6 @@ for y in np.arange(testyshape):
             for nup,nup_error in zip(nupperstofit,nuperrors):#,nuperrors,eukstofit,qnsfitted):
                 #pdb.set_trace()
                 templog10=nup_error/nup
-                '''
-                if templog10 == 1:
-                print(f'Excluded line detected, log10(N/S)={templog10}')
-                print(f'Excluded line: {qnsfitted[num]}')
-                print('Removing from list of to-fit values')
-                nupperstofit.remove(originalnupperstofit[num])
-                qnsfitted.remove(qnsfitted[num])
-                eukstofit.remove(eukstofit[num])
-                #nuperrors.remove(nuperrors[num])
-                else:
-                '''
                 temperrfit=1/templog10
                 #if np.isnan(templog10) or np.isnan(temperrfit):
                 #    pdb.set_trace()
@@ -180,8 +164,6 @@ for y in np.arange(testyshape):
             fit_lin=fit(linemod,eukstofit,np.log10(nupperstofit), weights=errstofit)
             obsTrot=-np.log10(np.e)/(fit_lin.slope)
             qrot_partfunc=qrot(obsTrot)*u.dimensionless_unscaled
-            #popt,pcov=cf(line,eukstofit,np.log10(nupperstofit),sigma=errstofit)
-            #perr = np.sqrt(np.diag(pcov))
             
             bslist=[]
             for nug,euk,weight,var in zip(np.log10(nupperstofit),eukstofit,errstofit,log10variances):
@@ -228,9 +210,6 @@ for y in np.arange(testyshape):
             #obsNtot=qrot_partfunc*10**(np.log10(nugsmap[0,y,x])+fit_lin.slope*eukstofit[0])#eukstofit[0] is '5(1)-4(2)E1vt=0', eupper 55.87102 K
             altNtot=qrot_partfunc*10**(fit_lin.intercept)
             obsNtot=altNtot
-            #print(f'Alt Ntot: {altNtot}')
-        
-            #pdb.set_trace()
         
             A=np.stack((eukstofit,np.ones_like(eukstofit)),axis=1)
             C=np.diagflat(log10variances)
@@ -243,47 +222,15 @@ for y in np.arange(testyshape):
                 covmat = np.linalg.inv(atc_1a)
                 m_unc = covmat[0,0]**0.5
                 b_unc = covmat[1,1]**0.5
-            #covmat = np.linalg.inv(np.dot(np.dot(A.T, np.linalg.inv(C)), A))
-            #m_unc = covmat[0,0]**0.5
-            #b_unc = covmat[1,1]**0.5
-            #m_unccf=pcov[0,0]**0.5
-            #b_unccf=pcov[1,1]**0.5
         
-            dobsTrot=np.abs(m_unc/fit_lin.slope)*obsTrot*u.K#(eukstofit[0]*u.K)/(np.log(nupperstofit[0]/masterdegens[0])-np.log(obsNtot/qrot_partfunc))**2#*nuperrors[0]
-            dobsNtot=np.sqrt((qrot_partfunc*10**(fit_lin.intercept)*np.log(10)*b_unc)**2)*u.cm**-2#np.sqrt((qrot_partfunc*10**(np.log10(nugsmap[0,y,x])+fit_lin.slope*eukstofit[0])*np.log(10)*eukstofit[0]*m_unc)**2+(qrot_partfunc*10**(np.log10(nugsmap[0,y,x])+fit_lin.slope*eukstofit[0])*(1/(nugsmap[0,y,x]*np.log(10)))*nuperrors[0])**2)*u.cm**-2
-            #print(f'dobsNtot: {dobsNtot.to("cm-2")}')
-            #print(f'Ntot S/N: {obsNtot/dobsNtot.value}\n')
+            dobsTrot=np.abs(m_unc/fit_lin.slope)*obsTrot*u.K
+            dobsNtot=np.sqrt((qrot_partfunc*10**(fit_lin.intercept)*np.log(10)*b_unc)**2)*u.cm**-2
             snr=obsNtot/bootNstd#dobsNtot
         
             texmap[y,x]=obsTrot
             ntotmap[y,x]=obsNtot
-            texerrormap[y,x]=bootTstd#dobsTrot.to('K').value
+            texerrormap[y,x]=bootTstd
             ntoterrormap[y,x]=bootNstd
-            '''
-            plt.clf()
-            print('Begin plotting')
-            tk='$T_{rot}$'
-            ntot='log$_{10}(N_{tot})$'
-            cm2='cm$^{-2}$'
-            #strdobsntot=str(dobsNtot.value)[0]
-            val_dntot=round((np.log10(bootNstd)/np.log10(obsNtot.value)),2)
-            val_ntot=round(np.log10(obsNtot.value),2)#round((obsNtot.value/(1*10**int(np.log10(obsNtot.value)))),(len(str(round(snr.value)))-1))
-            
-            plt.errorbar(eukstofit,np.log10(nupperstofit),yerr=log10nuerr,fmt='o')
-            plt.plot(linemod_euks,fit_lin(linemod_euks),label=(f'{tk}: {round(obsTrot, 2)} $\pm$ {round(bootTstd,2)} K\n{ntot}: {val_ntot} $\pm$ {val_dntot} '))
-            #plt.errorbar(eukstofit,np.log10(nupperstofit),yerr=log10nuerr,fmt='o')
-            #plt.plot(linemod_euks,fit_lin(linemod_euks),label=(f'obsTex: {round(obsTrot, 4)} $\pm$ {round(dobsTrot.value, 2)*u.K}\nobsNtot: {round(obsNtot.value,3)/u.cm**2}'))
-            for linmod in bootlines:
-                plt.plot(linemod_euks,linmod(linemod_euks),color='black',ls='--',alpha=0.01,zorder=0)
-            #plt.scatter(excludedeuks,np.log10(excludednuppers),marker='v',color='red')
-            #plt.title(f'field{fnum} {source} pixel ({y},{x}) CH$_3$OH Rotational Diagram')
-            plt.xlabel(r'E$_u$ (K)')
-            plt.ylabel(r'log$_{10}$(N$_u$/g$_u$)')
-            plt.legend()
-            plt.show()
-            print('Done.')
-            '''
-            #continue
 
 texmaphdu=fits.open(home+'texmap_3sigma_allspw_withnans_weighted.fits')
 templateheader=texmaphdu[0].header
