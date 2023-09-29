@@ -16,6 +16,9 @@ def gieser_massprofile(nin,rout,rin,p):
 
 mu=2.8*u.Dalton
 
+dataversion='sep2023revolution'#homedict[source].replace('/','')
+datadir=f'/blue/adamginsburg/d.jeff/imaging_results/SgrB2DS-CH3OH/{dataversion}/'
+
 names=['WB 89789 SMM1','W51 e2e','IRAS 23O33 1', 'IRAS 23033 2', 'IRAS 23033 3', 'IRAS 23151 1','IRAS 23385 1','IRAS 23385 2','AFGL 2591 1','CepA HW2 1', 'CepA HW2 2','G084.95505 1','G094.6028 1','G100.38 1', 'G108.75 1', 'G108.75 2', 'G075.78 1','IRAS 21078 1', 'IRAS 21078 2', 'NGC 7538 IRS9 1', 'S87 IRS1 1', 'W3 H2O 3', 'W3 H2O 4', 'W3 IRS4 1']
 wbsmm1trot=[245]*u.K
 w51trot=[575,390,435]*u.K#e2e,north,e8e, Goddi+2020
@@ -69,7 +72,7 @@ percentdiff=np.abs((np.array(coremasses)-np.array(eta150_fullmasses))/(np.array(
 avg_ratio=np.mean(percentdiff)
 print(f'Average percent difference between scaled and eta150 masses: {avg_ratio}')
 
-comptable=Table.read('contsanitycheck_t180_compositedensitytable.fits')
+comptable=Table.read(datadir+'densabunpowersummarytable.fits')
 dsmasses=np.array(comptable['H_2 Mass'])#list(comptable[4])[1:])
 errormass=np.array(comptable['H_2 Mass error'])#list(comptable[5])[1:])#list(comptable[5])[1:]
 lums=np.array(comptable['Luminosity'])#list(comptable[6])[1:]
@@ -155,7 +158,7 @@ plt.yscale('log')
 plt.ylabel('T$_{peak}$ (K)',fontsize=14)
 plt.xlabel('M$_{core}$ (M$_\odot$)',fontsize=14)
 plt.legend()
-plt.savefig(savefigpath+'contfix_tempvsmass.png')
+plt.savefig(savefigpath+f'{dataversion}_tempvsmass.png')
 plt.show()
 
 firstline=True
@@ -175,7 +178,7 @@ plt.yscale('log')
 plt.xlabel('M$_{core}$ (M$_\odot$)',fontsize=14)
 plt.ylabel('$R_{core}$ (AU)',fontsize=14)
 plt.legend()
-plt.savefig(savefigpath+'contfix_radiusvsmass_lines.png')
+plt.savefig(savefigpath+f'{dataversion}_radiusvsmass_lines.png')
 plt.show()
 
 plt.figure()
@@ -195,7 +198,7 @@ plt.xlabel('M$_{core}$ (M$_\odot$)',fontsize=14)
 plt.ylabel('$p$',fontsize=14)
 plt.xscale('log')
 plt.legend()
-plt.savefig(savefigpath+'contfix_densityindexvsmass.png')
+plt.savefig(savefigpath+f'{dataversion}_densityindexvsmass.png')
 plt.show()
 
 plt.figure()
@@ -204,7 +207,7 @@ plt.hist(dsdensindex,label='DS Hot Cores')
 plt.xlabel('$p$',fontsize=14)
 plt.ylabel('Counts',fontsize=14)
 plt.legend()
-plt.savefig(savefigpath+'contfix_densityindexhistogram.png')
+plt.savefig(savefigpath+f'{dataversion}_densityindexhistogram.png')
 plt.show()
 
 plt.figure()
@@ -214,7 +217,7 @@ plt.errorbar(dsradii,dsdensindex,yerr=err_dstempindices,fmt=dsfmt,label='DS Hot 
 plt.xlabel('$R_{core}$ (AU)')
 plt.ylabel('$p$')
 plt.legend()
-plt.savefig(savefigpath+'contfix_densityindexvsradius.png')
+plt.savefig(savefigpath+f'{dataversion}_densityindexvsradius.png')
 plt.show()
 
 plt.figure()
@@ -224,21 +227,20 @@ plt.errorbar(coreradii.value,coretrots.value,yerr=trotcore_errs.value,fmt=corefm
 plt.errorbar(dsradii,temps,yerr=errortemps,fmt=dsfmt,label='DS Hot Cores')
 plt.xscale('log')
 plt.yscale('log')
-plt.xlabel('R_{core} (AU)',fontsize=14)
+plt.xlabel('R$_{core}$ (AU)',fontsize=14)
 plt.ylabel('T$_{peak}$ (K)',fontsize=14)
-plt.savefig(savefigpath+'contfix_tempvsradius.png')
+plt.savefig(savefigpath+f'{dataversion}_tempvsradius.png')
 plt.legend()
-'''
+
 plt.figure()
 plt.errorbar(coretrots.value,tindices,yerr=err_tindices,xerr=trotcore_errs.value,fmt=corefmt,label='CORE catalogue')
 plt.errorbar(temps,dstempindex,yerr=err_dstempindices,xerr=errortemps,fmt=dsfmt,label='DS Hot Cores')
 plt.xlabel('T$_{peak}$ (K)',fontsize=14)
 plt.ylabel('$q$')
 plt.legend()
-plt.savefig(savefigpath+'contfix_temperatureindexvstemp.png')
+plt.savefig(savefigpath+f'{dataversion}_temperatureindexvstemp.png')
 plt.show()
-'''
-'''
+
 plt.figure()
 plt.errorbar(temps,abuns,yerr=errorabun,xerr=errortemps,fmt=dsfmt,color='red')
 plt.xlabel('T$_{peak}$ (K)',fontsize=14)
@@ -246,6 +248,6 @@ plt.ylabel('X(CH$_3$OH)$_{peak}$',fontsize=14)
 #plt.xscale('log')
 plt.yscale('log')
 #plt.legend()
-plt.savefig(savefigpath+'contfix_peakabundancevstemp.png',overwrite=True)
+plt.savefig(savefigpath+f'{dataversion}_peakabundancevstemp.png')
 plt.show()
-'''
+

@@ -1,6 +1,6 @@
 #!/bin/sh
 
-#SBATCH --job-name=SgrB2S_limitvt1    # Job name
+#SBATCH --job-name=sep2023_bootstraps    # Job name
 #SBATCH --qos=adamginsburg-b    #Allocation
                             #
 #SBATCH --mail-type=ALL          # Mail events (NONE, BEGIN, END, FAIL, ALL)

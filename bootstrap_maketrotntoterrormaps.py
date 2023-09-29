@@ -63,8 +63,7 @@ sourcepath=sourcedict[source]
 savefigbase=f'/blue/adamginsburg/d.jeff/repos/CH3OHTemps/figures/{source}'
 savefighome=savefigbase+sourcepath
 
-home=base+sourcedict[source]#origsourcepath
-#rotdiagpath=savefighome+'pixelwiserotationaldiagrams/'
+home=base+sourcedict[source]
 
 print(f'Source: {source}')
 print(f'Getting data from directory {home}')

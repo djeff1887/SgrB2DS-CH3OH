@@ -39,16 +39,10 @@ if not os.path.exists(inputtablepath):
 '''
 sumtable=Table.read(pretablepath)
 densitytable=Table.read('contsanitycheck_densityslopes_bootmasked.fits')
-#cores=np.array(['DS1','DS2','DS3','DS4','DS5','DS6','DS7','DS8','DS9','SgrB2S'])
-#cores_t=cores.reshape([10,1])
-#core_table=QTable(cores_t)
-#newdensitytable=hstack([core_table,densitytable])
-#transdensitytable=transpose_table(newdensitytable)
+
 newstack=hstack([sumtable,densitytable])
 newsumtable=Table(newstack)
-#newsumtable['Core'][18]=densitytable.keys()[0]
-#newsumtable['Core'][19]=densitytable.keys()[1]
-#newsumtable.remove_column(' ')
+
 print(newsumtable)
 pdb.set_trace()
 

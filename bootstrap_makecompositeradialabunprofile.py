@@ -111,11 +111,14 @@ def rolling_median2(data,kernel,error):
 
 linestyles = {'solid':(0, ()),'densely dashdotdotted':(0, (3, 1, 1, 1, 1, 1)),'dotted':(0, (1, 5)),'densely dotted':(0, (1, 1)),'dashed':(0, (5, 5)),'densely dashed':(0, (5, 1)),'solid2':(0, ()),'dashdotted':(0, (3, 5, 1, 5)),'densely dashdotted':  (0, (3, 1, 1, 1)),'densely dashdotdotdot':(0, (3, 1, 1, 1, 1, 1))}
 
-paths=glob.glob('*intstd_radialavgabun*.txt')
-errpaths=glob.glob('*err_intstd_avgabun.txt')
+dataversion='sep2023revolution'#homedict[source].replace('/','')
+datadir=f'/blue/adamginsburg/d.jeff/imaging_results/SgrB2DS-CH3OH/{dataversion}/'
+
+paths=glob.glob(datadir+'*radialavgabun*.txt')
+errpaths=glob.glob(datadir+'*err_avgabun.txt')
 figpath='/blue/adamginsburg/d.jeff/repos/CH3OHTemps/figures/'
 
-comptable=Table.read('contsanitycheck_t180_compositedensitytable.fits')
+comptable=Table.read(datadir+'densabunpowersummarytable.fits')
 sources=comptable['Source']
 radii=comptable['Radius']
 names={'DSi':'DS1','DSii':'DS2','DSiii':'DS3','DSiv':'DS4','DSv':'DS5','DSVI':'DS6','DSVII':'DS7','DSVIII':'DS8','DSIX':'DS9','SgrB2S':'SgrB2S'}
@@ -153,14 +156,19 @@ for src,ls in zip(names.keys(),linestyles.keys()):
             abunmed,errorabunmed=rolling_median2(radialabun,3,proferr)
             upperabun=np.array(abunmed)+np.array(errorabunmed)
             lowerabun=np.array(abunmed)-np.array(errorabunmed)
+            '''
+            if len(np.where(lowerabun < 1e-9)[0]) != 0:
+                pdb.set_trace()
+            '''
             #print(f'{names2[src]}: {medtest[:5]}')
     plt.plot(radmed,abunmed[:len(radmed)],label=f'{names2[src]}',linestyle=linestyles[ls],)#yerr=errorabunmed[:len(radmed)])
     plt.fill_between(radmed,upperabun,lowerabun,alpha=0.2,)#color='blue')
 plt.yscale('log')
 plt.xlabel('$r$ (AU)',fontsize=14)
 plt.ylabel('X(CH$_3$OH)',fontsize=14)
+plt.ylim(ymin=1e-8)
 plt.legend()
 #plt.colorbar(pad=0,label='N(H$_2$) (cm$^{-2}$)')#'T$_K$ (K)')
-figsavepath=figpath+f'radialavgabundiag_intstd_allsource_noradcut_fillbetween.pdf'
+figsavepath=figpath+f'radialavgabundiag_{dataversion}_allsource_noradcut_fillbetween.pdf'
 plt.savefig(figsavepath,bbox_inches='tight')
 plt.show()

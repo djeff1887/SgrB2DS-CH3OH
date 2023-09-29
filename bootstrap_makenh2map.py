@@ -88,14 +88,14 @@ print(f'Source: {source}')
 fielddict={'SgrB2S':1,'DSi':10,'DSii':10,'DSiii':10,'DSiv':10,'DSv':10,'DSVI':2,'DSVII':3,'DSVIII':3,'DSIX':7}
 fnum=fielddict[source]
 
-sourcedict={'SgrB2S':'/aug2023qrotfix/','DSi':'/aug2023qrotfix/','DSii':'/aug2023qrotfix/','DSiii':'/aug2023qrotfix/','DSiv':'/aug2023qrotfix/','DSv':f'/aug2023qrotfix/','DSVI':'/aug2023qrotfix/','DSVII':f'/aug2023qrotfix/','DSVIII':f'/aug2023qrotfix/','DSIX':f'/aug2023qrotfix/'}
+sourcedict={'SgrB2S':'/sep2023-5removelasttorsionalline/','DSi':'/sep2023-5addvt2linesbackin/','DSii':'/sep2023-2widerrefslab/','DSiii':'/sep2023-3vt2doublet/','DSiv':'/sep2023-4nextinline/','DSv':f'/sep2023phi_nu&doublet/','DSVI':'/sep2023-2removenewvt1line/','DSVII':f'/sep2023phi_nu&doublet/','DSVIII':f'/sep2023phi_nu&doublet/','DSIX':f'/sep2023phi_nu&doublet/'}
 sourcepath=f'/blue/adamginsburg/d.jeff/SgrB2DSreorg/field{fnum}/CH3OH/{source}'+sourcedict[source]
 
-texmap=fits.open(sourcepath+'texmap_0transmask_3sigma_allspw_withnans_weighted.fits')
+texmap=fits.open(sourcepath+'bootstrap_texmap_3sigma_allspw_withnans_weighted.fits')
 texerrfits=fits.open(sourcepath+'test_error_trot_boostrap10000_nonegativeslope.fits')
 
-ntotfits=fits.open(sourcepath+'ntotmap_allspw_withnans_weighted_useintercept_3sigma.fits')
-ntotmap=ntotfits[0].data*u.cm**-2
+ntotfits=fits.open(sourcepath+'bootstrap_ntot_intstd_boostrap1000_nonegativeslope.fits')
+ntotmap=np.squeeze(ntotfits[0].data)*u.cm**-2
 ntoterrfits=fits.open(sourcepath+'error_ntot_intstd_boostrap1000_nonegativeslope.fits')
 ntoterrmap=np.squeeze(ntoterrfits[0].data)*u.cm**-2
 ch3ohSigmam_map=ntotmap*molweight_ch3oh
@@ -117,7 +117,7 @@ maskedntoterr2=np.ma.masked_where(tempmaskntoterr.value <= 1e12, tempmaskntoterr
 ntoterrmap=maskedntoterr2.filled(fill_value=np.nan)*u.cm**-2
 
 reprojtexmappath=sourcepath+'bootstrap_texmap_3sigma_allspw_withnans_weighted_reprojecttobolocamcont_smoothed.fits'
-reprojtexerrpath=sourcepath+'boostrap_ntotmap_allspw_withnans_weighted_useintercept_3sigma_reprojecttobolocamcont_smoothed.fits'
+reprojtexerrpath=sourcepath+'boostrap_texerrmap_allspw_withnans_weighted_useintercept_3sigma_reprojecttobolocamcont_smoothed.fits'
 reprojsnrpath=sourcepath+'bootstrap_texmap_snr_allspw_weighted_reprojecttobolocamcont_smoothed.fits'
 reprojntotpath=sourcepath+'bootstrap_ntotmap_allspw_withnans_weighted_useintercept_3sigma_reprojecttobolocamcont_smoothed.fits'
 reprojntoterrpath=sourcepath+'bootstrap_ntoterrmap_allspw_withnans_weighted_useintercept_reprojecttobolocamcont_smoothed.fits'
@@ -136,14 +136,17 @@ if os.path.exists(reprojtexmappath):
     smoothed_snr=fits.open(sourcepath+reprojsnrpath)
     smoothed_ntot=fits.open(sourcepath+reprojntotpath)
     smoothed_ntoterr=fits.open(sourcepath+reprojntoterrpath)
+    reprojandsmooth=False
 else:
     print('Begin reprojection and smoothing')
+    reprojandsmooth=True
     if os.path.exists(newcontpath):
         print(f'Reprojected continuum for {source} already exists.')
         print(f'Loading from {newcontpath}')
         cntmimage=fits.open(newcontpath)
     else:
-        newcont,footprint=reproject.reproject_interp((notreproj_cntmimage[0].data.squeeze(),WCS(notreproj_cntmimage[0].header).celestial),texmap[0].header)
+        newcont,footprint=reproject.reproject_interp((notreproj_cntmimage[0].data.squeeze(),
+                                                          WCS(notreproj_cntmimage[0].header).celestial),texmap[0].header)
         newcontprimaryHDU=fits.PrimaryHDU(newcont)
         newcontprimaryHDU.header=texmap[0].header
         newcontprimaryHDU.header['BUNIT']='Jy/beam'
@@ -157,17 +160,18 @@ else:
 
         newcontHDUList.writeto(newcontpath,overwrite=True)
         cntmimage=newcontHDUList
-
-    #pdb.set_trace()
     
     beam_tex=radio_beam.Beam.from_fits_header(texmap[0].header)
     beam_cntm=radio_beam.Beam.from_fits_header(notreproj_cntmimage[0].header)
     beam_deconv=beam_cntm.deconvolve(beam_tex)
     pixscale=WCS(texmap[0].header).proj_plane_pixel_area()**0.5
+    okmask=np.isfinite(texmap[0].data)*np.isfinite(ntotmap.value)
+    
     smoothed_trot = convolve(texmap[0].data, beam_deconv.as_kernel(pixscale),nan_treatment='interpolate')
     cmbmasktrot=np.ma.masked_less_equal(smoothed_trot,Tcmb.value)
     smoothed_trot=cmbmasktrot
-    smoothed_trot=smoothed_trot.filled(fill_value=np.nan)
+    okmasktrot=np.ma.masked_where(okmask==False,smoothed_trot)
+    smoothed_trot=okmasktrot.filled(fill_value=np.nan)
 
     smoothed_troterr = convolve(texerrmap, beam_deconv.as_kernel(pixscale),nan_treatment='interpolate')
     #pdb.set_trace()
@@ -176,13 +180,15 @@ else:
     smoothed_snr=cmbmasksnr.filled(fill_value=np.nan)
 
     smoothed_ntot = convolve(ntotmap, beam_deconv.as_kernel(pixscale),nan_treatment='interpolate')
-    cmbmaskntot=np.ma.masked_where(smoothed_trot < Tcmb.value,smoothed_ntot)
+    cmbmaskntot=np.ma.masked_where(smoothed_trot < Tcmb.value, smoothed_ntot)
     smoothed_ntot=cmbmaskntot.filled(fill_value=np.nan)
+    okmaskntot=np.ma.masked_where(okmask == False, smoothed_ntot)
+    smoothed_ntot=okmaskntot.filled(fill_value=np.nan)
 
     smoothed_ntoterr=convolve(ntoterrmap, beam_deconv.as_kernel(pixscale),fill_value=np.nan, nan_treatment='interpolate')
     cmbmaskntoterr=np.ma.masked_where(smoothed_trot < Tcmb.value, smoothed_ntoterr)
-    asmoothed_ntoterr=cmbmaskntoterr.filled(fill_value=np.nan)
-    
+    smoothed_ntoterr=cmbmaskntoterr.filled(fill_value=np.nan)
+    #pdb.set_trace()
 '''
 plt.figure(1)
 plt.imshow(smoothed_ntoterr,origin='lower',vmin=0,vmax=2e17)
@@ -215,7 +221,6 @@ beamarea_phys=cntmbeam.beam_projected_area(d).to('AU2')#np.pi*(bmajtophyssize/2)
 
 geomeanbeamarea=np.sqrt((bmajtophyssize*bmintophyssize)/2)
 print(f'Geometric mean beam radius (continuum): {geomeanbeamarea}')
-#sys.exit()
     
 cntmwcs=WCS(cntmimage[0].header)
 texwcs=WCS(texmap[0].header)
@@ -226,7 +231,47 @@ rms_1mm_K=(cntmstd/beamarea_sr).to(u.K,equivalencies=equiv)
 
 snr=3
 
-#pdb.set_trace()
+if reprojandsmooth==True:
+    smoothedtrotprimaryhdu=fits.PrimaryHDU(smoothed_trot)
+    smoothedtrotprimaryhdu.header=texmap[0].header
+    smoothedtrotprimaryhdu.header['BMAJ']=bmaj.to('deg').value
+    smoothedtrotprimaryhdu.header['BMIN']=bmaj.to('deg').value
+    smoothedtrothdul=fits.HDUList([smoothedtrotprimaryhdu])
+    smoothedtrotpath=sourcepath+f'bootstrap_smoothed_trot_to_bolocamfeathercont.fits'
+    print(f'Saving smoothed temperature map at {smoothedtrotpath}\n')
+    smoothedtrothdul.writeto(smoothedtrotpath,overwrite=True)
+
+    errsmoothedtrotprimaryhdu=fits.PrimaryHDU(smoothed_troterr.value)
+    errsmoothedtrotprimaryhdu.header=texmap[0].header
+    errsmoothedtrotprimaryhdu.header['BMAJ']=bmaj.to('deg').value
+    errsmoothedtrotprimaryhdu.header['BMIN']=bmin.to('deg').value
+    errsmoothedtrothdul=fits.HDUList([errsmoothedtrotprimaryhdu])
+    errsmoothedtrotpath=sourcepath+f'bootstrap_smoothed_trot_err.fits'
+    print(f'Saving smoothed temperature error map at {errsmoothedtrotpath}\n')
+    errsmoothedtrothdul.writeto(errsmoothedtrotpath,overwrite=True)
+
+    smoothedntotprimaryhdu=fits.PrimaryHDU(smoothed_ntot.value)
+    smoothedntotprimaryhdu.header=texmap[0].header
+    smoothedntotprimaryhdu.header['BMAJ']=bmaj.to('deg').value
+    smoothedntotprimaryhdu.header['BMIN']=bmaj.to('deg').value
+    smoothedntotprimaryhdu.header['BTYPE']='Column density (CH3OH)'
+    smoothedntotprimaryhdu.header['BUNIT']='cm-2'
+    smoothedntothdul=fits.HDUList([smoothedntotprimaryhdu])
+    smoothedntotpath=sourcepath+f'bootstrap_smoothed_ntot_to_bolocamfeathercont.fits'
+    print(f'Saving smoothed column density map at {smoothedntotpath}\n')
+    smoothedntothdul.writeto(smoothedntotpath,overwrite=True)
+
+    errsmoothedntotprimaryhdu=fits.PrimaryHDU(smoothed_ntoterr.value)
+    errsmoothedntotprimaryhdu.header=texmap[0].header
+    errsmoothedntotprimaryhdu.header['BMAJ']=bmaj.to('deg').value
+    errsmoothedntotprimaryhdu.header['BMIN']=bmin.to('deg').value
+    errsmoothedntotprimaryhdu.header['BTYPE']='Column density error (CH3OH)'
+    errsmoothedntotprimaryhdu.header['BUNIT']='cm-2'
+    errsmoothedntothdul=fits.HDUList([errsmoothedntotprimaryhdu])
+    errsmoothedntotpath=sourcepath+f'bootstrap_smoothed_ntot_err.fits'
+    print(f'Saving smoothed column density error map at {errsmoothedntotpath}\n')
+    errsmoothedntothdul.writeto(errsmoothedntotpath,overwrite=True)
+
 
 cntmsurfbright=cntmdata/beamarea_sr
 err_cntmsurfbright=cntmstd/beamarea_sr
@@ -271,14 +316,23 @@ masked_tau=np.ma.masked_where(snr_tau<3,bettertau)
 sigma3_tau=masked_tau.filled(fill_value=np.nan)
 tau=sigma3_tau
 
-betterlum=(4*np.pi*(np.sqrt((bmajtophyssize*bmintophyssize)/2))**2*sigmasb*cntmsurfbrightK**4).to('solLum')
-err_betterlum=np.sqrt(((16*np.pi*bmajtophyssize**2)*sigmasb*cntmsurfbrightK**3*err_Kcntmsurfbright)**2).to('solLum')
+betterlum=(4*np.pi*(geomeanbeamarea)**2*sigmasb*cntmsurfbrightK**4).to('solLum')
+err_betterlum=np.sqrt(((16*np.pi*geomeanbeamarea**2)*sigmasb*cntmsurfbrightK**3*err_Kcntmsurfbright)**2).to('solLum')
 snr_lum=(betterlum/err_betterlum)
 masked_lum=np.ma.masked_where(snr_lum<3,betterlum)
 sigma3_lum=masked_lum.filled(fill_value=np.nan)
 lums=sigma3_lum
 lumserr=err_betterlum
 
+'''
+ch3ohlum=(4*np.pi*(geomeanbeamarea)**2*sigmasb*(smoothed_trot*u.K)**4).to('solLum')
+err_ch3ohlum=np.sqrt(((16*np.pi*geomeanbeamarea**2)*sigmasb*(smoothed_trot*u.K)**3*(smoothed_troterr))**2).to('solLum')
+snr_ch3ohlum=(ch3ohlum/err_ch3ohlum)
+masked_ch3ohlum=np.ma.masked_where(snr_ch3ohlum<3,ch3ohlum)
+sigma3_ch3ohlum=masked_ch3ohlum.filled(fill_value=np.nan)
+ch3ohlums=sigma3_ch3ohlum
+ch3ohlumserr=err_ch3ohlum
+'''
 #pdb.set_trace()
   
 gasmassprimaryhdu=fits.PrimaryHDU(sigma3_gasmass.value)
@@ -388,46 +442,6 @@ errtauhdul=fits.HDUList([errtauprimaryhdu])
 errtaufitspath=sourcepath+f'bootstrap_opticaldepth_error_bolocamfeather_smoothedtobolocam.fits'
 print(f'Saving optical depth error map at {errtaufitspath}\n')
 errtauhdul.writeto(errtaufitspath,overwrite=True)
-
-smoothedtrotprimaryhdu=fits.PrimaryHDU(smoothed_trot)
-smoothedtrotprimaryhdu.header=texmap[0].header
-smoothedtrotprimaryhdu.header['BMAJ']=bmaj.to('deg').value
-smoothedtrotprimaryhdu.header['BMIN']=bmaj.to('deg').value
-smoothedtrothdul=fits.HDUList([smoothedtrotprimaryhdu])
-smoothedtrotpath=sourcepath+f'bootstrap_smoothed_trot_to_bolocamfeathercont.fits'
-print(f'Saving smoothed temperature map at {smoothedtrotpath}\n')
-smoothedtrothdul.writeto(smoothedtrotpath,overwrite=True)
-
-errsmoothedtrotprimaryhdu=fits.PrimaryHDU(smoothed_troterr.value)
-errsmoothedtrotprimaryhdu.header=texmap[0].header
-errsmoothedtrotprimaryhdu.header['BMAJ']=bmaj.to('deg').value
-errsmoothedtrotprimaryhdu.header['BMIN']=bmin.to('deg').value
-errsmoothedtrothdul=fits.HDUList([errsmoothedtrotprimaryhdu])
-errsmoothedtrotpath=sourcepath+f'bootstrap_smoothed_trot_err.fits'
-print(f'Saving smoothed temperature error map at {errsmoothedtrotpath}\n')
-errsmoothedtrothdul.writeto(errsmoothedtrotpath,overwrite=True)
-
-smoothedntotprimaryhdu=fits.PrimaryHDU(smoothed_ntot.value)
-smoothedntotprimaryhdu.header=texmap[0].header
-smoothedntotprimaryhdu.header['BMAJ']=bmaj.to('deg').value
-smoothedntotprimaryhdu.header['BMIN']=bmaj.to('deg').value
-smoothedntotprimaryhdu.header['BTYPE']='Column density (CH3OH)'
-smoothedntotprimaryhdu.header['BUNIT']='cm-2'
-smoothedntothdul=fits.HDUList([smoothedntotprimaryhdu])
-smoothedntotpath=sourcepath+f'bootstrap_smoothed_ntot_to_bolocamfeathercont.fits'
-print(f'Saving smoothed column density map at {smoothedntotpath}\n')
-smoothedntothdul.writeto(smoothedntotpath,overwrite=True)
-
-errsmoothedntotprimaryhdu=fits.PrimaryHDU(smoothed_ntoterr.value)
-errsmoothedntotprimaryhdu.header=texmap[0].header
-errsmoothedntotprimaryhdu.header['BMAJ']=bmaj.to('deg').value
-errsmoothedntotprimaryhdu.header['BMIN']=bmin.to('deg').value
-errsmoothedntotprimaryhdu.header['BTYPE']='Column density error (CH3OH)'
-errsmoothedntotprimaryhdu.header['BUNIT']='cm-2'
-errsmoothedntothdul=fits.HDUList([errsmoothedntotprimaryhdu])
-errsmoothedntotpath=sourcepath+f'bootstrap_smoothed_ntot_err.fits'
-print(f'Saving smoothed column density error map at {errsmoothedntotpath}\n')
-errsmoothedntothdul.writeto(errsmoothedntotpath,overwrite=True)
         
 plt.imshow(ch3ohabundance_sigclip.value,origin='lower',norm=mpl.colors.LogNorm(),cmap='cividis')
 plt.colorbar(pad=0)

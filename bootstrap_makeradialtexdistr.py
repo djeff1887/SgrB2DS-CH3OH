@@ -61,17 +61,17 @@ def powerlaw_profile(x,a,n):
 def round_to_1(x):
     return round(x, -int(math.floor(math.log10(abs(x)))))
     
-source='DSiv'#os.getenv('SOURCE')#
+source=os.getenv('SOURCE')#
 fielddict={'SgrB2S':1,'DSi':10,'DSii':10,'DSiii':10,'DSiv':10,'DSv':10,'DSVI':2,'DSVII':3,'DSVIII':3,'DSIX':7}
 fnum=fielddict[source]
 print(f'Source: {source}')
 base=f'/blue/adamginsburg/d.jeff/SgrB2DSreorg/field{fnum}/CH3OH/{source}/'
-homedict={'SgrB2S':'/aug2023qrotfix/','DSi':'/aug2023qrotfix/','DSii':'/aug2023qrotfix/','DSiii':'/aug2023qrotfix/','DSiv':'/aug2023qrotfix/','DSv':f'/aug2023qrotfix/','DSVI':'/aug2023qrotfix/','DSVII':f'/aug2023qrotfix/','DSVIII':f'/aug2023qrotfix/','DSIX':f'/aug2023qrotfix/'}
+homedict={'SgrB2S':'/sep2023-5removelasttorsionalline/','DSi':'/sep2023-5addvt2linesbackin/','DSii':'/sep2023-2widerrefslab/','DSiii':'/sep2023-3vt2doublet/','DSiv':'/sep2023-4nextinline/','DSv':f'/sep2023phi_nu&doublet/','DSVI':'/sep2023-2removenewvt1line/','DSVII':f'/sep2023phi_nu&doublet/','DSVIII':f'/sep2023phi_nu&doublet/','DSIX':f'/sep2023phi_nu&doublet/'}
 home=base+homedict[source]
 fighome=f'/blue/adamginsburg/d.jeff/repos/CH3OHTemps/figures/{source}/'
 figpath=fighome+homedict[source]
 
-dataversion=homedict[source].replace('/','')
+dataversion='sep2023revolution'#homedict[source].replace('/','')
 datadir=f'/blue/adamginsburg/d.jeff/imaging_results/SgrB2DS-CH3OH/{dataversion}/'
 
 if not os.path.exists(figpath):
@@ -186,7 +186,7 @@ cntmbmaj=cntmbeam.major#3.629587176773e-05*u.deg
 cntmbmajtoAU=(np.tan(cntmbmaj)*dGC).to('AU')
 
 pixdict={'SgrB2S':(26,14),'DSi':(36,40),'DSii':(22,24),'DSiii':(24,24),'DSiv':(32,31),'DSv':(19,19),'DSVI':(62,62),'DSVII':(75,75),'DSVIII':(50,50),'DSIX':(34,35)}#y,x; DSiii was 24,24;S was 73,54 - contfix S was 69,58/'DSi':(36,42)
-sgrb2scentralpix=(25,25)#contfix pix, prefinal was (66,70)
+sgrb2scentralpix=(25,25)#contfix pix, prefinal was (66,70)/
 #SgrB2S tpeak is 73,54
 #nh2dict={'DSiii':(27,27)}
 #ntotdict={'SgrB2S':(63,71)'}
@@ -201,7 +201,7 @@ print(f'Center p: {texmapdata[texpeakpix[0],texpeakpix[1]]}')
 
 #r=35 #for 15,000 AU
 #pixradius=math.ceil((0.08*u.pc/pixtophysicalsize).to(''))
-rdict={'SgrB2S':10000*u.AU,'DSi':7500*u.AU,'DSii':8700*u.AU,'DSiii':6000*u.AU,'DSiv':8000*u.AU,'DSv':3500*u.AU,'DSVII':6000*u.AU,'DSVIII':5700*u.AU,'DSIX':5000*u.AU}#1-6400,4-8500,5-4000,7-6600,S-12000
+rdict={'SgrB2S':8000*u.AU,'DSi':8000*u.AU,'DSii':5500*u.AU,'DSiii':6000*u.AU,'DSiv':6000*u.AU,'DSv':7000*u.AU,'DSVII':6000*u.AU,'DSVIII':5400*u.AU,'DSIX':8000*u.AU}#1-6400,4-8500,5-4000,7-6600,S-12000
 rdictkeys=rdict.keys()
 if source not in rdictkeys:
     r_phys=10000*u.AU
@@ -288,7 +288,7 @@ totalmass=np.nansum(teststack[:,1])
 sanitycheckmass=0
 edge=None
 localminmass=False
-trad=180
+
 
 for bin in listordered_centrtopix:
     tempmass=[]
@@ -384,6 +384,10 @@ for bin in listordered_centrtopix:
         if False in ok:
             tempabun=np.array(tempabun)[ok]
             tempabunerr=np.array(tempabunerr)[ok]
+        if len(tempabun) == 0:
+            pdb.set_trace()
+            avgabuninrad=0
+            err_avgabuninrad=np.nan
         avgabuninrad=np.average(tempabun, weights=(np.array(tempabun)/np.array(tempabunerr)))
         err_avgabuninrad=np.max(tempabun)-np.min(tempabun)#np.nanmean(tempabunerr)#This is the range in values, like the radial temperature profile
         
@@ -405,12 +409,12 @@ for bin in listordered_centrtopix:
         massinterior_radius.append((massinteriorsum.value,masserrinteriorsum.value,bin))
     #pdb.set_trace()
 
-avgabunerrpath=f'{source}_err_avgabun.txt'
+avgabunerrpath=datadir+f'{source}_err_avgabun.txt'
 np.savetxt(avgabunerrpath,np.array(radialabunerr))
 
 if onlymassinteriorandradius:
     outlist=np.array(massinterior_radius)
-    np.savetxt(f'{source}_massinterior_radius.txt',outlist)
+    np.savetxt(datadir+f'{source}_massinterior_radius.txt',outlist)
     sys.exit()
 
 if edge == None:#for hot sources where T never falls below 150 K
@@ -431,22 +435,6 @@ nh2tomean=[]
 nh2errortomean=[]
 #pdb.set_trace()
 if source == 'SgrB2S':#Selects masses,luminosities, nh2s, distances, and temperatures for use in radial plot
-    #wcsobj=WCS(smooth_trotfits[0].header)
-
-    #regs = regions.Regions.read('/blue/adamginsburg/d.jeff/imaging_results/regfiles/roughsgrb2smassregion_ignoresHIIregion.reg')
-    #pixreg = regs[0].to_pixel(wcsobj)
-    #pixmask = pixreg.to_mask()
-    #err_mdata = pixmask.cutout(h2masserr)
-    #dat_mdata=pixmask.cutout(h2mass)
-    #masserrtoprop.append(pixmask.get_values(h2masserr))#propmasserr=np.sqrt(np.nansum(np.square(pixmask.get_values(h2masserrmap))))
-    #massestosum.append(pixmask.get_values(h2mass))#sgrb2smass=np.nansum(pixmask.get_values(h2massmap))
-    #lumstosum.append(pixmask.get_values(lums))
-    #lumerrtoprop.append(pixmask.get_values(lumserr))
-    #nh2tomean.append(pixmask.get_values(nh2s.value))
-    #nh2errortomean.append(pixmask.get_values(nh2s_error))
-    #nh2snrinradius=list(pixmask.get_values(nh2s/nh2s_error))
-    #premask_tex=np.copy(texinradius)
-    #texinradius=list(pixmask.get_values(texmapdata.value))
     
     rr2_sgrb2s=centrtopix#(rr2*pixtophysicalsize).value#list(pixmask.get_values(rr2*pixtophysicalsize).value)#rr2 and not rr here?
     '''
@@ -460,12 +448,9 @@ if source == 'SgrB2S':#Selects masses,luminosities, nh2s, distances, and tempera
             else:
                 pass
     '''
-    #premask_abuns=np.copy(abundinradius)
-    #abundinradius=list(pixmask.get_values(abunds))
-    #abundsnrinradius=list(pixmask.get_values(snr_abund))
     trotsforabunds=texinradius#list(pixmask.get_values(texmapdata.value))
 
-onlytexabund=False
+onlytexabund=True
 
 if onlytexabund:
     if source == 'SgrB2S':
@@ -539,6 +524,7 @@ fitter2=fitting.LevMarLSQFitter()
 fitter3=fitting.LevMarLSQFitter()
 base_bpl=powerlaws.BrokenPowerLaw1D(amplitude=inputamp,x_break=xbreakguess,alpha_1=a1guess,alpha_2=bpl_alpha2_initialguess[source])#original was -1 for all
 base_spl=powerlaws.PowerLaw1D(amplitude=np.mean(radialdensitylist[1:]))
+tex_spl=powerlaws.PowerLaw1D(amplitude=np.mean(avgtexlist))
 
 if source=='DSIX':
     innerradius=9
@@ -546,7 +532,7 @@ if source=='DSIX':
 
 elif source=='DSiv':
     innerradius=1
-    outerradius=193
+    outerradius=None
 
 elif source=='DSVII':
     innerradius=1
@@ -556,6 +542,12 @@ elif source == 'DSi':
     innerradius=1
     outerradius=119
 
+elif source=='DSii':
+    innerradius=1
+    outerradius=len(radialdensitylist)-1
+elif source == 'SgrB2S':
+    innerradius=1
+    outerradius=len(radialdensitylist)-1
 else:
     innerradius=1
     outerradius=None
@@ -567,7 +559,9 @@ weightstofit=avginversesigma[innerradius:outerradius]
 denstofit=radialdensitylist[innerradius:outerradius]#[innerradius:outerradius]
 densweightstofit=1/(np.array(err_radialdens[innerradius:outerradius]))
 
-fit_spl=fitter3(base_spl, radiustofit, textofit,weights=weightstofit)
+#pdb.set_trace()
+fit_spl=fitter3(tex_spl, radiustofit, textofit,weights=weightstofit)
+#pdb.set_trace()
 splperr=np.sqrt(np.diag(fitter3.fit_info['param_cov']))
 #popt,pcov=cf(powerlaw_profile,radiustofit,textofit,sigma=texerrtofit,bounds=([0,lowerbound_initialguess[source]],[1000,1.25]))#[1:197] for ds4 (some nans may be present further out),[5:] for ds7, [9:] for ds9
 fit_pl=fitter(base_bpl,radiustofit,textofit,weights=weightstofit)
@@ -585,7 +579,7 @@ print(f'Sum: {masssum} +/- {propmasserr} Msun')
 print(f'Core radius: {edge} +/- {cntmbmajtoAU/2}')
 print(f'Core luminosity: {lumsum} +/- {proplumerr} Lsun')
 print(f'Average H2 column in {edge} AU radius: {nh2mean} +/- {nh2errormean}')
-plottexmax=np.nanmax(lookformax)+10
+plottexmax=np.nanmax(lookformax)+15
 maxtexindex=np.where(lookformax==np.nanmax(lookformax))
 maxtexerror=lookformax_err[maxtexindex]
 print(f'Max Tex: {np.max(lookformax)} +/- {float(maxtexerror)} K')
@@ -593,9 +587,6 @@ print(f'Max Tex: {np.max(lookformax)} +/- {float(maxtexerror)} K')
 
 copy_centrtopix=np.copy(listordered_centrtopix)
 fittedtex=[]
-
-#for dist in copy_centrtopix:
-    #fittedtex.append((popt[0]*((dist/pixtophysicalsize.value)**-popt[1])))#.value)
     
 plt.rcParams["figure.dpi"]=300
 
@@ -688,7 +679,7 @@ if source == 'SgrB2S':
     plt.show()
     
     savetxt=np.array([listordered_centrtopix,radialabun])
-    np.savetxt(f'{source}_intstd_radialavgabun.txt',savetxt)
+    np.savetxt(datadir+f'{source}_radialavgabun.txt',savetxt)
 
     if onlyradabun:
         sys.exit()
@@ -727,7 +718,7 @@ else:
     plt.show()
 
     savetxt=np.array([listordered_centrtopix,radialabun])
-    np.savetxt(f'{dataversion}_{source}_radialavgabun.txt',savetxt)
+    np.savetxt(datadir+f'{source}_radialavgabun.txt',savetxt)
 
     if onlyradabun:
         sys.exit()
@@ -767,12 +758,12 @@ if source == 'DSiv':
     ax0.scatter(listordered_centrtopix,avgtexlist)#[:197] for ds4
     ax0.fill_between(listordered_centrtopix[:197],upperfill[:197],lowerfill[:197],alpha=0.2,color='blue')#[:197] for ds
 
-    ax0.plot(copy_centrtopix,fit_spl(copy_centrtopix),color='orange',label=f'$\\alpha$={round(popt[1],2)} \u00B1 {round(pcov[1,1]**0.5,2)}',zorder=1)
+    ax0.plot(copy_centrtopix,fit_spl(copy_centrtopix),color='orange',label=f'$\\alpha$={round(fit_spl.alpha.value,2)} \u00B1 {round(splperr[2],2)}',zorder=1)
     ax0.plot(copy_centrtopix,fit_pl(copy_centrtopix),color='red',ls='-',zorder=2,label=f'$\\alpha_1$={round(fit_pl.alpha_1.value,2)} \u00B1 {round(perr[2],2)}\n$\\alpha_2$={round(fit_pl.alpha_2.value,2)} \u00B1 {round(perr[3],2)}\n$r_{{break}}$={round(fit_pl.x_break.value)} \u00B1 {round(perr[1])}')#[1:] for ds7
     ax1.set_xlabel('$r$ (AU)',fontsize=14)
     ax0.set_ylabel('T$_{rot}$ (K)',fontsize=14)
     ax1.set_ylabel('Residuals',fontsize=10)
-    ax0.set_ylim(ymax=(max(upperfill)+30))
+    ax0.set_ylim(ymax=plottexmax+50)#(max(upperfill)+30))
     ax0.legend()
     ax0.tick_params(direction='in')
     ax0.tick_params(axis='x',labelcolor='w')
@@ -781,7 +772,7 @@ if source == 'DSiv':
 
     plt.tight_layout()
 
-    plt.savefig(figsavepath,overwrite=True)
+    plt.savefig(figsavepath)#,overwrite=True)
 
     plt.show()
 
@@ -791,7 +782,7 @@ elif source == 'DSVII':
 
     ax0.scatter(listordered_centrtopix,avgtexlist)#[:197] for ds4
     ax0.fill_between(listordered_centrtopix,upperfill,lowerfill,alpha=0.2,color='blue')#[:197] for ds4
-    ax0.plot(copy_centrtopix,fittedtex,color='orange',label=f'$\\alpha$={round(popt[1],2)} \u00B1 {round(pcov[1,1]**0.5,2)}',zorder=1)
+    ax0.plot(copy_centrtopix,fit_spl(copy_centrtopix),color='orange',label=f'$\\alpha$={round(fit_spl.alpha.value,2)} \u00B1 {round(splperr[2],2)}',zorder=1)
     ax0.plot(copy_centrtopix[1:],fit_pl(copy_centrtopix)[1:],color='red',ls='-',zorder=2,label=f'$\\alpha_1$={round(fit_pl.alpha_1.value,2)} \u00B1 {round(perr[2],2)}\n$\\alpha_2$={round(fit_pl.alpha_2.value,2)} \u00B1 {round(perr[3],2)}\n$r_{{break}}$={round(fit_pl.x_break.value)} \u00B1 {round(perr[1])}')#[1:] for ds7
     ax1.set_xlabel('$r$ (AU)',fontsize=14)
     ax0.set_ylabel('T$_{rot}$ (K)',fontsize=14)
@@ -805,7 +796,7 @@ elif source == 'DSVII':
 
     plt.tight_layout()
 
-    plt.savefig(figsavepath,overwrite=True)
+    plt.savefig(figsavepath)#,overwrite=True)
 
     plt.show()
 else:
@@ -814,7 +805,7 @@ else:
 
     ax0.scatter(listordered_centrtopix,avgtexlist)#[:197] for ds4
     ax0.fill_between(listordered_centrtopix,upperfill,lowerfill,alpha=0.2,color='blue')#[:197] for ds4
-    ax0.plot(copy_centrtopix,fittedtex,color='orange',label=f'$\\alpha$={round(popt[1],2)} \u00B1 {round(pcov[1,1]**0.5,2)}',zorder=1)
+    ax0.plot(copy_centrtopix,fit_spl(copy_centrtopix),color='orange',label=f'$\\alpha$={round(fit_spl.alpha.value,2)} \u00B1 {round(splperr[2],2)}',zorder=1)
     ax0.plot(copy_centrtopix,fit_pl(copy_centrtopix),color='red',ls='-',zorder=2,label=f'$\\alpha_1$={round(fit_pl.alpha_1.value,2)} \u00B1 {round(perr[2],2)}\n$\\alpha_2$={round(fit_pl.alpha_2.value,2)} \u00B1 {round(perr[3],2)}\n$r_{{break}}$={round(fit_pl.x_break.value)} \u00B1 {round(perr[1])}')#[1:] for ds7
     ax1.set_xlabel('$r$ (AU)',fontsize=14)
     ax0.set_ylabel('T$_{rot}$ (K)',fontsize=14)
@@ -831,7 +822,7 @@ else:
 
     plt.tight_layout()
 
-    plt.savefig(figsavepath,overwrite=True)
+    plt.savefig(figsavepath)
 
     plt.show()
     
@@ -852,7 +843,7 @@ if source=='SgrB2S':
     plt.xlabel('N(H$_2$) (cm$^{-2}$)')
     plt.ylabel('N(CH$_3$OH) (cm$^{-2}$)')
     figsavepath=figpath+f'{dataversion}_nch3ohvsnh2_smoothed.png'
-    plt.savefig(figsavepath,overwrite=True)
+    plt.savefig(figsavepath)#,overwrite=True)
     plt.show()
 
 else:
@@ -871,17 +862,12 @@ else:
     plt.xlabel('N(H$_2$) (cm$^{-2}$)')
     plt.ylabel('N(CH$_3$OH) (cm$^{-2}$)')
     figsavepath=figpath+f'{dataversion}_nch3ohvsnh2_smoothed.png'
-    plt.savefig(figsavepath,overwrite=True)
+    plt.savefig(figsavepath)
     plt.show()
-'''
-print(f'Norm initial guess: {fiducial_norm}')
-print(f'norm error: {pcov[0,0]**0.5}')
 
-print(f'index initial guess: {lowerbound_initialguess[source]}')
-print(f'index error: {pcov[1,1]**0.5}')
-'''
+
 onlypowerlaw=False
-powerlawpath=datadir+'/powerlawtable_bootmasked.fits'
+powerlawpath=datadir+'powerlawtable_bootmasked.fits'
 pwrlwprams=[(round(fit_pl.alpha_1.value,2)*u.dimensionless_unscaled),(round(perr[2],2)*u.dimensionless_unscaled),(round(fit_pl.alpha_2.value,2)*u.dimensionless_unscaled),(round(perr[3],2)*u.dimensionless_unscaled),(round(fit_pl.x_break.value)*u.AU),(round(perr[1])*u.AU)]
 powerlawparams=QTable(rows=[pwrlwprams],names=['alpha_1','alpha_1 error','alpha_2','alpha_2 error','x_break','x_break error'])
 
