@@ -18,7 +18,7 @@ import copy
 from astropy.wcs import WCS
 import matplotlib.gridspec as gridspec
 import os
-from utilities import *
+#from utilities import *
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 from astropy.table import Table
@@ -27,13 +27,13 @@ mpl.interactive(True)
 
 #plt.rcParams['figure.dpi']=300
 
-source='SgrB2S'
+source='DSi'
 print(f'Source: {source}\n')
 fields={'SgrB2S':1,'DSi':10,'DSii':10,'DSiii':10,'DSiv':10,'DSv':10,'DSVI':2,'DSVII':3,'DSVIII':3,'DSIX':7}
 romannums={'DSi':'DSI','DSii':'DSii'}
 fnum=fields[source]
 
-immode='nh2'
+immode='mom0'
 colormap={'mom0':'bone_r','tex':'inferno','numtrans':'CMRmap','nupper':'Blues_r','nh2':'cividis'}
 cm = copy.copy(mpl.cm.get_cmap(colormap[immode]))#mom0 bone, temperature inferno, nupper Blues_r, detections CMRmap
 cm.set_bad('white')
@@ -62,7 +62,6 @@ samplewcs=WCS(samplefits[0])
 mastereuks=[]
 masterqns=[]
 masteroldqns=[]
-excludedlines={'SgrB2S':['7_6-7_7E1vt1','14_6-14_7E1vt1','11_6-11_7E1vt1','15_6-15_7E1vt1','9_6-9_7E1vt1','13_6-13_7E1vt1','12_6-12_7E1vt1','8_6-8_7E1vt1'],'DSi':['11_6-11_7E1vt1','25_3-24_4E1vt0','14_6-14_7E1vt1','7_6-7_7E1vt1','13_3--14_4-vt2','13_3+-14_4+vt2','15_6-15_7E1vt1'],'DSii':'','DSiii':'','DSiv':'','DSv':'','DSVI':["6_1--7_2-vt1",'14_6-14_7E1vt1','10_6-10_7E1vt1','9_6-9_7E1vt1','11_6-11_7E1vt1','13_6-13_7E1vt1','12_6-12_7E1vt1','13_3--14_4-vt2','13_3+-14_4+vt2','7_6-7_7E1vt1','16_6-16_7E1vt1','8_6-8_7E1vt1'],'DSVII':'','DSVIII':'','DSIX':'','DSX':''}
 mastertable=Table.read('multiplot_methanoltransitiontable.fits')#np.genfromtxt(sourcepath+'mastereuksqnsfreqsdegens.txt',dtype=str)
 for master in mastertable:
     mastereuks.append(float(master['$E_U$']))

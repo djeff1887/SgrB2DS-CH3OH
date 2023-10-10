@@ -14,6 +14,7 @@ from matplotlib.patches import Rectangle
 import matplotlib as mpl
 import os
 import math
+from utilities import *
 #from astropy.visualization.wcsaxes import Quadrangle
 
 plt.close()
@@ -39,8 +40,8 @@ def make_scalebar(ax, left_side, length, color='black', linestyle='-', label='',
                  zorder=2,bbox=dict(facecolor='white', alpha=0.6))
     ax.axis(axlims)
     return lines,txt
-set=0
-colordict={0:('trot','inferno','bootstrap_texmap_3sigma_allspw_withnans_weighted.fits'),1:('mom0','bone',"CH3OH~5_1-4_2E1vt0_masked.fits"),2:('nupper','Blues_r'),3:('detections','CMRmap',"ch3ohdetections0_3sigma_allspw_withnans_weighted.fits"),4:('abundance','viridis','bootstrap_ch3ohabundance_3sigma_ntotintercept_bolocamfeather_smoothedtobolocam.fits')}
+set=3
+colordict={0:('trot','inferno','bootstrap_texmap_3sigma_allspw_withnans_weighted.fits'),1:('mom0','bone',"CH3OH~5_1-4_2E1vt0_masked.fits"),2:('nupper','Blues_r'),3:('detections','CMRmap',"ch3ohdetections0_3sigma_allspw_withnans_weighted.fits"),4:('abundance','viridis','bootstrap_ch3ohabundance_3sigma_ntotintercept_bolocamfeather_smoothedtobolocam.fits'),5:('nh2','cividis', 'bootstrap_nh2map_3sigma_bolocamfeather_smoothedtobolocam.fits')}
 mode=colordict[set][0]
 color=colordict[set][1]
 pathsuffix=colordict[set][2]
@@ -59,7 +60,7 @@ home=f'/blue/adamginsburg/d.jeff/SgrB2DSreorg/field{fnum}/CH3OH/'
 
 cntrfile='/orange/adamginsburg/sgrb2/2017.1.00114.S/imaging_results/Sgr_B2_DS_B6_uid___A001_X1290_X46_continuum_merged_12M_robust2_selfcal4_finaliter_feathered_with_bolocam.fits'#'/blue/adamginsburg/d.jeff/imaging_results/adamcleancontinuum/Sgr_B2_DS_B6_uid___A001_X1290_X46_continuum_merged_12M_robust0_selfcal4_finaliter.image.tt0.pbcor.fits'#'/orange/adamginsburg/sgrb2/2017.1.00114.S/imaging_results/Sgr_B2_DS_B6_uid___A001_X1290_X46_continuum_merged_12M_robust2_selfcal4_finaliter_feathered_with_bolocam.fits'
 
-sourcedict={'SgrB2S':'/nov2022continuumsanitycheck_limitvt1lines_centeronlinepeak_repline20-20/','DSi':'/nov2022continuumsanitycheck/','DSii':'/nov2022continuumsanitycheck/','DSiii':'/nov2022continuumsanitycheck/','DSiv':'/nov2022contniuumsanitycheck/','DSv':f'/nov2022contniuumsanitycheck/','DSVI':'/nov2022continuumsanitycheck/','DSVII':f'/nov2022contniuumsanitycheck/','DSVIII':f'/nov2022contniuumsanitycheck/','DSIX':f'/nov2022contniuumsanitycheck/'}#{'SgrB2S':'/new_testingstdfixandontheflyrepstuff_K_OctReimage_restfreqfix_newvelmask_newpeakamp/','DSi':'/Kfield10originals_trial7_field10errors_newexclusion_matchslabwidthtorep/','DSii':'/Kfield10originals_noexclusions/','DSiii':'/Kfield10originals_noexclusions/','DSiv':'/Kfield10originals_noexclusions/','DSv':f'/Kfield10originals_noexclusions_include4-3_150K_trial2/','DSVI':'/Kfield2originals_trial3_8_6-8_7excluded/','DSVII':'/Kfield3originals_200K_trial1_noexclusions/','DSVIII':'/Kfield3originals_175K_trial1_noexclusions/','DSIX':f'/Kfield7originals_150K_trial1_noexclusions/'}
+#sourcedict={'SgrB2S':'/nov2022continuumsanitycheck_limitvt1lines_centeronlinepeak_repline20-20/','DSi':'/nov2022continuumsanitycheck/','DSii':'/nov2022continuumsanitycheck/','DSiii':'/nov2022continuumsanitycheck/','DSiv':'/nov2022contniuumsanitycheck/','DSv':f'/nov2022contniuumsanitycheck/','DSVI':'/nov2022continuumsanitycheck/','DSVII':f'/nov2022contniuumsanitycheck/','DSVIII':f'/nov2022contniuumsanitycheck/','DSIX':f'/nov2022contniuumsanitycheck/'}#{'SgrB2S':'/new_testingstdfixandontheflyrepstuff_K_OctReimage_restfreqfix_newvelmask_newpeakamp/','DSi':'/Kfield10originals_trial7_field10errors_newexclusion_matchslabwidthtorep/','DSii':'/Kfield10originals_noexclusions/','DSiii':'/Kfield10originals_noexclusions/','DSiv':'/Kfield10originals_noexclusions/','DSv':f'/Kfield10originals_noexclusions_include4-3_150K_trial2/','DSVI':'/Kfield2originals_trial3_8_6-8_7excluded/','DSVII':'/Kfield3originals_200K_trial1_noexclusions/','DSVIII':'/Kfield3originals_175K_trial1_noexclusions/','DSIX':f'/Kfield7originals_150K_trial1_noexclusions/'}
 
 infile=home+source+'/'+sourcedict[source]+pathsuffix
 
@@ -122,15 +123,27 @@ plt.rcParams['figure.dpi'] = 150
 ra=ax.coords[0]
 dec=ax.coords[1]
 if mode == 'trot':
-    vmaxdict={'SgrB2S':575,'DSi':377,'DSii':232,'DSiii':339,'DSiv':325,'DSv':337,'DSVI':441,'DSVII':263,'DSVIII':259,'DSIX':275}
+    vmaxdict={'SgrB2S':352,'DSi':306,'DSii':239,'DSiii':351,'DSiv':398,'DSv':357,'DSVI':427,'DSVII':282,'DSVIII':300,'DSIX':252}
     img=ax.imshow(np.squeeze(hdu.data),vmax=vmaxdict[source],vmin=25,interpolation=None, cmap=cm)#, norm=mpl.colors.LogNorm())#vmaxcntm=0.005, vmaxdsi=300 (no min value),vmaxsgrb2s=605 tmin=10 (try no min value), ntotmax=6.26e17, dsintotmax=2.21e17
 elif mode == 'abundance':
     abundadjust={'DSiii':1e-9,'DSiv':1e-9,'DSVI':1e-8,'DSVII':1e-8,'DSVIII':1e-8,'DSIX':1e-8}
     if source in abundadjust.keys():
         minfix=abundadjust[source]
-        img=ax.imshow(np.squeeze(hdu.data),interpolation=None, vmin=minfix,cmap=cm, norm=mpl.colors.LogNorm())#(vmax=5e-5,vmin=1e-7))
+        img=ax.imshow(np.squeeze(hdu.data),interpolation=None,cmap=cm, norm=mpl.colors.LogNorm(vmin=minfix))#(vmax=5e-5,vmin=1e-7))
     else:
          img=ax.imshow(np.squeeze(hdu.data),interpolation=None, cmap=cm, norm=mpl.colors.LogNorm())#(vmax=5e-5,vmin=1e-7))
+            
+elif mode == 'nh2':
+    minnh2adjust={'SgrB2S':9e22,'DSVI':9e22,'DSVII':9e22}#,'DSi':9e22}
+    maxnh2adjust={'DSii':9e23,'DSv':5e23,'DSIX':3e23}
+    if source in minnh2adjust.keys():
+        minfix=minnh2adjust[source]
+        img=ax.imshow(np.squeeze(hdu.data),interpolation=None, cmap=cm, norm=mpl.colors.LogNorm(vmin=minfix,))
+    elif source in maxnh2adjust.keys():
+        maxfix=maxnh2adjust[source]
+        img=ax.imshow(np.squeeze(hdu.data),interpolation=None, cmap=cm, norm=mpl.colors.LogNorm(vmax=maxfix,))
+    else:
+        img=ax.imshow(np.squeeze(hdu.data),interpolation=None, cmap=cm, norm=mpl.colors.LogNorm())
 else:
     img=ax.imshow(np.squeeze(hdu.data),interpolation=None, cmap=cm)
 lims=ax.axis()
@@ -218,7 +231,7 @@ ax.add_patch(hdubeamplot)
 hdubeamplot.set_facecolor('gray')
 hdubeamplot.set_edgecolor('white')
 
-labeldict={0:'T$_{K}$ (K)',1:r'Intensity (K km s$^{-1}$)',2:r'N$_{upper}$ (cm$^{-2}$)',3:'$n_{transition}$',4:'X(CH$_3$OH)'}
+labeldict={0:'T$_{K}$ (K)',1:r'Intensity (K km s$^{-1}$)',2:r'N$_{upper}$ (cm$^{-2}$)',3:'$n_{transition}$',4:'X(CH$_3$OH)',5:'$N_{H_2}$ (cm$^{-2}$)'}
 ax.axis(lims)
 ra.set_axislabel('RA (J2000)',fontsize=14,minpad=0.9)
 ra.set_ticklabel(exclude_overlapping=True)
