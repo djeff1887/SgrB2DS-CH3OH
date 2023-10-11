@@ -89,7 +89,7 @@ for euk in mastereuks:
 #print(sortedqns)
 
 qnstoplot=[]
-for (qn,plotqn) in zip(sortedoldqns,sortedqns):
+for (qn,plotqn) in zip(sortedoldqns,sortedqns): 
     for mom0 in mom0images:
         if qn_replace(qn) in mom0 and qn_replace(qn) not in excludedlines[source] and qn_replace(qn) not in qnstoplot:
             sortedmom0str.append(mom0)
