@@ -61,7 +61,7 @@ def powerlaw_profile(x,a,n):
 def round_to_1(x):
     return round(x, -int(math.floor(math.log10(abs(x)))))
     
-source=os.getenv('SOURCE')#
+source="SgrB2S"#os.getenv('SOURCE')#
 fielddict={'SgrB2S':1,'DSi':10,'DSii':10,'DSiii':10,'DSiv':10,'DSv':10,'DSVI':2,'DSVII':3,'DSVIII':3,'DSIX':7}
 fnum=fielddict[source]
 print(f'Source: {source}')
@@ -71,7 +71,7 @@ home=base+homedict[source]
 fighome=f'/blue/adamginsburg/d.jeff/repos/CH3OHTemps/figures/{source}/'
 figpath=fighome+homedict[source]
 
-dataversion='sep2023revolution'#homedict[source].replace('/','')
+dataversion='pacman_sep2023revolution'#homedict[source].replace('/','')
 datadir=f'/blue/adamginsburg/d.jeff/imaging_results/SgrB2DS-CH3OH/{dataversion}/'
 
 if not os.path.exists(figpath):
@@ -129,6 +129,7 @@ smooth_trotfits=fits.open(smoothedtrotmap)
 smooth_trot=smooth_trotfits[0].data*u.K
 smooth_trot_err=fits.getdata(smoothedtroterrmap)*u.K
 
+'''These used to say pixmask.cutout, but that was a mistake that didn't appropriately mask things outside of the pacman mask'''
 if source == 'SgrB2S':
     wcsobj=WCS(smooth_trotfits[0].header)
 
@@ -136,26 +137,25 @@ if source == 'SgrB2S':
     pixreg = regs[0].to_pixel(wcsobj)
     pixmask = pixreg.to_mask()
     
-    texmapdata=pixmask.cutout(texmapdata,fill_value=np.nan)
+    texmapdata=pixmask.multiply(texmapdata,fill_value=np.nan)
     '''
     texmask=np.ma.masked_where(texmapdata > 1000, texmapdata)
     texmapdata=texmask.filled()
     '''
-    texerrdata=pixmask.cutout(texerrdata,fill_value=np.nan)
+    texerrdata=pixmask.multiply(texerrdata,fill_value=np.nan)
     snrs=np.squeeze(texmapdata/texerrdata)
-    abunds=pixmask.cutout(abunds,fill_value=np.nan)
-    snr_abund=pixmask.cutout(snr_abund,fill_value=np.nan)
-    nh2s=pixmask.cutout(nh2s,fill_value=np.nan)
-    nh2s_error=pixmask.cutout(nh2s_error,fill_value=np.nan)
-    lums=pixmask.cutout(lums,fill_value=np.nan)
-    lumserr=pixmask.cutout(lumserr,fill_value=np.nan)
-    ntots=pixmask.cutout(ntots,fill_value=np.nan)
-    ntoterr=pixmask.cutout(ntoterr,fill_value=np.nan)
-    h2mass=pixmask.cutout(h2mass,fill_value=np.nan)
-    h2masserr=pixmask.cutout(h2masserr,fill_value=np.nan)
-    smooth_trot=pixmask.cutout(smooth_trot,fill_value=np.nan)
-    smooth_trot_err=pixmask.cutout(smooth_trot_err,fill_value=np.nan)
-    
+    abunds=pixmask.multiply(abunds,fill_value=np.nan)
+    snr_abund=pixmask.multiply(snr_abund,fill_value=np.nan)
+    nh2s=pixmask.multiply(nh2s,fill_value=np.nan)
+    nh2s_error=pixmask.multiply(nh2s_error,fill_value=np.nan)
+    lums=pixmask.multiply(lums,fill_value=np.nan)
+    lumserr=pixmask.multiply(lumserr,fill_value=np.nan)
+    ntots=pixmask.multiply(ntots,fill_value=np.nan)
+    ntoterr=pixmask.multiply(ntoterr,fill_value=np.nan)
+    h2mass=pixmask.multiply(h2mass,fill_value=np.nan)
+    h2masserr=pixmask.multiply(h2masserr,fill_value=np.nan)
+    smooth_trot=pixmask.multiply(smooth_trot,fill_value=np.nan)
+    smooth_trot_err=pixmask.multiply(smooth_trot_err,fill_value=np.nan)
 
 dGC=8.34*u.kpc#per Meng et al. 2019 https://www.aanda.org/articles/aa/pdf/2019/10/aa35920-19.pdf
 
@@ -201,7 +201,7 @@ print(f'Center p: {texmapdata[texpeakpix[0],texpeakpix[1]]}')
 
 #r=35 #for 15,000 AU
 #pixradius=math.ceil((0.08*u.pc/pixtophysicalsize).to(''))
-rdict={'SgrB2S':8000*u.AU,'DSi':8000*u.AU,'DSii':5500*u.AU,'DSiii':6000*u.AU,'DSiv':6000*u.AU,'DSv':7000*u.AU,'DSVII':6000*u.AU,'DSVIII':5400*u.AU,'DSIX':8000*u.AU}#1-6400,4-8500,5-4000,7-6600,S-12000
+rdict={'SgrB2S':9500*u.AU,'DSi':8000*u.AU,'DSii':5500*u.AU,'DSiii':6000*u.AU,'DSiv':6000*u.AU,'DSv':7000*u.AU,'DSVII':6000*u.AU,'DSVIII':5400*u.AU,'DSIX':8000*u.AU}#1-6400,4-8500,5-4000,7-6600,S-12000
 rdictkeys=rdict.keys()
 if source not in rdictkeys:
     r_phys=10000*u.AU
@@ -450,9 +450,10 @@ if source == 'SgrB2S':#Selects masses,luminosities, nh2s, distances, and tempera
     '''
     trotsforabunds=texinradius#list(pixmask.get_values(texmapdata.value))
 
-onlytexabund=True
+onlytexabund=False
 
 if onlytexabund:
+    print('only data for X vs T will be outputted')
     if source == 'SgrB2S':
         np.savetxt(datadir+f'{source}_abuns.txt',abundinradius)
         np.savetxt(datadir+f'{source}_errabuns.txt',(np.array(abundinradius)/np.array(abundsnrinradius)))
@@ -547,7 +548,7 @@ elif source=='DSii':
     outerradius=len(radialdensitylist)-1
 elif source == 'SgrB2S':
     innerradius=1
-    outerradius=len(radialdensitylist)-1
+    outerradius=len(radialdensitylist)-4
 else:
     innerradius=1
     outerradius=None
@@ -659,7 +660,7 @@ if source == 'SgrB2S':
     plt.yscale('log')
     plt.xlabel('$T_{rot}$ (K)',fontsize=14)
     plt.ylabel('X(CH$_3$OH)',fontsize=14)
-    plt.xlim(xmax=plottexmax,xmin=80)
+    plt.xlim(xmax=400)#,xmin=80)
     #plt.colorbar(pad=0,label='Luminosity (Lsun)')
     plt.colorbar(pad=0,label='N(H$_2$) (cm$^{-2}$)')#'N(CH$_3$OH) (cm$^{-2}$)')##
     figsavepath=figpath+f'{dataversion}_texabundiag_r{r}px_rphys{int(pixtophysicalsize.value)}AU_smoothed.png'
@@ -811,7 +812,7 @@ else:
     ax0.set_ylabel('T$_{rot}$ (K)',fontsize=14)
     ax1.set_ylabel('Residuals',fontsize=10)
     if source == 'SgrB2S':
-        ax0.set_ylim(ymax=(800),ymin=100)#max(upperfill)+30),ymin=100)
+        ax0.set_ylim(ymax=(575),ymin=100)#max(upperfill)+30),ymin=100)
     else:
         ax0.set_ylim(ymax=(max(upperfill)+30))
     ax0.legend()
@@ -866,7 +867,7 @@ else:
     plt.show()
 
 
-onlypowerlaw=False
+onlypowerlaw=True
 powerlawpath=datadir+'powerlawtable_bootmasked.fits'
 pwrlwprams=[(round(fit_pl.alpha_1.value,2)*u.dimensionless_unscaled),(round(perr[2],2)*u.dimensionless_unscaled),(round(fit_pl.alpha_2.value,2)*u.dimensionless_unscaled),(round(perr[3],2)*u.dimensionless_unscaled),(round(fit_pl.x_break.value)*u.AU),(round(perr[1])*u.AU)]
 powerlawparams=QTable(rows=[pwrlwprams],names=['alpha_1','alpha_1 error','alpha_2','alpha_2 error','x_break','x_break error'])
@@ -889,7 +890,12 @@ else:
     print('No power law table in current directory')
     if source != 'DSi':
         print('Please change source to DS1 to ensure proper stack')
-        pdb.set_trace()
+        sys.exit()
+    if source == 'SgrB2S':
+        print('Nov 2023 pacman format in effect')
+        print('Please make sure to change this, if it\'s not Nov 2023')
+        powerlawparams.write(powerlawpath)
+        print('Pacman powerlaw table created')
     else:
         print('Creating new power law table')
         powerlawparams.write(powerlawpath)

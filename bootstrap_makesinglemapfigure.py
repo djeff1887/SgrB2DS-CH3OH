@@ -16,6 +16,9 @@ import os
 import math
 import pdb
 import matplotlib.ticker as mticker
+from utilities import *
+import sys
+from astropy.table import QTable
 #from astropy.visualization.wcsaxes import Quadrangle
 
 #plt.close()
@@ -63,8 +66,8 @@ def make_tickstrings(list_of_float):
         list_of_strings.append(string)
     return list_of_strings
 
-set=5
-colordict={0:('trot','inferno','bootstrap_texmap_3sigma_allspw_withnans_weighted.fits'),1:('mom0','bone',"CH3OH~5_1-4_2E1vt0_masked.fits"),2:('nupper','Blues_r'),3:('detections','CMRmap',"ch3ohdetections0_3sigma_allspw_withnans_weighted.fits"),4:('abundance','viridis','bootstrap_ch3ohabundance_3sigma_ntotintercept_intstd_bolocamfeather_smoothedtobolocam.fits'),5:('nh2','Greys_r','bootstrap_nh2map_3sigma_bolocamfeather_smoothedtobolocam.fits')}
+set=3
+colordict={0:('trot','inferno','bootstrap_texmap_3sigma_allspw_withnans_weighted.fits'),1:('mom0','bone',"CH3OH~5_1-4_2E1vt0_masked.fits"),2:('nupper','Blues_r'),3:('detections','CMRmap',"ch3ohdetections0_3sigma_allspw_withnans_weighted.fits"),4:('abundance','viridis','bootstrap_ch3ohabundance_3sigma_ntotintercept_bolocamfeather_smoothedtobolocam.fits'),5:('nh2','Greys_r','bootstrap_nh2map_3sigma_bolocamfeather_smoothedtobolocam.fits')}
 mode=colordict[set][0]
 color=colordict[set][1]
 pathsuffix=colordict[set][2]
@@ -73,18 +76,17 @@ print(f'Mode: {mode}')
 cm= copy.copy(mpl.cm.get_cmap(color))#mom0 bone, temperature inferno, nupper Blues_r, detections CMRmap, abundance cividis
 cm.set_bad('black')
 dGC=8.34*u.kpc#per Meng et al. 2019 https://www.aanda.org/articles/aa/pdf/2019/10/aa35920-19.pdf
-source='SgrB2S'#os.getenv('source')#
+source=os.getenv('source')#
 print(f'Source: {source}\n')
 fields={'SgrB2S':1,'DSi':10,'DSii':10,'DSiii':10,'DSiv':10,'DSv':10,'DSVI':2,'DSVII':3,'DSVIII':3,'DSIX':7}
 fnum=fields[source]
 
 home=f'/blue/adamginsburg/d.jeff/SgrB2DSreorg/field{fnum}/CH3OH/'
 
-cntrfile='/orange/adamginsburg/sgrb2/2017.1.00114.S/imaging_results/Sgr_B2_DS_B6_uid___A001_X1290_X46_continuum_merged_12M_robust2_selfcal4_finaliter_feathered_with_bolocam.fits'#'/blue/adamginsburg/d.jeff/imaging_results/adamcleancontinuum/Sgr_B2_DS_B6_uid___A001_X1290_X46_continuum_merged_12M_robust0_selfcal4_finaliter.image.tt0.pbcor.fits'#
+cntrfile='/orange/adamginsburg/sgrb2/2017.1.00114.S/imaging_results/Sgr_B2_DS_B6_uid___A001_X1290_X46_continuum_merged_12M_robust2_selfcal4_finaliter_feathered_with_bolocam.fits'
+tblfile='pacman_sep2023revolution/nov92023_allpropertytable.fits'
 
-sourcedict={'SgrB2S':'/nov2022continuumsanitycheck_limitvt1lines_centeronlinepeak_repline20-20/','DSi':'/nov2022continuumsanitycheck/','DSii':'/nov2022continuumsanitycheck/','DSiii':'/nov2022continuumsanitycheck/','DSiv':'/nov2022contniuumsanitycheck/','DSv':f'/nov2022contniuumsanitycheck/','DSVI':'/nov2022continuumsanitycheck/','DSVII':f'/nov2022contniuumsanitycheck/','DSVIII':f'/nov2022contniuumsanitycheck/','DSIX':f'/nov2022contniuumsanitycheck/'}#
-
-infile=home+source+'/'+sourcedict[source]+pathsuffix
+infile=home+source+sourcedict[source]+pathsuffix
 
 savefigbase=f'/blue/adamginsburg/d.jeff/repos/CH3OHTemps/figures/{source}'
 savefighome=savefigbase+sourcedict[source]
@@ -103,30 +105,13 @@ else:
 pathsuffix2=pathsuffix.replace('fits','png')
 savefigpath=savefighome+pathsuffix2
 
-'''
-if '"' in infile:
-    infile.replace('"','')
-    print('" Replaced')
-else:
-    print('No quotations found.')
-    pass
-'''
 hdu=fits.open(infile)[0]
 cntrhdu=fits.open(cntrfile)[0]
 
-'''
-Stopgap masking values that are unphysically large
-cntrshape=np.shape(cntrhdu.data)
-upperntot=1e20
-for y in range(cntrshape[0]):
-    for x in range(cntrshape[1]):
-        if cntrhdu.data[y,x] > upperntot:
-            cntrhdu.data[y,x]=np.nan
-        else:
-            pass
-assert upperntot not in cntrhdu.data, 'Unphysical values in Ntot image'
-'''
-cntrrms=0.0002#mjy, np.nanstd(cntrhdu.data)#this is definitely actually in Jy
+cellsize=(np.abs(hdu.header['CDELT1']*u.deg)).to('arcsec')
+pixtophysicalsize=(np.tan(cellsize)*dGC).to('AU')
+
+cntrrms=0.0002#Jy
 cntrlist=cntrrms*np.array([5,9,27,81,128,281])
 
 cntrdata=np.squeeze(cntrhdu.data)
@@ -146,11 +131,11 @@ ax=plt.subplot(projection=hduwcs,slices=sliced)
 ra=ax.coords[0]
 dec=ax.coords[1]
 if mode == 'trot':
-    vmaxdict={'SgrB2S':575,'DSi':377,'DSii':232,'DSiii':339,'DSiv':325,'DSv':337,'DSVI':441,'DSVII':263,'DSVIII':259,'DSIX':275}
+    vmaxdict={'SgrB2S':352,'DSi':306,'DSii':239,'DSiii':351,'DSiv':398,'DSv':357,'DSVI':427,'DSVII':282,'DSVIII':300,'DSIX':252}
     img=ax.imshow(np.squeeze(hdu.data),vmax=vmaxdict[source],vmin=25,interpolation=None, cmap=cm)#, norm=mpl.colors.LogNorm())#vmaxcntm=0.005, vmaxdsi=300 (no min value),vmaxsgrb2s=605 tmin=10 (try no min value), ntotmax=6.26e17, dsintotmax=2.21e17
 elif mode == 'abundance':
-    abundadjust={'SgrB2S':5e-8,'DSiii':5e-9,'DSiv':5e-9,'DSv':2e-9,'DSVI':1e-8,'DSVII':1e-8,'DSVIII':1e-8,'DSIX':1e-8}
-    maxadjust={'SgrB2S':8.75e-7,'DSi':6e-7,'DSiii':7e-8,'DSiv':1e-7,'DSVI':5e-7,'DSVIII':2e-7,}
+    abundadjust={'SgrB2S':5e-8,'DSiii':5e-9,'DSiv':9e-8,'DSv':9e-9,'DSVI':6e-8,'DSVII':2e-8,'DSVIII':3e-8,'DSIX':5e-8}
+    maxadjust={'SgrB2S':1.13e-6,'DSi':9.3e-7,'DSiv':7.9e-7,'DSVI':6.1e-7,'DSVII':3.88e-7,'DSVIII':5.9e-7}#'DSiii':7e-8,
     if source in list(abundadjust.keys()) and source in list(maxadjust.keys()):
         print('bothadjust')
         maxfix=maxadjust[source]
@@ -171,9 +156,14 @@ elif mode == 'abundance':
         maxfix=False
 
 elif mode == 'nh2':
-    nh2min={'SgrB2S':5e22}
-    if source in list(nh2min.keys()):
-        img=ax.imshow(np.squeeze(hdu.data),interpolation=None, cmap=cm, norm=mpl.colors.LogNorm(),vmin=nh2min[source])
+    minnh2adjust={'SgrB2S':9e22,'DSVI':9e22,'DSVII':9e22}#,'DSi':9e22}
+    maxnh2adjust={'DSii':9e23,'DSv':5e23,'DSIX':3e23}
+    if source in minnh2adjust.keys():
+        minfix=minnh2adjust[source]
+        img=ax.imshow(np.squeeze(hdu.data),interpolation=None, cmap=cm, norm=mpl.colors.LogNorm(vmin=minfix,))
+    elif source in maxnh2adjust.keys():
+        maxfix=maxnh2adjust[source]
+        img=ax.imshow(np.squeeze(hdu.data),interpolation=None, cmap=cm, norm=mpl.colors.LogNorm(vmax=maxfix,))
     else:
         img=ax.imshow(np.squeeze(hdu.data),interpolation=None, cmap=cm, norm=mpl.colors.LogNorm())
 else:
@@ -181,9 +171,19 @@ else:
 lims=ax.axis()
 if mode == 'detections':
     ax.contour(cntrdata, levels=cntrlist, colors='black',transform=ax.get_transform(cntrwcs),linewidths=0.5,zorder=1)
+    
+    tbl=QTable.read(tblfile)
+    tblindex=np.where(tbl['Source']==tblconversion[source])[0]
+    srcradius=tbl['Radius'][tblindex]
+    radius_pixels=math.floor((srcradius/pixtophysicalsize).to('').value)
+    if source == 'SgrB2S':
+        circle=mpl.patches.Circle(xy=(65,70),radius=radius_pixels,facecolor='none',edgecolor='cyan',linewidth=1)
+    else:
+        circle=mpl.patches.Circle(xy=(pixdict[source][1],pixdict[source][0]),radius=radius_pixels,facecolor='none',edgecolor='cyan',linewidth=1)
+    ax.scatter(pixdict[source][1],pixdict[source][0],marker='*',color='cyan')
+    ax.add_patch(circle)
 else:
-    ax.contour(cntrdata, levels=cntrlist, colors='white',transform=ax.get_transform(cntrwcs),linewidths=0.5,zorder=1)#, alpha=0.5)#ax.contour(data=hdu.data)#, colors='black')#binary/Greys are other good cmaps
-#ax.contour(cntrdata,levels=(-1*cntrlist),colors='white',linestyles='dashed')#YlGn is alt for both
+    ax.contour(cntrdata, levels=cntrlist, colors='white',transform=ax.get_transform(cntrwcs),linewidths=0.5,zorder=1)
 
 scaledict={'SgrB2S':5000*u.AU,'DSi':5000*u.AU,'DSii':2000*u.AU,'DSiii':2000*u.AU,'DSiv':2000*u.AU,'DSv':2000*u.AU,'DSVI':5000*u.AU,'DSVII':5000*u.AU,'DSVIII':5000*u.AU,'DSIX':5000*u.AU}
 scale=scaledict[source]
@@ -269,8 +269,10 @@ ra.set_axislabel('RA (J2000)',fontsize=14,minpad=0.9)
 ra.set_ticklabel(exclude_overlapping=True)
 dec.set_axislabel('Dec (J2000)',fontsize=14,minpad=-0.7)
 ax.tick_params(fontsize=14)
-cbar1=plt.colorbar(img,label=labeldict[set],pad=0)#,ticks= [10**-8.5, np.log10(maxfix)])#r'S$_\nu$ (Jy)')#'$n_{transition}$')#plt.colorbar()
-#print(cbar1.get_ticks())
+cbar1=plt.colorbar(img,label=labeldict[set],pad=0)
+docbartickfix=['DSii','DSIX']
+skipcbartickfix=['SgrB2S']
+
 if mode == 'abundance':
     if maxfix:
         #ticklimit=False
@@ -282,6 +284,33 @@ if mode == 'abundance':
             #endloop=False
             if not boo:
                 index+=1
+            elif source in skipcbartickfix:
+                print(f'Manually skipping {source} cbar correction.')
+                break
+            else:
+                #lowertick=cbarticks[index]
+                #tickconvert=maxfix/lowertick
+                #cbarticks[index+1]=maxfix
+                cbarticks=np.insert(cbarticks,(index+1),maxfix)
+                ticks_loc=cbarticks.tolist()
+                cbar1.ax.yaxis.set_major_locator(mticker.FixedLocator(ticks_loc))
+                strcbarticks=make_tickstrings(cbarticks)
+                cbar1.ax.set_yticklabels(strcbarticks)#print(cbarticks)
+                break
+                
+    elif source in docbartickfix:
+        print(f'Manual cbar correciton for {source} yay')
+        maxfix=np.nanmax(np.squeeze(hdu.data))
+        cbarticks=cbar1.get_ticks()
+        tickbools=maxfix<cbarticks
+        index=-1
+        for boo in tickbools:
+            #endloop=False
+            if not boo:
+                index+=1
+            elif source in skipcbartickfix:
+                print(f'Manually skipping {source} cbar correction.')
+                break
             else:
                 #lowertick=cbarticks[index]
                 #tickconvert=maxfix/lowertick
@@ -293,7 +322,8 @@ if mode == 'abundance':
                 cbar1.ax.set_yticklabels(strcbarticks)#print(cbarticks)
                 break
 
-
+#pdb.set_trace()
+#sys.exit()
 print(f'Saving figure at {savefigpath}')
 plt.savefig(savefigpath)
 print('Saved')

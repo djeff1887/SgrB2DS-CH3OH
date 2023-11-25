@@ -81,7 +81,7 @@ notreproj_cntmimage=fits.open(cntminfile)
 print(f'Continuum image: {cntminfile}')
 restfreq=notreproj_cntmimage[0].header['RESTFRQ']*u.Hz
 
-source=os.getenv('envsource')
+source='DSi'#os.getenv('envsource')
 assert source is not None; 'os.getenv didn\'t work'
 print(f'Source: {source}')
 
@@ -221,6 +221,8 @@ beamarea_phys=cntmbeam.beam_projected_area(d).to('AU2')#np.pi*(bmajtophyssize/2)
 
 geomeanbeamarea=np.sqrt((bmajtophyssize*bmintophyssize)/2)
 print(f'Geometric mean beam radius (continuum): {geomeanbeamarea}')
+
+sys.exit()
     
 cntmwcs=WCS(cntmimage[0].header)
 texwcs=WCS(texmap[0].header)

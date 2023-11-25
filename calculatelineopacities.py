@@ -16,7 +16,7 @@ from pyspeckit.spectrum.models.lte_molecule import get_molecular_parameters
 
 mpl.interactive(True)
 plt.close('all')
-plt.rcParams["figure.dpi"]=150
+plt.rcParams["figure.dpi"]=300
 
 def lineprofile(sigma,nu_0,nu):
     return (1/(np.sqrt(2*np.pi)*sigma))*np.exp(-(nu-nu_0)**2/(2*sigma**2))
@@ -26,22 +26,24 @@ def N_u(nu,Aij,velocityintegrated_intensity_K):#,velint_intK_err):#taken from py
     #nuppererr=((8*np.pi*k*nu**2)/(h*c**3*Aij))*velint_intK_err
     return nuppercalc#,nuppererr
 
-repodict={'SgrB2S':'/nov2022continuumsanitycheck_limitvt1lines_centeronlinepeak_repline20-20/','DSi':'/nov2022continuumsanitycheck/','DSii':'/nov2022continuumsanitycheck/','DSiii':'/nov2022continuumsanitycheck/','DSiv':'/nov2022contniuumsanitycheck/','DSv':f'/nov2022contniuumsanitycheck/','DSVI':'/nov2022continuumsanitycheck/','DSVII':f'/nov2022contniuumsanitycheck/','DSVIII':f'/nov2022contniuumsanitycheck/','DSIX':f'/nov2022contniuumsanitycheck/'}#{'SgrB2S':'/new_testingstdfixandontheflyrepstuff_K_OctReimage_restfreqfix_newvelmask_newpeakamp/','DSi':'/Kfield10originals_trial7_field10errors_newexclusion_matchslabwidthtorep/','DSii':'/Kfield10originals_noexclusions/','DSiii':'/Kfield10originals_noexclusions/','DSiv':'/Kfield10originals_noexclusions/','DSv':f'/Kfield10originals_noexclusions_include4-3_150K_trial2/','DSVI':'/Kfield2originals_trial3_8_6-8_7excluded/','DSVII':'/Kfield3originals_200K_trial1_noexclusions/','DSVIII':'/Kfield3originals_175K_trial1_noexclusions/','DSIX':f'/Kfield7originals_150K_trial1_noexclusions/'}
+repodict=sourcedict#{'SgrB2S':'/nov2022continuumsanitycheck_limitvt1lines_centeronlinepeak_repline20-20/','DSi':'/nov2022continuumsanitycheck/','DSii':'/nov2022continuumsanitycheck/','DSiii':'/nov2022continuumsanitycheck/','DSiv':'/nov2022contniuumsanitycheck/','DSv':f'/nov2022contniuumsanitycheck/','DSVI':'/nov2022continuumsanitycheck/','DSVII':f'/nov2022contniuumsanitycheck/','DSVIII':f'/nov2022contniuumsanitycheck/','DSIX':f'/nov2022contniuumsanitycheck/'}#{'SgrB2S':'/new_testingstdfixandontheflyrepstuff_K_OctReimage_restfreqfix_newvelmask_newpeakamp/','DSi':'/Kfield10originals_trial7_field10errors_newexclusion_matchslabwidthtorep/','DSii':'/Kfield10originals_noexclusions/','DSiii':'/Kfield10originals_noexclusions/','DSiv':'/Kfield10originals_noexclusions/','DSv':f'/Kfield10originals_noexclusions_include4-3_150K_trial2/','DSVI':'/Kfield2originals_trial3_8_6-8_7excluded/','DSVII':'/Kfield3originals_200K_trial1_noexclusions/','DSVIII':'/Kfield3originals_175K_trial1_noexclusions/','DSIX':f'/Kfield7originals_150K_trial1_noexclusions/'}
 
 k=cnst.k_B
 h=cnst.h
 c=cnst.c
 sources=sourcedict.keys()
-alltablepaths=glob.glob('OpticalDepthTables/*ntot_4-3peak.fits')#('OpticalDepthTables/*_contpeak_nothiiregion.fits')#('_4-3peak.fits')
+alltablepaths=glob.glob(datadir+'OpticalDepthTables/*ntot_4-3peak.fits')#('OpticalDepthTables/*_contpeak_nothiiregion.fits')#('_4-3peak.fits')
 testT=[150,300,500]*u.K
 
+'''
 Jfreqs, Jaij, Jdeg, JEU, Qrot = get_molecular_parameters('CH3OH',
                                                          line_lists=['JPL'],
                                                          fmin=200*u.GHz,
                                                          fmax=250*u.GHz)
-
+'''
+#pdb.set_trace()
 for tblpath in alltablepaths:
-    s=tblpath.replace('OpticalDepthTables/','')
+    s=tblpath.replace(f'{datadir}OpticalDepthTables/','')
     s=s.replace('_ntot_4-3peak.fits','')#('_contpeak_nothiiregion.fits','')#('_4-3peak.fits','')
     print(f'Source: {s}')
     qtable=QTable.read(tblpath)
@@ -70,30 +72,31 @@ for tblpath in alltablepaths:
         masternuppers.append(nupper.to('cm-2').value)
         masterngs.append(nupper.to('cm-2').value/degen)
         for t in testT:
-            qrot=Qrot(t)
-            phi_nu=lineprofile(fwhm_Hz,restfreq,restfreq)
-            intertau=lte_molecule.line_tau(t,ntot,qrot,degen,restfreq,euj,aij)
+            Qrot=qrot(t)
+            lineprofilesigma=fwhm_Hz/(2*np.sqrt(2*np.log(2)))
+            phi_nu=lineprofile(lineprofilesigma,restfreq,restfreq)
+            intertau=lte_molecule.line_tau(t,ntot,Qrot,degen,restfreq,euj,aij)
             tau=(intertau*phi_nu).to('')
             
             tauC=0.6
             cnupper05=nupper*(tauC/(1-np.exp(-tauC)))
             cnuppers05.append(cnupper05)
             pctdiff=(cnupper05-nupper)/((cnupper05+nupper)/2)*100
-            print(f'QN:{line["QNs"]} Tex:{t} Qrot:{qrot} Tau:{tau} Ntot:{ntot.to("cm-2")}, Nupper:{nupper.to("cm-2")} Underestimated by: {round(pctdiff.value,2)}%')
+            print(f'QN:{line["QNs"]} Tex:{t} Qrot:{Qrot} Tau:{tau} Ntot:{ntot.to("cm-2")}, Nupper:{nupper.to("cm-2")} Underestimated by: {round(pctdiff.value,2)}%')
             if t == testT[0]:
                 tau150.append(tau.value)
             elif t == testT[1]:
                 tau300.append(tau.value)
             elif t == testT[2]:
                 tau500.append(tau.value)
-
+    sys.exit()
     savefigbase=f'/blue/adamginsburg/d.jeff/repos/CH3OHTemps/figures/{s}'
     savefighome=savefigbase+repodict[s]
 
-    savefigpath1=savefighome+'qrotfix_lineopacities.png'
-    savefigpath2=savefighome+'qrotfix_linear_lineopacities.png'
-    savefigpath3=savefighome+'qrotfix_tauvseupper.png'
-    savefigpath4=savefighome+'qrotfix_linear_tauvseupper.png'
+    savefigpath1=savefighome+f'{dataversion}_lineopacities.png'
+    savefigpath2=savefighome+f'{dataversion}_linear_lineopacities.png'
+    savefigpath3=savefighome+f'{dataversion}_tauvseupper.png'
+    savefigpath4=savefighome+f'{dataversion}_linear_tauvseupper.png'
 
     plt.figure()
     plt.scatter(masterngs,tau150,c=qtable['EU(K)'].value,label='$Q_{rot}$(150 K)')
@@ -107,6 +110,7 @@ for tblpath in alltablepaths:
     plt.legend()
     plt.colorbar(label='$E_U$ (K)')
     plt.tight_layout()
+    #pdb.set_trace()
     plt.savefig(savefigpath1)
     plt.show()
 
@@ -158,39 +162,4 @@ for tblpath in alltablepaths:
         pickle.dump(zipped,myFile)
         myFile.close
         print(f'Saved pickle of taus to this folder')
-        sys.exit()
-    #sys.exit()
-'''    
-sgrb2scontsource_43tb=100*u.K#61.9*u.K#peak taken from CARTA
-qrot=Q_rot_asym(testT)#3203.211430184744
-fourthreeaij=4.686514876992861e-05*u.Hz
-restfreq=218.44005*u.GHz
-sigma_vel=5*u.km/u.s
-sigma_freq=velocitytofreq(sigma_vel,restfreq)
-freqrange=np.linspace(218.4*u.GHz,218.5*u.GHz,100)
-
-nupper_pix=N_u(restfreq,fourthreeaij,713*u.K*u.km*u.s**-1)#9.44e13*u.cm**-2
-eupper43=45.45988*u.K
-eupperJ=(3/2)*k*eupper43
-degen=9.0
-ntot=lte_molecule.ntot_of_nupper(nupper_pix,eupperJ,sgrb2scontsource_43tb,qrot,degen)
-
-
-phi_nu=[]
-for f in freqrange:
-    phi_nu.append(lineprofile(sigma_freq,restfreq,f).value)
-
-#pdb.set_trace()
-phi_nu=np.array(phi_nu)*u.MHz**-1
-
-intertau=lte_molecule.line_tau(sgrb2scontsource_43tb,ntot,qrot,degen,restfreq,eupperJ,fourthreeaij)
-tau=(intertau*phi_nu).to('')
-
-plt.plot(freqrange,tau)
-plt.xlabel('Freq (GHz)')
-plt.ylabel(r'{\tau}')
-plt.title(f'{testT}, {sigma_vel} line width')
-plt.show()
-
-#print(f'Tau = {tau}')
-'''
+        #sys.exit()

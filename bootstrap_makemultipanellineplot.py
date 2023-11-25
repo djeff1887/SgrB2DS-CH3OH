@@ -24,7 +24,13 @@ excludelineformatstrings={}
 
 truesubplotwidth=10*u.km/u.s
 
-for source in list(sourcedict.keys())[0:1]:
+reprojcontfits=fits.open(contpath)
+reprojcont=reprojcontfits[0].data*u.Jy
+reprojcontrestfreq=225*u.GHz#manual addition 11/9/2022, wiggle room w/i GHz
+cntmbeam=radio_beam.Beam.from_fits_header(reprojcontfits[0].header)
+reprojcont_K=reprojcont.to('K',cntmbeam.jtok_equiv(reprojcontrestfreq))
+
+for source in list(sourcedict.keys()):
     print(f'Source:{source}')
     fnum=fields[source]
     pixcoords=pixdict[source]
@@ -240,7 +246,7 @@ for source in list(sourcedict.keys())[0:1]:
                     i+=1
                     
     excludelineformatstrings.update({source:exclfmtqns})
-    fig.text(0.5, 0.04, r'$v_{LOS}$ (km s$^{-1}$)', ha='center',fontsize=14)
+    fig.text(0.5, 0.04, r'$v_{offset}$ (km s$^{-1}$)', ha='center',fontsize=14)
     fig.text(0.04, 0.5, r'$T_{b}$ (K)', va='center', rotation='vertical',fontsize=14)
     #fig.supylabel(r'$T_{b}$ (K)')
     #fig.supxlabel(r'$v_{rel}$ (km s$^{-1}$)')

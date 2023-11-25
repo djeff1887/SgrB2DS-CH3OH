@@ -70,13 +70,9 @@ sourcelocs=
 homedict={'SgrB2S':'/blue/adamginsburg/d.jeff/XCLASS2021/files/SgrB2S/OctReimage_K/','DSi':'/blue/adamginsburg/d.jeff/XCLASS2021/files/DSi/field10originals_K/','DSii':'DSi':'/blue/adamginsburg/d.jeff/XCLASS2021/files/DSii/field10originals_K/','DSiii':'/aug2023qrotfix/','DSiv':'/aug2023qrotfix/','DSv':f'/aug2023qrotfix/','DSVI':'/aug2023qrotfix/','DSVII':f'/aug2023qrotfix/','DSVIII':f'/aug2023qrotfix/','DSIX':f'/aug2023qrotfix/'}
 
 origsourcepath=f'/blue/adamginsburg/d.jeff/SgrB2DSreorg/field{fnum}/CH3OH/{source}/{sourcepath}'
-texlocs={'SgrB2S':r'C:/Users/desmond/Dropbox/Research/SgrB2DS/Sources/SgrB2S/nov2022continuumsanitycheck_limitvt1lines_centeronlinepeak_repline20-20/','DSi':r'C:/Users/desmond/Dropbox/Research/SgrB2DS/Sources/DS1/nov2022continuumsanitycheck/','DSii':r'C:/Users/desmond/Dropbox/Research/SgrB2DS/Sources/DS2/nov2022continuumsanitycheck/','DSiii':r'C:/Users/desmond/Dropbox/Research/SgrB2DS/Sources/DSiii/Kfield10originals_noexclusions/','DSiv':r'C:/Users/desmond/Dropbox/Research/SgrB2DS/Sources/DSiv/Kfield10originals_noexclusions/','DSv':r'C:/Users/desmond/Dropbox/Research/SgrB2DS/Sources/DS5/Kfield10originals_noexclusions_include4-3_150K_trial2/','DSVI':r'C:/Users/desmond/Dropbox/Research/SgrB2DS/Sources/DS6/nov2022continuumsanitycheck/','DSVII':r'C:/Users/desmond/Dropbox/Research/SgrB2DS/Sources/DS7/Kfield3originals_trial1_noexclusions/','DSVIII':r'C:/Users/desmond/Dropbox/Research/SgrB2DS/Sources/DS8/nov2022contniuumsanitycheck/','DSIX':r'C:/Users/desmond/Dropbox/Research/SgrB2DS/Sources/DS9/Kfield7originals_150K_trial1_noexclusions/','DS10':r'C:/Users/desmond/Dropbox/Research/SgrB2DS/Sources/DS10/march2023discovery_5kmslw/'}
+texlocs=
 
-if source in arabicswitch.keys():
-    texlocs[source]=texlocs[source].replace(source,arabicswitch[source])
-    texmappath=texlocs[source]+'texmap_3sigma_allspw_withnans_weighted.fits'
-else:
-    texmappath=texlocs[source]+'texmap_3sigma_allspw_withnans_weighted.fits'
+texmappath=origsourcepath+texlocs[source]+'bootstrap_texmap_3sigma_allspw_withnans_weighted.fits'
     
 fwhmpath=glob.glob(texlocs[source]+'*fwhm*')[0]
 nch3ohpath=glob.glob(texlocs[source]+'ntotmap_allspw_withnans_weighted_useintercept_3sigma.fits')[0]

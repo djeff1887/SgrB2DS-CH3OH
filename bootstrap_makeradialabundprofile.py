@@ -397,7 +397,7 @@ for bin in listordered_centrtopix:
     #pdb.set_trace()
 
 avgabunerrpath=f'{source}_err_intstd_avgabun.txt'
-np.savetxt(avgabunerrpath,np.array(radialabunerr))
+#np.savetxt(avgabunerrpath,np.array(radialabunerr))
 
 if source == 'SgrB2S':
     rr2_sgrb2s=centrtopix
@@ -420,7 +420,7 @@ if source == 'SgrB2S':
     plt.colorbar(pad=0,label='N(H$_2$) (cm$^{-2}$)')#'N(CH$_3$OH) (cm$^{-2}$)')##
     figsavepath=figpath+f'texabundiag_contsanitycheck_r{r}px_rphys{int(pixtophysicalsize.value)}AU_smoothed.png'
     #pdb.set_trace()
-    plt.savefig(figsavepath,bbox_inches='tight',)#overwrite=True)
+    #plt.savefig(figsavepath,bbox_inches='tight',)#overwrite=True)
     plt.show()
 
     plt.figure()
@@ -431,7 +431,7 @@ if source == 'SgrB2S':
     plt.colorbar(pad=0,label='N(H$_2$) (cm$^{-2}$)')#'T$_K$ (K)')
     figsavepath=figpath+f'real_radialavgabundiag_contsanitycheck_r{r}px_rphys{int(pixtophysicalsize.value)}AU_smoothed.png'
     #pdb.set_trace()
-    plt.savefig(figsavepath,bbox_inches='tight',)#overwrite=True)
+    #plt.savefig(figsavepath,bbox_inches='tight',)#overwrite=True)
     plt.show()
     '''
     savetxt=np.array([listordered_centrtopix,radialabun])
@@ -447,7 +447,7 @@ else:
     #plt.colorbar(pad=0,label='Luminosity (Lsun)')
     plt.colorbar(pad=0,label='N(H$_2$) (cm$^{-2}$)')#'N(CH$_3$OH) (cm$^{-2}$)')##
     figsavepath=figpath+f'texabundiag_contsanitycheck_r{r}px_rphys{int(pixtophysicalsize.value)}AU_smoothed.png'
-    plt.savefig(figsavepath,bbox_inches='tight',)#overwrite=True)
+    #plt.savefig(figsavepath,bbox_inches='tight',)#overwrite=True)
     plt.show()
 
     plt.figure()
@@ -457,7 +457,7 @@ else:
     plt.ylabel('X(CH$_3$OH)',fontsize=14)
     #plt.colorbar(pad=0,label='N(H$_2$) (cm$^{-2}$)')#'T$_K$ (K)')
     figsavepath=figpath+f'real_radialavgabundiag_contsanitycheck_r{r}px_rphys{int(pixtophysicalsize.value)}AU_smoothed.png'
-    plt.savefig(figsavepath,bbox_inches='tight',)#overwrite=True)
+    #plt.savefig(figsavepath,bbox_inches='tight',)#overwrite=True)
     plt.show()
     '''
     savetxt=np.array([listordered_centrtopix,radialabun])

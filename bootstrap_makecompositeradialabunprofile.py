@@ -6,6 +6,7 @@ import math
 import pdb
 import matplotlib as mpl
 from collections import OrderedDict
+import sys
 
 mpl.interactive(True)
 plt.close('all')
@@ -109,16 +110,31 @@ def rolling_median2(data,kernel,error):
         pdb.set_trace()
     return median,mederr
 
+pacmanfix=True
 linestyles = {'solid':(0, ()),'densely dashdotdotted':(0, (3, 1, 1, 1, 1, 1)),'dotted':(0, (1, 5)),'densely dotted':(0, (1, 1)),'dashed':(0, (5, 5)),'densely dashed':(0, (5, 1)),'solid2':(0, ()),'dashdotted':(0, (3, 5, 1, 5)),'densely dashdotted':  (0, (3, 1, 1, 1)),'densely dashdotdotdot':(0, (3, 1, 1, 1, 1, 1))}
 
+pacman='pacman_sep2023revolution'
 dataversion='sep2023revolution'#homedict[source].replace('/','')
 datadir=f'/blue/adamginsburg/d.jeff/imaging_results/SgrB2DS-CH3OH/{dataversion}/'
+pac_datadir='/blue/adamginsburg/d.jeff/imaging_results/SgrB2DS-CH3OH/pacman_sep2023revolution/'
 
 paths=glob.glob(datadir+'*radialavgabun*.txt')
 errpaths=glob.glob(datadir+'*err_avgabun.txt')
+
+if pacmanfix:
+    print('Pacman Fix online')
+    pacpath=glob.glob(pac_datadir+'*radialavgabun*.txt')
+    errpacpath=glob.glob(pac_datadir+'*err_avgabun.txt')
+
+    oldpath=paths[9]
+    assert 'SgrB2S' in oldpath, 'SgrB2S not in old path'
+    paths[9]=pacpath[0]
+    comptable=Table.read(pac_datadir+'nov92023_allpropertytable.fits')
+else:
+    comptable=Table.read(datadir+'nov92023_allpropertytable.fits')
+
 figpath='/blue/adamginsburg/d.jeff/repos/CH3OHTemps/figures/'
 
-comptable=Table.read(datadir+'densabunpowersummarytable.fits')
 sources=comptable['Source']
 radii=comptable['Radius']
 names={'DSi':'DS1','DSii':'DS2','DSiii':'DS3','DSiv':'DS4','DSv':'DS5','DSVI':'DS6','DSVII':'DS7','DSVIII':'DS8','DSIX':'DS9','SgrB2S':'SgrB2S'}
@@ -166,9 +182,9 @@ for src,ls in zip(names.keys(),linestyles.keys()):
 plt.yscale('log')
 plt.xlabel('$r$ (AU)',fontsize=14)
 plt.ylabel('X(CH$_3$OH)',fontsize=14)
-plt.ylim(ymin=1e-8)
-plt.legend()
+plt.ylim(ymin=5e-8)
+plt.legend(bbox_to_anchor=(1.25, 1), loc="upper right")
 #plt.colorbar(pad=0,label='N(H$_2$) (cm$^{-2}$)')#'T$_K$ (K)')
-figsavepath=figpath+f'radialavgabundiag_{dataversion}_allsource_noradcut_fillbetween.pdf'
+figsavepath=figpath+f'radialavgabundiag_{pacman}_allsource_noradcut_fillbetween.pdf'
 plt.savefig(figsavepath,bbox_inches='tight')
 plt.show()

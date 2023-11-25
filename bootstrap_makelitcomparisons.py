@@ -7,6 +7,8 @@ import matplotlib as mpl
 import pdb
 import glob
 import sys
+from utilities import *
+from astropy.io import fits
 
 plt.close('all')
 mpl.interactive(True)
@@ -59,6 +61,23 @@ err_dindices=[0.11,0.21,0.09,0.011,0.07,0.07,0.08,0.03,0.11,0.06,0.27,0.23,0.09,
 tindices=[0.34,0.48,0.96,0.27,0.14,0.21,0.25,0.31,0.56,1.35,1.48,0.41,0.56,0.23,0.29,0.43,0.59,0.38,0.45,0.59,0.45,0.54]
 err_tindices=[0.11,0.2,0.07,0.11,0.05,0.04,0.08,0.02,0.1,0.05,0.27,0.22,0.09,0.02,0.05,0.05,0.01,0.04,0.07,0.06,0.03,0.08]
 
+xch3oh_sgrb2n1=np.array([4.8e-5,1.1e-4])#N1S,1W Table 3 https://www.aanda.org/articles/aa/pdf/2022/09/aa43383-22.pdf
+errorxch3oh_sgrb2n1=np.array([2.3e-5,0.5e-4])
+nch3oh_sgrb2n=np.array([4e19,4e18,2.5e17,9.5e17])#N2-5
+nh2_sgrb2n=np.array([1.8e24,0.5e24,2.9e24,1e24])
+xch3oh_sgrb2n=(nch3oh_sgrb2n/nh2_sgrb2n)
+xch3oh_wbsmm1=[3.8e-7]# Table 4 https://iopscience.iop.org/article/10.3847/1538-4357/ac289b/pdf
+errorxch3oh_wbsmm1=[1.3e-7]
+xch3oh_w51=[7.08e-6,2.338e-6,1.526e-6,3.2e-6,1.588e-6]#e2,e8,north-left,north-middle,north-right,mm14; data from Adam, published work is here https://iopscience.iop.org/article/10.3847/1538-4357/aa6bfa/pdf
+xch3oh_orionkl=[2.2e-6]#Table 8 https://iopscience.iop.org/article/10.1088/0004-637X/787/2/112/pdf, comparable spatial resolution @ ~4000 AU res
+trotforabun_w51=[318.276,212.7,189.821,228.801,216.67]
+trotforabun_orionkl=[128]#Section 5.31 https://iopscience.iop.org/article/10.1088/0004-637X/787/2/112/pdf
+sys.exit()
+trot_sgrb2n1=[104,131]
+errortrot_sgrb2n1=[1,2]
+trot_sgrb2n=[160,170,190,180]
+#pdb.set_trace()
+
 coremasses=[]
 eta150_fullmasses=[]
 for n,e_n,outer,inner,dindex in zip(nins,eta150_nins,coreradii,innerradii,dindices):
@@ -72,7 +91,7 @@ percentdiff=np.abs((np.array(coremasses)-np.array(eta150_fullmasses))/(np.array(
 avg_ratio=np.mean(percentdiff)
 print(f'Average percent difference between scaled and eta150 masses: {avg_ratio}')
 
-comptable=Table.read(datadir+'densabunpowersummarytable.fits')
+comptable=Table.read(datadir+'pacman_lstarch3oh_densabunpowersummarytable.fits')
 dsmasses=np.array(comptable['H_2 Mass'])#list(comptable[4])[1:])
 errormass=np.array(comptable['H_2 Mass error'])#list(comptable[5])[1:])#list(comptable[5])[1:]
 lums=np.array(comptable['Luminosity'])#list(comptable[6])[1:]
@@ -90,10 +109,15 @@ dsdensindex=np.array(comptable['density_alpha'])#list(comptable[18])[1:]
 err_dsdens=np.array(comptable['err_densityalpha'])#list(comptable[19])[1:]
 dstempindex=np.array(comptable['alpha_2'])
 dstempindex[3]=comptable['alpha_1'][3]
-dstempindex[8]=0.62#comptable['alpha_1'][8]
+dstempindex[8]=comptable['alpha_1'][8]
+dstempindex[9]=comptable['alpha_1'][9]
 err_dstempindices=np.array(comptable['alpha_2 error'])
 err_dstempindices[3]=comptable['alpha_1 error'][3]
 err_dstempindices[8]=0.03#comptable['alpha_1 error'][8]
+
+srealpeak=662.299
+error_srealpeak=190.604
+
 
 radialmassprofilepaths=glob.glob('*massinterior*')
 names=['DSi_','DSii_','DSiii_','DSiv','DSv','DSVI_','DSVII_','DSVIII_','DSIX','SgrB2S']
@@ -139,20 +163,146 @@ print(f'Difference between DS and CORE p indices: {pdiff_dindex*100}%\n')
 print(f'Mean CORE temperature index: {meancoretempindex} +/- {err_meancoretempindex}')
 print(f'Mean DS temperature index: {meandstempindex} +/- {err_meandstempindex}')
 print(f'Difference between DS and CORE p indices: {pdiff_tindex*100}%')
-#pdb.set_trace()
+
+trotsforabun_ds=np.array([])
+errortrotsforabun_ds=np.array([])
+abuntemp_s=0
+errorabuntemp_s=0
+for i, s in enumerate(sourcedict.keys()):
+    if s == 'SgrB2S':
+        fnum=fields[s]
+        datafolder=sourcedict[s]
+        base=f'/blue/adamginsburg/d.jeff/SgrB2DSreorg/field{fnum}/CH3OH/{s}/{datafolder}'
+        path_xch3oh=base+'bootstrap_ch3ohabundance_3sigma_ntotintercept_bolocamfeather_smoothedtobolocam.fits'
+        path_trot=base+"bootstrap_texmap_3sigma_allspw_withnans_weighted.fits"
+        path_errortrot=base+'test_error_trot_boostrap10000_nonegativeslope.fits'
+        map_xch3oh=fits.getdata(path_xch3oh)
+        map_trot=fits.getdata(path_trot)
+        map_errortrot=np.squeeze(fits.getdata(path_errortrot))
+        loc=np.where((map_xch3oh % abuns[9])==np.nanmin(map_xch3oh % abuns[9]))#Find the minimum mod to ID the peak abundance pixel 
+        trot_peakabun=map_trot[loc[0][0],loc[1][0]]
+        errortrot_peakabun=map_errortrot[loc[0][0],loc[1][0]]
+        abuntemp_s=trot_peakabun
+        errorabuntemp_s=errortrot_peakabun
+    else:
+        fnum=fields[s]
+        datafolder=sourcedict[s]
+        base=f'/blue/adamginsburg/d.jeff/SgrB2DSreorg/field{fnum}/CH3OH/{s}/{datafolder}'
+        path_xch3oh=base+'bootstrap_ch3ohabundance_3sigma_ntotintercept_bolocamfeather_smoothedtobolocam.fits'
+        path_trot=base+"bootstrap_texmap_3sigma_allspw_withnans_weighted.fits"
+        path_errortrot=base+'test_error_trot_boostrap10000_nonegativeslope.fits'
+        map_xch3oh=fits.getdata(path_xch3oh)
+        map_trot=fits.getdata(path_trot)
+        map_errortrot=np.squeeze(fits.getdata(path_errortrot))
+        loc=np.where((map_xch3oh % abuns[i-1])==np.nanmin(map_xch3oh % abuns[i-1]))
+        trot_peakabun=map_trot[loc[0][0],loc[1][0]]
+        errortrot_peakabun=map_errortrot[loc[0][0],loc[1][0]]
+        trotsforabun_ds=np.append(trotsforabun_ds,trot_peakabun)
+        errortrotsforabun_ds=np.append(errortrotsforabun_ds,errortrot_peakabun)
+        
+trotsforabun_ds=np.append(trotsforabun_ds,abuntemp_s)
+errortrotsforabun_ds=np.append(errortrotsforabun_ds,errorabuntemp_s)
+
 wbfmt='o'
 w51fmt='x'
 corefmt='^'
 dsfmt='*'
+n1fmt='p'
+nfmt='s'
+klfmt='P'
 savefigpath='/blue/adamginsburg/d.jeff/repos/CH3OHTemps/figures/LitComparisons/'
 
+names=['Sgr B2(N)','Sgr B2(DS)','WB 89789 SMM1','W51','Orion KL']
+colors={names[0]:'cyan',names[1]:'red',names[2]:'blue',names[3]:'orange',names[4]:'pink'}
+numofregions=len(names)
+regionxs=np.arange(numofregions)*2
+all_xch3oh_sgrb2n=np.append(xch3oh_sgrb2n1,xch3oh_sgrb2n)
+datasets=[all_xch3oh_sgrb2n,abuns,xch3oh_wbsmm1,xch3oh_w51,xch3oh_orionkl]
+width = 0.25  # the width of the bars
+multiplier = 0
+'''
+hist_range=[np.min(datasets[0]),np.max(datasets[0])]
+binned_datasets = [np.histogram(d, range=hist_range, bins=numberofbins)[0] for d in datasets]
+binned_maximums = np.max(binned_datasets, axis=1)
+x_locations = np.arange(0, sum(binned_maximums), np.max(binned_maximums))
+
+bin_edges = np.linspace(hist_range[0], hist_range[1], numberofbins + 1)
+heights = np.diff(bin_edges)
+centers = bin_edges[:-1]
+'''
+
 plt.rcParams['figure.dpi']=300
+
+fig=plt.figure(figsize=(7,6))
+plt.errorbar(trot_sgrb2n1,xch3oh_sgrb2n1,xerr=errortrot_sgrb2n1,yerr=errorxch3oh_sgrb2n1,marker=n1fmt,label='Sgr B2(N1)',color='cyan',ls='none')
+plt.errorbar(trot_sgrb2n,xch3oh_sgrb2n,marker=nfmt,label='Sgr B2(N2-N5)',color='cyan',ls='none')
+plt.errorbar(trotsforabun_ds,abuns,xerr=errortrotsforabun_ds,yerr=errorabun,fmt=dsfmt,label='Sgr B2(DS)',color='red')
+plt.errorbar(wbsmm1trot.value,xch3oh_wbsmm1,xerr=trotwb_err.value,yerr=errorxch3oh_wbsmm1,fmt=wbfmt,label='WB 89789 SMM1')
+plt.errorbar(trotforabun_w51,xch3oh_w51,marker=w51fmt,color='orange',label='W51',ls='none')
+plt.errorbar(trotforabun_orionkl,xch3oh_orionkl,marker=klfmt,color='pink',label='Orion KL')
+plt.yscale('log')
+plt.xlabel('T$_{rot}$ (K)',fontsize=14)
+plt.ylabel('X(CH$_3$OH)$_{peak}$',fontsize=14)
+plt.legend()
+plt.savefig(savefigpath+f'{dataversion}_globalhotcore_xch3ohpeakvstrot.png')
+plt.show()
+#sys.exit()
+
+widthofregionbars=0.5
+fig, ax = plt.subplots(layout='constrained')
+count=0
+
+for dataset,regionx in zip(datasets,regionxs):
+    assert len(datasets) == len(regionxs), 'Number of regions mismatched'
+    firstbar=True
+    numsources=len(dataset)
+    sourceindex=np.arange(len(dataset))
+    bindivision=numsources*width
+    if numsources > 1:
+        sourcexs=np.linspace((regionx-(widthofregionbars)),(regionx+(widthofregionbars)),numsources)
+    else:
+        sourcexs=[regionx]
+    print(sourcexs)
+    #pdb.set_trace()
+    for obj,x in zip(dataset,sourcexs):
+        offset = width * multiplier
+        if firstbar:
+            rects = ax.bar(x, obj, width,edgecolor='black',color=colors[names[count]],label=names[count])
+            firstbar=False
+        else:
+            rects = ax.bar(x, obj, width,edgecolor='black',color=colors[names[count]])
+        #ax.bar_label(rects, padding=3)
+    count+=1
+#ax.set_xticks(numofbins + width, names)
+plt.yscale('log')
+
+# Add some text for labels, title and custom x-axis tick labels, etc.
+ax.set_ylabel('X(CH$_3$OH)$_{peak}$')
+ax.set_xticks(regionxs, names)
+#ax.legend(loc='upper right')
+plt.savefig(savefigpath+f'{dataversion}_globalhotcore_hist_xch3ohpeak.png')
+plt.show()
+sys.exit()
+'''
+fig, ax = plt.subplots()
+for x_loc, binned_data in zip(x_locations, binned_datasets):
+    lefts = x_loc - 0.5 * binned_data
+    ax.barh(centers, binned_data, left=lefts,height=heights)
+
+ax.set_xticks(x_locations, names)
+
+ax.set_ylabel("XCH3OH")
+#ax.set_xlabel("Data sets")
+
+plt.show()
+'''
 
 fig=plt.figure(figsize=(7,6))
 plt.errorbar(wbsmm1mass.value,wbsmm1trot.value,yerr=trotwb_err.value,fmt=wbfmt,label='WB 89789 SMM1')
 plt.errorbar(w51mass,w51trot,fmt=w51fmt,label='W51')
 plt.errorbar(coremasses,coretrots.value,yerr=trotcore_errs.value,xerr=err_coremasses,fmt=corefmt,label='CORE catalogue')
-plt.errorbar(dsmasses,temps,yerr=errortemps,xerr=errormass,fmt=dsfmt,label='DS Hot Cores')
+plt.errorbar(dsmasses[:8],temps[:8],yerr=errortemps[:8],xerr=errormass[:8],fmt=dsfmt,label='Sgr B2(DS1-DS9)')
+plt.errorbar([dsmasses[9],dsmasses[9]],[temps[9],srealpeak],yerr=[errortemps[9],error_srealpeak],xerr=[errormass[9],errormass[9]],fmt=dsfmt,label='Sgr B2(S)')
 plt.xscale('log')
 plt.yscale('log')
 plt.ylabel('T$_{peak}$ (K)',fontsize=14)
@@ -160,6 +310,7 @@ plt.xlabel('M$_{core}$ (M$_\odot$)',fontsize=14)
 plt.legend()
 plt.savefig(savefigpath+f'{dataversion}_tempvsmass.png')
 plt.show()
+sys.exit()
 
 firstline=True
 plt.figure(figsize=(7,6))

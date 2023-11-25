@@ -21,6 +21,8 @@ sumtable=QTable.read(datadir+'hotcoresummarytable.fits')
 radii=sumtable['Radius']
 
 #order DS1,2,3,4,5,6,7,8,9,SgrB2S
+ntot=[]
+ntoterr=[]
 abuns=[]#[2.7976e-7,1.30031e-7,1.91618e-8,3.80548e-8,1.97814e-8,1.4809e-7,4.26428e-8,5.21027e-8,7.227e-8,7.57974e-07]*u.dimensionless_unscaled
 errabuns=[]#[1.17176e-8,5.47361e-9,6.53246e-10,1.80802e-9,1.50475e-9,6.03875e-9,1.97995e-9,2.54539e-9,3.88543e-9,3.10019e-8]*u.dimensionless_unscaled
 
@@ -32,16 +34,21 @@ for core in source:
     home=base+homedict[core]
     centralpix=pixdict[core]
 
+    ntotmap=home+'bootstrap_smoothed_ntot_to_bolocamfeathercont_3sigma.fits'
+    ntoterrmap=home+'bootstrap_smoothed_ntot_err.fits'
     abunmap=home+'bootstrap_ch3ohabundance_3sigma_ntotintercept_bolocamfeather_smoothedtobolocam.fits'
     abunerrmap=home+'bootstrap_ch3ohabundance_error_ntotintercept_bolocamfeather_smoothedtobolocam.fits'
 
     abundfits=fits.open(abunmap)
     abundances=abundfits[0].data
     err_abund=fits.getdata(abunerrmap)
+    ntot=fits.getdata(abunmap)
+    ntoterr=fits.getdata(abunerrmap)
+    
     if core == 'SgrB2S':
-        corerad=10000*u.AU#15000,radii[i]
+        corerad=9000*u.AU#15000,radii[i]
     else:
-        corerad=2000*u.AU
+        corerad=3000*u.AU
     cellsize=(np.abs(abundfits[0].header['CDELT1']*u.deg)).to('arcsec')
     #pixperbeam=(cntmbeam.sr/((cellsize**2).to('sr'))).value
 
@@ -54,6 +61,8 @@ for core in source:
 
     abunsinradius=abundances[rr2<r]
     abunerrinradius=err_abund[rr2<r]
+    ntotinradius=ntot[rr2<r]
+    ntoterrinradius=ntoterr[rr2<2]
     
     if core == 'SgrB2S' or core == 'DSVI':
         peakabundance=np.nanmax(abunsinradius)
@@ -63,6 +72,12 @@ for core in source:
         peakabundance=abundances[centralpix[0],centralpix[1]]
         erroronpeak=err_abund[centralpix[0],centralpix[1]]
 
+    peakntot=np.nanmax(ntotinradius)
+    ntotpeakloc=np.where(ntot==peakntot)
+    peakntoterr=ntoterr[int(ntotpeakloc[0]),int(ntotpeakloc[1])]
+    print(peakntot)
+    print(peakntoterr)
+    pdb.set_trace()
     abuns.append(peakabundance)
     print(f'Abundance: {peakabundance}')
     errabuns.append(erroronpeak)

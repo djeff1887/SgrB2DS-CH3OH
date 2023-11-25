@@ -7,6 +7,7 @@ import pdb
 import matplotlib as mpl
 from collections import OrderedDict
 from astropy.io import fits
+import sys
 
 mpl.interactive(True)
 plt.close('all')
@@ -146,5 +147,6 @@ norms, _ = np.histogram(rr, bins=rrs[:], weights=np.ones_like(data))
 plt.plot((edges[:-1] + edges[1:])/2, avgs/norms)
 
 #plt.plot(rr.flat, data.flat, ',')
+#plt.ylim(ymin=5e-8)
 plt.yscale('log')
 plt.show()

@@ -11,6 +11,7 @@ import matplotlib as mpl
 import radio_beam
 import pdb
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
+from utilities import *
 
 
 plt.close('all')
@@ -22,18 +23,18 @@ cm.set_bad('black')
 #sourcepath='/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/SgrB2S/z0_0002306756533745274_testbox2_5-6mhzwidth/'
 sgrb2dspath='/orange/adamginsburg/sgrb2/2017.1.00114.S/imaging_results/Sgr_B2_DS_B6_uid___A001_X1290_X46_continuum_merged_12M_robust2_selfcal4_finaliter_feathered_with_bolocam.fits'
 notfeath_sgrb2dspath="/blue/adamginsburg/d.jeff/imaging_results/adamcleancontinuum/Sgr_B2_DS_B6_uid___A001_X1290_X46_continuum_merged_12M_robust0_selfcal4_finaliter.image.tt0.pbcor.fits"# Using this one b/c the feathered one has that weird background
-sgrb2stexmap="/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/SgrB2S/nov2022continuumsanitycheck_limitvt1lines_centeronlinepeak_repline20-20/bootstrap_texmap_3sigma_allspw_withnans_weighted.fits"
+sgrb2stexmap="/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/SgrB2S/sep2023-5removelasttorsionalline/bootstrap_texmap_3sigma_allspw_withnans_weighted.fits"
 #sgrb2stexmap="/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/SgrB2S/z0_0002306756533745274_testbox2_5-6mhzwidth/texmap_3sigma_allspw_withnans_weighted.fits"
-sgrb2dsitexmap="/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSi/nov2022continuumsanitycheck/bootstrap_texmap_3sigma_allspw_withnans_weighted.fits"
+sgrb2dsitexmap="/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSi/sep2023-5addvt2linesbackin/bootstrap_texmap_3sigma_allspw_withnans_weighted.fits"
 #sgrb2dsitexmap="/blue/adamginsburg/d.jeff/SgrB2DSreorg/field1/CH3OH/DSi/z0_000186407_box1_5-6mhzwidth/texmap_3sigma_allspw_withnans_weighted.fits"
-sgrb2dsiitexmap="/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSii/nov2022continuumsanitycheck/bootstrap_texmap_3sigma_allspw_withnans_weighted.fits"
-sgrb2dsiiitexmap="/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSiii/nov2022continuumsanitycheck/bootstrap_texmap_3sigma_allspw_withnans_weighted.fits"
-sgrb2dsivtexmap="/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSiv/nov2022contniuumsanitycheck/bootstrap_texmap_3sigma_allspw_withnans_weighted.fits"
-dsvtexmap="/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSv/nov2022contniuumsanitycheck/bootstrap_texmap_3sigma_allspw_withnans_weighted.fits"
-ds6texmap="/blue/adamginsburg/d.jeff/SgrB2DSreorg/field2/CH3OH/DSVI/nov2022continuumsanitycheck/bootstrap_texmap_3sigma_allspw_withnans_weighted.fits"
-ds7texmap="/blue/adamginsburg/d.jeff/SgrB2DSreorg/field3/CH3OH/DSVII/nov2022contniuumsanitycheck/bootstrap_texmap_3sigma_allspw_withnans_weighted.fits"
-ds8texmap="/blue/adamginsburg/d.jeff/SgrB2DSreorg/field3/CH3OH/DSVIII/nov2022contniuumsanitycheck/bootstrap_texmap_3sigma_allspw_withnans_weighted.fits"
-ds9texmap="/blue/adamginsburg/d.jeff/SgrB2DSreorg/field7/CH3OH/DSIX/nov2022contniuumsanitycheck/bootstrap_texmap_3sigma_allspw_withnans_weighted.fits"
+sgrb2dsiitexmap="/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSii/sep2023-2widerrefslab/bootstrap_texmap_3sigma_allspw_withnans_weighted.fits"
+sgrb2dsiiitexmap="/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSiii/sep2023-3vt2doublet/bootstrap_texmap_3sigma_allspw_withnans_weighted.fits"
+sgrb2dsivtexmap="/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSiv/sep2023-4nextinline/bootstrap_texmap_3sigma_allspw_withnans_weighted.fits"
+dsvtexmap="/blue/adamginsburg/d.jeff/SgrB2DSreorg/field10/CH3OH/DSv/sep2023phi_nu&doublet/bootstrap_texmap_3sigma_allspw_withnans_weighted.fits"
+ds6texmap="/blue/adamginsburg/d.jeff/SgrB2DSreorg/field2/CH3OH/DSVI/sep2023-2removenewvt1line/bootstrap_texmap_3sigma_allspw_withnans_weighted.fits"
+ds7texmap="/blue/adamginsburg/d.jeff/SgrB2DSreorg/field3/CH3OH/DSVII/sep2023phi_nu&doublet/bootstrap_texmap_3sigma_allspw_withnans_weighted.fits"
+ds8texmap="/blue/adamginsburg/d.jeff/SgrB2DSreorg/field3/CH3OH/DSVIII/sep2023phi_nu&doublet/bootstrap_texmap_3sigma_allspw_withnans_weighted.fits"
+ds9texmap="/blue/adamginsburg/d.jeff/SgrB2DSreorg/field7/CH3OH/DSIX/sep2023phi_nu&doublet/bootstrap_texmap_3sigma_allspw_withnans_weighted.fits"
 
 sgrb2dshdu=fits.open(sgrb2dspath)[0]
 sgrb2dsdata=sgrb2dshdu.data.squeeze()
@@ -58,6 +59,8 @@ ds7hdu=fits.open(ds7texmap)[0]
 ds8hdu=fits.open(ds8texmap)[0]
 ds9hdu=fits.open(ds9texmap)[0]
 
+sgrb2swcs=WCS(sgrb2shdu.header).celestial
+
 '''for alma'''
 pixscale=0.05*u.arcsec
 hpbw=42.9*u.arcsec
@@ -68,7 +71,7 @@ a=pbrad*np.cos(theta)
 b=pbrad*np.sin(theta)
 
 fluxscalefactor=1#000
-tmax=575
+tmax=625
 tmin=20
 jymax=((0.05*fluxscalefactor/beam_sgrb2dshdu)*u.Jy).to('K',equivalencies=equiv).value#Was 0.050831314 Jy
 jymaxfull=((0.05*fluxscalefactor/beam_sgrb2dshdu)*u.Jy).to('K',equivalencies=equiv).value#was 0.01 Jy
@@ -132,6 +135,7 @@ secondrowinset=firstrowinset-insetverticalspacing#0.564
 thirdrowinset=secondrowinset-insetverticalspacing
 fourthrowinset=thirdrowinset-insetverticalspacing
 fifthrowinset=fourthrowinset-insetverticalspacing
+tmapcontourcolor='white'
 
 annote_size=12
 s_annote_size=annote_size-2
@@ -152,11 +156,14 @@ axins2=axins.inset_axes([leftinsetxpos,0,1,1])
 axins2show=axins2.imshow(sgrb2shdu.data,vmax=tmax,vmin=tmin,origin='lower',cmap='inferno')
 s_txt=axins2.text(3,102,'Sgr B2(S)',size=s_annote_size,color='black')#ypos was 102
 s_txt.set_path_effects([pe.withStroke(linewidth=3,foreground='w')])
+axins2.contour((sgrb2dsdata*fluxscalefactor)[int(centery-width):int(centery+width),int(centerx-width):int(centerx+width)],
+               levels=cntrlist,colors=tmapcontourcolor,linewidths=0.7,)
 
 shape=sgrb2shdu.data.shape
 xratio=3/shape[1]
 yratio=102/shape[0]
 
+#DS1
 axins3=ax.inset_axes([righthoriz,(thirdrowinset),axins_dims,axins_dims])
 axins3.imshow(sgrb2dsdata*fluxscalefactor,origin='lower',norm=visualization.simple_norm(sgrb2dsdata, stretch='sqrt', max_cut=jymax),cmap='gray_r')
 axins3.set_xlim((centerx2-width2),(centerx2+width2))
@@ -169,7 +176,9 @@ xpos1=round(shape1[1]*xratio)
 ypos1=round(shape1[0]*yratio)
 txt1=axins4.text(xpos1,ypos1,'DS1',size=annote_size,color='black')
 txt1.set_path_effects([pe.withStroke(linewidth=3,foreground='w')])
+axins4.contour((sgrb2dsdata*fluxscalefactor)[int(centery2-width2):int(centery2+width2),int(centerx2-width2):int(centerx2+width2)],levels=cntrlist,colors=tmapcontourcolor,linewidths=0.7)
 
+#DS2
 axins5=ax.inset_axes([righthoriz,secondrowinset,axins_dims,axins_dims])
 axins5.imshow(sgrb2dsdata*fluxscalefactor,origin='lower',norm=visualization.simple_norm(sgrb2dsdata, stretch='sqrt', max_cut=jymax),cmap='gray_r')
 axins5.set_xlim((centerx3-width3),(centerx3+width3))
@@ -182,7 +191,9 @@ xpos2=round(shape2[1]*xratio)
 ypos2=round(shape2[0]*yratio)
 txt2=axins6.text(xpos2,ypos2,'DS2',size=annote_size,color='black')
 txt2.set_path_effects([pe.withStroke(linewidth=3,foreground='w')])
+axins6.contour((sgrb2dsdata*fluxscalefactor)[int(centery3-width3):int(centery3+width3),int(centerx3-width3):int(centerx3+width3)],levels=cntrlist,colors=tmapcontourcolor,linewidths=0.7)
 
+#DS5
 axins7=ax.inset_axes([righthoriz,fourthrowinset,axins_dims,axins_dims])
 axins7.imshow(sgrb2dsdata*fluxscalefactor,origin='lower',norm=visualization.simple_norm(sgrb2dsdata, stretch='sqrt', max_cut=jymax),cmap='gray_r')
 axins7.set_xlim((centerx6-width6),(centerx6+width6))
@@ -195,7 +206,9 @@ xpos5=round(shape5[1]*xratio)
 ypos5=round(shape5[0]*yratio)
 txt5=axins8.text(xpos5,ypos5,'DS5',size=annote_size,color='black')
 txt5.set_path_effects([pe.withStroke(linewidth=3,foreground='w')])
+axins8.contour((sgrb2dsdata*fluxscalefactor)[int(centery6-width6):int(centery6+width6),int(centerx6-width6):int(centerx6+width6)],levels=cntrlist,colors=tmapcontourcolor,linewidths=0.7)
 
+#DS4
 axins9=ax.inset_axes([righthoriz,firstrowinset,axins_dims,axins_dims])
 axins9.imshow(sgrb2dsdata*fluxscalefactor,origin='lower',norm=visualization.simple_norm(sgrb2dsdata, stretch='sqrt', max_cut=jymax),cmap='gray_r')
 axins9.set_xlim((centerx5-width5),(centerx5+width5))
@@ -208,7 +221,9 @@ xpos4=round(shape4[1]*xratio)
 ypos4=round(shape4[0]*yratio)
 txt4=axins10.text(xpos4,ypos4,'DS4',size=annote_size,color='black')
 txt4.set_path_effects([pe.withStroke(linewidth=3,foreground='w')])
+axins10.contour((sgrb2dsdata*fluxscalefactor)[int(centery5-width5):int(centery5+width5),int(centerx5-width5):int(centerx5+width5)],levels=cntrlist,colors=tmapcontourcolor,linewidths=0.7)
 
+#DS3
 axins11=ax.inset_axes([lefthoriz,secondrowinset,axins_dims,axins_dims])
 axins11.imshow(sgrb2dsdata*fluxscalefactor,origin='lower', norm=visualization.simple_norm(sgrb2dsdata, stretch='sqrt',max_cut=jymax),cmap='gray_r')
 axins11.set_xlim((centerx4-width4),(centerx4+width4))
@@ -221,7 +236,9 @@ xpos3=round(shape3[1]*xratio)
 ypos3=round(shape3[0]*yratio)
 txt3=axins12.text(xpos3,ypos3,'DS3',size=annote_size,color='black')
 txt3.set_path_effects([pe.withStroke(linewidth=3,foreground='w')])
+axins12.contour((sgrb2dsdata*fluxscalefactor)[int(centery4-width4):int(centery4+width4),int(centerx4-width4):int(centerx4+width4)],levels=cntrlist,colors=tmapcontourcolor,linewidths=0.7)
 
+#DS6
 axins13=ax.inset_axes([lefthoriz,thirdrowinset,axins_dims,axins_dims])
 axins13.imshow(sgrb2dsdata*fluxscalefactor,origin='lower', norm=visualization.simple_norm(sgrb2dsdata, stretch='sqrt',max_cut=jymax),cmap='gray_r')
 axins13.set_xlim((centerx7-width7),(centerx7+width7))
@@ -234,7 +251,9 @@ xpos6=round(shape6[1]*xratio)
 ypos6=round(shape6[0]*yratio)
 txt6=axins14.text(xpos6,ypos6,'DS6',size=annote_size,color='black')
 txt6.set_path_effects([pe.withStroke(linewidth=3,foreground='w')])
+axins14.contour((sgrb2dsdata*fluxscalefactor)[int(centery7-width7):int(centery7+width7),int(centerx7-width7):int(centerx7+width7)],levels=cntrlist,colors=tmapcontourcolor,linewidths=0.7)
 
+#DS7
 axins15=ax.inset_axes([lefthoriz,fourthrowinset,axins_dims,axins_dims])
 axins15.imshow(sgrb2dsdata*fluxscalefactor,origin='lower', norm=visualization.simple_norm(sgrb2dsdata, stretch='sqrt',max_cut=jymax),cmap='gray_r')
 axins15.set_xlim((centerx8-width8),(centerx8+width8))
@@ -247,7 +266,9 @@ xpos7=round(shape7[1]*xratio)
 ypos7=round(shape7[0]*yratio)
 txt7=axins16.text(xpos7,ypos7,'DS7',size=annote_size,color='black')
 txt7.set_path_effects([pe.withStroke(linewidth=3,foreground='w')])
+axins16.contour((sgrb2dsdata*fluxscalefactor)[int(centery8-width8):int(centery8+width8),int(centerx8-width8):int(centerx8+width8)],levels=cntrlist,colors=tmapcontourcolor,linewidths=0.7)
 
+#DS9
 axins17=ax.inset_axes([lefthoriz,fifthrowinset,axins_dims,axins_dims])
 axins17.imshow(sgrb2dsdata*fluxscalefactor,origin='lower', norm=visualization.simple_norm(sgrb2dsdata, stretch='sqrt',max_cut=jymax),cmap='gray_r')
 axins17.set_xlim((centerx10-width10),(centerx10+width10))
@@ -260,7 +281,9 @@ xpos9=round(shape9[1]*xratio)
 ypos9=round(shape9[0]*yratio)
 txt9=axins18.text(xpos9,ypos9,'DS9',size=annote_size,color='black')
 txt9.set_path_effects([pe.withStroke(linewidth=3,foreground='w')])
+axins18.contour((sgrb2dsdata*fluxscalefactor)[int(centery10-width10):int(centery10+width10),int(centerx10-width10):int(centerx10+width10)],levels=cntrlist,colors=tmapcontourcolor,linewidths=0.7)
 
+#DS8
 axins19=ax.inset_axes([righthoriz,fifthrowinset,axins_dims,axins_dims])
 axins19.imshow(sgrb2dsdata*fluxscalefactor,origin='lower', norm=visualization.simple_norm(sgrb2dsdata, stretch='sqrt',max_cut=jymax),cmap='gray_r')
 axins19.set_xlim((centerx9-width9),(centerx9+width9))
@@ -273,6 +296,7 @@ xpos8=round(shape8[1]*xratio)
 ypos8=round(shape8[0]*yratio)
 txt8=axins20.text(xpos8,ypos8,'DS8',size=annote_size,color='black')
 txt8.set_path_effects([pe.withStroke(linewidth=3,foreground='w')])
+axins20.contour((sgrb2dsdata*fluxscalefactor)[int(centery9-width9):int(centery9+width9),int(centerx9-width9):int(centerx9+width9)],levels=cntrlist,colors=tmapcontourcolor,linewidths=0.7)
 
 #plt.grid(color='white', ls='solid')
 dec.set_axislabel('Dec')
@@ -359,7 +383,7 @@ ax.indicate_inset_zoom(axins19)
 #axins.indicate_inset_zoom(axins2)
 
 #plt.Circle((centerx3,centery3),15)
-savefigpath='/blue/adamginsburg/d.jeff/repos/CH3OHTemps/figures/zoominfigs/contfix_nograd_contours_bolocam_zoomin_300dpi.png'
+savefigpath=f'/blue/adamginsburg/d.jeff/repos/CH3OHTemps/figures/zoominfigs/{dataversion}_refereecontours_nograd_contours_bolocam_zoomin_300dpi.png'
 #cbax=axins20.inset_axes([1.25,0,1,1])#inset_axes(axins2,width='5%',height='100%',loc='lower right', bbox_to_anchor=a,borderpad=0,bbox_transform=ax.transAxes)#,bbox_transform=axins20.transAxes,borderpad=0)
 cb=plt.colorbar(axins2show,shrink=1.05, pad=0.05)#(shrink=2,pad=0, mappable=im,cax=cbax)
 cb2=plt.colorbar(continuum,shrink=1.05, pad=0.5)#,anchor=(0.0,1.0))

@@ -51,7 +51,7 @@ Jfreqs, Jaij, Jdeg, JEU, qrot = get_molecular_parameters('CH3OH',
                                                          fmax=300*u.GHz)
 
 
-source='DSVIII'
+source='DSi'
 fielddict={'SgrB2S':1,'DSi':10,'DSii':10,'DSiii':10,'DSiv':10,'DSv':10,'DSVI':2,'DSVII':3,'DSVIII':3,'DSIX':7}
 fnum=fielddict[source]
 
@@ -111,7 +111,7 @@ ypix=pixdict[source][0]#20#37#69#36dsi#73#70#int(input('y coord:'))61 dsiring:36
 xpix=pixdict[source][1]#24#41#58#40dsi#54#55#int(input('x coord:'))64 dsiring:35
 pixel=(ypix,xpix)
 pixellist=list([pixel])
-
+#pdb.set_trace()
 for px in pixellist:
     y=px[0]
     x=px[1]
